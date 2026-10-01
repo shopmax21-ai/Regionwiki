@@ -1,17 +1,8 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "ignoreCommand": "exit 0 # Skip builds because this Vercel-only redirect config is not required by the project",
-  "redirects": [
+  "crons": [
     {
-      "source": "/:path*",
-      "destination": "https://studio-admin.arhamkhnz.com/:path*",
-      "permanent": true,
-      "missing": [
-        {
-          "type": "host",
-          "value": "studio-admin.arhamkhnz.com"
-        }
-      ]
+      "path": "/api/rules/sync",
+      "schedule": "0 */3 * * *"
     }
   ]
 }
