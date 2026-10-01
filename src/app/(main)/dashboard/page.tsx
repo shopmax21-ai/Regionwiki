@@ -1,5 +1,5 @@
-import { permanentRedirect } from "next/navigation";
+import WikiPage from "./_components/wiki-page";
 
 export default function Page() {
-  permanentRedirect("/dashboard/default");
+  return <WikiPage />;
 }
