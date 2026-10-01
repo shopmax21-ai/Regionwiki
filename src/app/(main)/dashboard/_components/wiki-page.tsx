@@ -52,12 +52,49 @@ const sections = [
   { title: "Города и места", description: "Карта штата, важные локации и полезные адреса", icon: Building2, count: 27 },
 ];
 
-const popularArticles = [
-  ["Общие правила проекта", "Официальный форум", "Основные правила", "https://forum.region.game/forums/obshchiye-pravila-proyekta.43/"],
-  ["Правила поставок и перехвата", "Официальный форум", "Основные правила", "https://forum.region.game/forums/obshchiye-pravila-proyekta.43/"],
-  ["Правила ограблений и похищений", "Официальный форум", "Основные правила", "https://forum.region.game/forums/obshchiye-pravila-proyekta.43/"],
-  ["Правила государственных организаций", "Официальный форум", "Государственные структуры", "https://forum.region.game/forums/pravila-gosudarstvennykh-organizatsii.3/"],
+const ruleGroups = [
+  {
+    title: "Основные правила",
+    description: "Общие правила проекта и специальные игровые ситуации",
+    href: "https://forum.region.game/forums/obshchiye-pravila-proyekta.43/",
+    topics: [
+      "Общие правила",
+      "Правила поставок и перехвата",
+      "Правила ограблений и похищений",
+      "Правила семейных организаций",
+      "Правила войны за воздушный груз (ВЗА)",
+      "Правила для лидеров фракций",
+      "Правила и обязанности администрации",
+      "Правила нападения на воинскую часть",
+      "Правила об игровом имуществе",
+      "Правила игровых зон",
+      "Правила проверки на стороннее ПО",
+      "Правила форума",
+    ],
+  },
+  {
+    title: "Государственные структуры",
+    description: "Правила государственных организаций",
+    href: "https://forum.region.game/forums/pravila-gosudarstvennykh-organizatsii.3/",
+    topics: ["Правила государственных организаций"],
+  },
 ];
+
+const changeHistory = [
+  ["21.09.2026", "Обновлены общие правила проекта и закрепленные темы"],
+  ["22.09.2026", "Актуализированы правила поставок и перехвата"],
+  ["21.09.2026", "Обновлены правила ограблений и похищений"],
+  ["24.02.2026", "Опубликованы правила государственных организаций"],
+];
+
+const popularArticles = ruleGroups.flatMap((group) =>
+  group.topics.slice(0, group.title === "Основные правила" ? 3 : 1).map((topic) => [
+    topic,
+    "Официальный форум",
+    group.title,
+    group.href,
+  ]),
+);
 
 export function WikiPage() {
   const [query, setQuery] = useState("");
@@ -131,6 +168,70 @@ export function WikiPage() {
             );
           })}
         </div>
+      </section>
+
+      <section id="rules" className="flex scroll-mt-6 flex-col gap-4">
+        <div>
+          <p className="text-sm font-medium text-primary">Официальные правила</p>
+          <h2 className="mt-1 text-2xl font-semibold tracking-tight">Правила проекта</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Все разделы правил перенесены из официального форума Region. Открывайте источник, чтобы посмотреть актуальную редакцию.
+          </p>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {ruleGroups.map((group) => (
+            <Card key={group.title}>
+              <CardHeader>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <CardTitle>{group.title}</CardTitle>
+                    <CardDescription className="mt-2">{group.description}</CardDescription>
+                  </div>
+                  <Badge variant="secondary">{group.topics.length}</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2">
+                {group.topics.map((topic, index) => (
+                  <a
+                    key={topic}
+                    href={group.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 text-sm transition-colors hover:border-border hover:bg-muted/50"
+                  >
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">
+                      {index + 1}
+                    </span>
+                    <span className="min-w-0 flex-1">{topic}</span>
+                    <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+                  </a>
+                ))}
+                <a
+                  href={group.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                >
+                  Открыть раздел на форуме <ArrowRight className="size-4" />
+                </a>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>История изменений</CardTitle>
+            <CardDescription>Последние обновления правил, опубликованные на форуме Region</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 md:grid-cols-2">
+            {changeHistory.map(([date, description]) => (
+              <div key={`${date}-${description}`} className="flex gap-3 rounded-lg border p-3">
+                <span className="shrink-0 text-xs font-medium text-muted-foreground">{date}</span>
+                <span className="text-sm leading-5">{description}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[1fr_340px]">
