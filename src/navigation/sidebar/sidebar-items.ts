@@ -226,22 +226,6 @@ export const sidebarItems: NavGroup[] = [
     ],
   },
   {
-    id: 3,
-    label: "Устаревшие",
-    items: [
-      {
-        id: "legacy-dashboards",
-        title: "Дашборды",
-        subItems: [
-          { id: "legacy-default", title: "По умолчанию V1", url: "/dashboard/default-v1" },
-          { id: "legacy-crm", title: "CRM V1", url: "/dashboard/crm-v1" },
-          { id: "legacy-finance", title: "Финансы V1", url: "/dashboard/finance-v1" },
-          { id: "legacy-analytics", title: "Аналитика V1", url: "/dashboard/analytics-v1" },
-        ],
-      },
-    ],
-  },
-  {
     id: 4,
     label: "Разное",
     items: [
