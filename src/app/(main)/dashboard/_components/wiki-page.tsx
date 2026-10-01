@@ -28,8 +28,20 @@ const sections = [
     icon: Sparkles,
     count: 12,
   },
-  { title: "Правила проекта", description: "Общие правила Region и игрового поведения", icon: Shield, count: 24 },
-  { title: "Фракции", description: "Государственные структуры и криминальные организации", icon: Users, count: 18 },
+  {
+    title: "Основные правила",
+    description: "Общие правила проекта, игровые ситуации и ответственность",
+    icon: Shield,
+    count: 12,
+    href: "https://forum.region.game/forums/obshchiye-pravila-proyekta.43/",
+  },
+  {
+    title: "Государственные структуры",
+    description: "Правила государственных организаций и фракционной игры",
+    icon: Users,
+    count: 1,
+    href: "https://forum.region.game/forums/pravila-gosudarstvennykh-organizatsii.3/",
+  },
   {
     title: "Работы и бизнес",
     description: "Как зарабатывать, открывать бизнес и развиваться",
@@ -41,10 +53,10 @@ const sections = [
 ];
 
 const popularArticles = [
-  ["Как начать играть на Region", "5 мин чтения", "Новичкам"],
-  ["Правила Role Play", "8 мин чтения", "Правила"],
-  ["Получение водительских прав", "3 мин чтения", "Транспорт"],
-  ["Государственные организации", "6 мин чтения", "Фракции"],
+  ["Общие правила проекта", "Официальный форум", "Основные правила", "https://forum.region.game/forums/obshchiye-pravila-proyekta.43/"],
+  ["Правила поставок и перехвата", "Официальный форум", "Основные правила", "https://forum.region.game/forums/obshchiye-pravila-proyekta.43/"],
+  ["Правила ограблений и похищений", "Официальный форум", "Основные правила", "https://forum.region.game/forums/obshchiye-pravila-proyekta.43/"],
+  ["Правила государственных организаций", "Официальный форум", "Государственные структуры", "https://forum.region.game/forums/pravila-gosudarstvennykh-organizatsii.3/"],
 ];
 
 export function WikiPage() {
@@ -94,8 +106,8 @@ export function WikiPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredSections.map((section) => {
             const Icon = section.icon;
-            return (
-              <Card key={section.title} className="group cursor-pointer transition-colors hover:border-primary/50">
+            const content = (
+              <Card className="group cursor-pointer transition-colors hover:border-primary/50">
                 <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
                   <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                     <Icon className="size-5" />
@@ -108,6 +120,14 @@ export function WikiPage() {
                   <p className="mt-5 text-xs font-medium text-muted-foreground">{section.count} статей</p>
                 </CardContent>
               </Card>
+            );
+
+            return section.href ? (
+              <a key={section.title} href={section.href} target="_blank" rel="noreferrer">
+                {content}
+              </a>
+            ) : (
+              <div key={section.title}>{content}</div>
             );
           })}
         </div>
@@ -127,10 +147,12 @@ export function WikiPage() {
             </div>
           </CardHeader>
           <CardContent className="grid gap-2">
-            {popularArticles.map(([title, time, category]) => (
-              <button
+            {popularArticles.map(([title, time, category, href]) => (
+              <a
                 key={title}
-                type="button"
+                href={href}
+                target="_blank"
+                rel="noreferrer"
                 className="group flex items-center gap-4 rounded-xl border border-transparent p-3 text-left transition-colors hover:border-border hover:bg-muted/50"
               >
                 <FileText className="size-5 shrink-0 text-muted-foreground" />
@@ -141,7 +163,7 @@ export function WikiPage() {
                   </span>
                 </span>
                 <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
-              </button>
+              </a>
             ))}
           </CardContent>
         </Card>
