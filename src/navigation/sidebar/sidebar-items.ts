@@ -1,5 +1,6 @@
 import {
   Banknote,
+  BookOpen,
   BriefcaseBusiness,
   Calendar,
   CarFront,
@@ -222,6 +223,30 @@ export const sidebarItems: NavGroup[] = [
           { id: "auth-login-v2", title: "Вход", url: "/auth/v2/login", newTab: true },
           { id: "auth-register-v2", title: "Регистрация", url: "/auth/v2/register", newTab: true },
         ],
+      },
+    ],
+  },
+  {
+    id: 3,
+    label: "Правила",
+    items: [
+      {
+        id: "general-rules",
+        title: "Основные правила",
+        url: "/dashboard/rules/general",
+        icon: BookOpen,
+      },
+      {
+        id: "government-rules",
+        title: "Государственных структур",
+        url: "/dashboard/rules/government",
+        icon: BookOpen,
+      },
+      {
+        id: "rules-changelog",
+        title: "История изменений",
+        url: "/dashboard/rules/changelog",
+        icon: BookOpen,
       },
     ],
   },
