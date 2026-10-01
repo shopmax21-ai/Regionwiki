@@ -7,15 +7,33 @@ const owners = [
 ] as const;
 
 export function createDirectoryData(category: string): { folders: FileManagerFolder[]; files: FileManagerFile[] } {
-  const folderNames = ["Документы", "Объявления", "Фото и медиа", "Договоры", "Архив"];
-  const fileNames = [
-    "Основная информация",
-    "Актуальные объявления",
-    "Контакты и документы",
-    "Полезные материалы",
-    "Правила раздела",
-    "Справочник региона",
-  ];
+  const categoryContent = {
+    transport: {
+      folders: ["Автомобили", "Общественный транспорт", "Запчасти", "Услуги перевозки", "Архив"],
+      files: [
+        "Продажа автомобилей",
+        "Расписание транспорта",
+        "Грузоперевозки и услуги",
+        "Запчасти и аксессуары",
+        "Правила дорожного движения",
+        "Полезные контакты транспортных служб",
+      ],
+    },
+    default: {
+      folders: ["Документы", "Объявления", "Фото и медиа", "Договоры", "Архив"],
+      files: [
+        "Основная информация",
+        "Актуальные объявления",
+        "Контакты и документы",
+        "Полезные материалы",
+        "Правила раздела",
+        "Справочник региона",
+      ],
+    },
+  };
+  const content = categoryContent[category as keyof typeof categoryContent] ?? categoryContent.default;
+  const folderNames = content.folders;
+  const fileNames = content.files;
 
   return {
     folders: folderNames.map((name, index) => ({
