@@ -14,7 +14,6 @@ const PUBLIC_ROUTES = [
   "/dashboard/logistics",
   "/dashboard/infrastructure",
   "/dashboard/file-manager",
-  "/dashboard/patient-monitoring",
   "/dashboard/calendar",
   "/dashboard/kanban",
   "/dashboard/tasks",
