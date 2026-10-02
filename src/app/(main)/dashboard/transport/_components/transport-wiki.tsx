@@ -254,49 +254,60 @@ export function TransportWiki() {
         {filteredVehicles.map((vehicle) => {
           const Icon = categoryIcons[vehicle.category];
           return (
-            <Card key={vehicle.code} className="overflow-hidden transition-colors hover:border-primary/50">
-              <CardContent
-                className={
-                  view === "grid"
-                    ? "flex flex-col gap-5 p-5"
-                    : "flex flex-col gap-4 p-4 md:grid md:grid-cols-[220px_1fr_auto] md:items-center md:gap-6"
-                }
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted text-primary">
-                    <Icon />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap gap-2">
-                      {vehicle.new && <Badge>Новый</Badge>}
-                      {vehicle.nitro && <Badge variant="outline">Нитро</Badge>}
+            <Card
+              key={vehicle.code}
+              className="group overflow-hidden border-border/70 bg-card transition-colors hover:border-primary/60"
+            >
+              <CardContent className="p-0">
+                <div className="relative flex h-56 items-start justify-between overflow-hidden bg-muted/40 p-4 sm:h-64">
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-background/80" />
+                  <div className="pointer-events-none absolute -bottom-20 left-1/2 flex size-72 -translate-x-1/2 items-center justify-center rounded-full bg-primary/10 blur-3xl" />
+                  <div className="relative z-10 flex flex-wrap gap-2">
+                    <div className="flex size-9 items-center justify-center rounded-lg bg-background/80 text-muted-foreground backdrop-blur-sm">
+                      <Icon />
                     </div>
-                    <p className="mt-2 text-sm text-muted-foreground">{vehicle.name}</p>
-                    <h2 className="text-lg font-semibold">{vehicle.model}</h2>
+                    {vehicle.new && <Badge>Новый</Badge>}
                   </div>
+                  <div className="relative z-10 flex flex-col items-end gap-2">
+                    {vehicle.nitro && (
+                      <Badge variant="outline" className="bg-background/70 backdrop-blur-sm">
+                        Нитро
+                      </Badge>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="bg-background/70 backdrop-blur-sm"
+                      aria-label={`Открыть ${vehicle.name} ${vehicle.model}`}
+                    >
+                      <ExternalLink />
+                    </Button>
+                  </div>
+                  <Icon className="absolute bottom-3 left-1/2 size-36 -translate-x-1/2 text-primary/20 transition-transform duration-300 group-hover:scale-110" />
                 </div>
-                <div className="grid grid-cols-3 gap-3 border-y py-3 text-sm md:border-y-0 md:py-0">
+                <div className="flex flex-col gap-4 p-4 sm:p-5">
                   <div>
-                    <p className="text-muted-foreground">Скорость</p>
-                    <p className="font-semibold">{vehicle.speed} км/ч</p>
+                    <p className="text-sm text-muted-foreground">{vehicle.name}</p>
+                    <h2 className="text-xl font-semibold tracking-tight">{vehicle.model}</h2>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Макс. скорость (FT)</p>
-                    <p className="font-semibold">{vehicle.tunedSpeed} км/ч</p>
+                  <div className="grid grid-cols-3 gap-3 border-t pt-4 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Скорость</p>
+                      <p className="mt-1 font-semibold">{vehicle.speed} км/ч</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Максимальная скорость (FT)</p>
+                      <p className="mt-1 font-semibold">{vehicle.tunedSpeed} км/ч</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Гос. стоимость</p>
+                      <p className="mt-1 font-semibold">{formatPrice(vehicle.price)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Гос. стоимость</p>
-                    <p className="font-semibold">{formatPrice(vehicle.price)}</p>
-                    <p className="text-xs text-muted-foreground">{vehicle.source}</p>
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <span className="rounded-md bg-muted px-2 py-1">{vehicle.source}</span>
+                    <span className="rounded-md bg-muted px-2 py-1">ID {vehicle.code}</span>
                   </div>
-                </div>
-                <Button variant="ghost" size="icon" aria-label={`Открыть ${vehicle.name} ${vehicle.model}`}>
-                  <ExternalLink />
-                </Button>
-                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground md:col-span-3">
-                  <span className="rounded-md bg-muted px-2 py-1">ID {vehicle.code}</span>
-                  <span className="rounded-md bg-muted px-2 py-1">{vehicle.category}</span>
-                  <span className="rounded-md bg-muted px-2 py-1">100 kg</span>
                 </div>
               </CardContent>
             </Card>
