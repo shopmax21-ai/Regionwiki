@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import Image from "next/image";
+
 import {
   ArrowUpDown,
   Bike,
@@ -46,6 +48,7 @@ type Vehicle = {
   price: number;
   source: string;
   code: string;
+  imageUrl?: string;
   premium?: boolean;
   new?: boolean;
   nitro?: boolean;
@@ -87,6 +90,8 @@ const vehicles: Vehicle[] = [
     price: 29000000,
     source: "Осенний кейс 2026",
     code: "brouillard",
+    imageUrl:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/brouillard%20%281%29-3P4djLCkJewWt2DxPOrM5UPSYqW885.png",
     premium: true,
     new: true,
     nitro: true,
@@ -261,6 +266,16 @@ export function TransportWiki() {
               <CardContent className="p-0">
                 <div className="relative h-[22rem] overflow-hidden border-b border-border/70 bg-muted/20 p-4 sm:h-[34rem] sm:p-7">
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-background/80" />
+                  {vehicle.imageUrl && (
+                    <Image
+                      src={vehicle.imageUrl}
+                      alt={`${vehicle.name} ${vehicle.model}`}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 768px"
+                      unoptimized
+                      className="object-contain object-center px-4 pb-6 pt-14 sm:px-12 sm:pb-10 sm:pt-20"
+                    />
+                  )}
                   <div className="relative z-10 flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="flex size-11 items-center justify-center rounded-xl bg-muted text-muted-foreground">
