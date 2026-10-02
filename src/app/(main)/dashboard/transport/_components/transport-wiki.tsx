@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import Image from "next/image";
+
 import {
   ArrowUpDown,
   Bike,
@@ -46,6 +48,7 @@ type Vehicle = {
   price: number;
   source: string;
   code: string;
+  imageUrl?: string;
   premium?: boolean;
   new?: boolean;
   nitro?: boolean;
@@ -87,6 +90,8 @@ const vehicles: Vehicle[] = [
     price: 29000000,
     source: "Осенний кейс 2026",
     code: "brouillard",
+    imageUrl:
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/brouillard%20%281%29-3P4djLCkJewWt2DxPOrM5UPSYqW885.png",
     premium: true,
     new: true,
     nitro: true,
@@ -259,8 +264,18 @@ export function TransportWiki() {
               className="group overflow-hidden rounded-3xl border-border/70 bg-card shadow-sm transition-colors hover:border-primary/60"
             >
               <CardContent className="p-0">
-                <div className="relative min-h-[30rem] overflow-hidden border-b border-border/70 bg-muted/20 p-5 sm:min-h-[34rem] sm:p-7">
+                <div className="relative h-[22rem] overflow-hidden border-b border-border/70 bg-muted/20 p-4 sm:h-[34rem] sm:p-7">
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-background/80" />
+                  {vehicle.imageUrl && (
+                    <Image
+                      src={vehicle.imageUrl}
+                      alt={`${vehicle.name} ${vehicle.model}`}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 768px"
+                      unoptimized
+                      className="object-contain object-center px-4 pb-6 pt-14 sm:px-12 sm:pb-10 sm:pt-20"
+                    />
+                  )}
                   <div className="relative z-10 flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="flex size-11 items-center justify-center rounded-xl bg-muted text-muted-foreground">
@@ -268,51 +283,38 @@ export function TransportWiki() {
                       </div>
                       {vehicle.new && <Badge className="rounded-xl px-4 py-2 text-base">Новый</Badge>}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="rounded-xl text-muted-foreground"
-                      aria-label={`Открыть ${vehicle.name} ${vehicle.model}`}
-                    >
-                      <ExternalLink />
-                    </Button>
                   </div>
-                  <img
-                    src="/images/transport/genesis-g90.png"
-                    alt={`${vehicle.name} ${vehicle.model}`}
-                    className="absolute left-1/2 top-20 w-[92%] max-w-3xl -translate-x-1/2 object-contain transition-transform duration-500 group-hover:scale-105 sm:top-24"
-                  />
                   {vehicle.nitro && (
                     <Badge
                       variant="outline"
-                      className="absolute bottom-6 right-5 rounded-xl px-4 py-2 text-base sm:right-7"
+                      className="absolute bottom-4 right-4 rounded-xl px-3 py-1.5 text-sm sm:bottom-6 sm:right-7 sm:px-4 sm:py-2 sm:text-base"
                     >
                       <Gauge data-icon="inline-start" /> Нитро
                     </Badge>
                   )}
                 </div>
-                <div className="flex flex-col gap-7 p-6 sm:p-8">
+                <div className="flex flex-col gap-6 p-5 sm:gap-7 sm:p-8">
                   <div>
-                    <p className="text-lg text-muted-foreground">{vehicle.name}</p>
-                    <h2 className="text-3xl font-semibold tracking-tight">{vehicle.model}</h2>
+                    <p className="text-base text-muted-foreground sm:text-lg">{vehicle.name}</p>
+                    <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{vehicle.model}</h2>
                   </div>
-                  <div className="grid grid-cols-1 gap-5 text-sm sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 sm:gap-5">
                     <div>
-                      <p className="text-base text-muted-foreground">Скорость</p>
-                      <p className="mt-2 text-3xl font-semibold">{vehicle.speed} км/ч</p>
+                      <p className="text-sm text-muted-foreground sm:text-base">Скорость</p>
+                      <p className="mt-1 text-2xl font-semibold sm:mt-2 sm:text-3xl">{vehicle.speed} км/ч</p>
                     </div>
                     <div>
-                      <p className="text-base text-muted-foreground">Максимальная скорость (FT)</p>
-                      <p className="mt-2 text-3xl font-semibold">{vehicle.tunedSpeed} км/ч</p>
+                      <p className="text-sm text-muted-foreground sm:text-base">Максимальная скорость (FT)</p>
+                      <p className="mt-1 text-2xl font-semibold sm:mt-2 sm:text-3xl">{vehicle.tunedSpeed} км/ч</p>
                     </div>
                     <div className="sm:col-span-2">
-                      <p className="text-base text-muted-foreground">Гос. стоимость</p>
-                      <p className="mt-2 text-3xl font-semibold">{formatPrice(vehicle.price)}</p>
-                      <p className="mt-1 text-base text-muted-foreground">{vehicle.source}</p>
+                      <p className="text-sm text-muted-foreground sm:text-base">Гос. стоимость</p>
+                      <p className="mt-1 text-2xl font-semibold sm:mt-2 sm:text-3xl">{formatPrice(vehicle.price)}</p>
+                      <p className="mt-1 text-sm text-muted-foreground sm:text-base">{vehicle.source}</p>
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-7 gap-y-3 border-t border-border/70 px-6 py-5 text-base text-muted-foreground sm:px-8">
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-border/70 px-5 py-4 text-sm text-muted-foreground sm:gap-x-7 sm:px-8 sm:py-5 sm:text-base">
                   <span className="flex items-center gap-2">
                     <span className="rounded-md bg-muted px-2 py-1 text-xs font-bold">ID</span>
                     {vehicle.code}
