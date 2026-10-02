@@ -7,7 +7,7 @@ import { Maximize, Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-import { getCategory, MAP_TILES_URL, MAP_TRANSFORMATION, MAP_WORLD, MAP_ZOOM, type MapPlace } from "./map-data";
+import { getCategory, MAP_TRANSFORMATION, MAP_WORLD, MAP_ZOOM, type MapPlace } from "./map-data";
 
 import "leaflet/dist/leaflet.css";
 
@@ -62,14 +62,10 @@ export default function GameMap({ places, selectedId, onSelect }: GameMapProps) 
       maxBoundsViscosity: 1,
     });
 
-    L.tileLayer(MAP_TILES_URL, {
-      minZoom: MAP_ZOOM.min,
-      maxZoom: MAP_ZOOM.max,
-      maxNativeZoom: MAP_ZOOM.native,
-      bounds: worldBounds,
-      noWrap: true,
-      updateWhenIdle: true,
-      keepBuffer: 4,
+    const mapImage = L.imageOverlay("/images/map-vector-with-land.svg", worldBounds, {
+      opacity: 1,
+      interactive: false,
+      className: "region-map-image",
     }).addTo(map);
 
     map.fitBounds(worldBounds, { animate: false });
@@ -88,6 +84,7 @@ export default function GameMap({ places, selectedId, onSelect }: GameMapProps) 
     return () => {
       observer.disconnect();
       markers.clear();
+      mapImage.remove();
       map.remove();
       mapRef.current = null;
     };
