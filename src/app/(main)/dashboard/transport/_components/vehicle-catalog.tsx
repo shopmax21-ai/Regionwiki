@@ -180,7 +180,9 @@ export function VehicleCatalog() {
   );
 }
 
-function VehicleCard({ vehicle }) {
+type Vehicle = (typeof vehicles)[number];
+
+function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   return (
     <Card className="group overflow-hidden transition-colors hover:border-primary/60">
       <div
