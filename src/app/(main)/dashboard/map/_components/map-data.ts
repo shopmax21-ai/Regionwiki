@@ -12,10 +12,8 @@ export const MAP_WORLD = {
   maxY: 2048,
 } as const;
 
-/** Тайлы лежат в public/images/map/{z}/{x}x{y}.png. Нативный зум = 4 (16×16 тайлов по 256px). */
-export const MAP_ZOOM = { min: 0, max: 4, native: 4 } as const;
-
-export const MAP_TILES_URL = "/images/map/{z}/{x}x{y}.png";
+/** SVG-карта имеет размер 4096×4096 и масштабируется Leaflet без потери детализации. */
+export const MAP_ZOOM = { min: 0, max: 6, native: 4 } as const;
 
 // Коэффициенты L.Transformation: px(z) = 2^z * (a * x + b).
 // Мир занимает 256 * 2^native = 4096 пикселей на нативном зуме (4), отсюда a = 256 / ширина мира.
