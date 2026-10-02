@@ -19,6 +19,7 @@ import {
   Lock,
   type LucideIcon,
   Mail,
+  Map as MapIcon,
   MessageSquare,
   ReceiptText,
   Server,
@@ -136,6 +137,12 @@ export const sidebarItems: NavGroup[] = [
         title: "Транспорт",
         url: "/dashboard/transport",
         icon: CarFront,
+      },
+      {
+        id: "map",
+        title: "Карта",
+        url: "/dashboard/map",
+        icon: MapIcon,
       },
       {
         id: "real-estate",
