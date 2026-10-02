@@ -13,7 +13,7 @@ export const MAP_WORLD = {
 } as const;
 
 /** Тайлы лежат в public/images/map/{z}/{x}x{y}.png. Нативный зум = 4 (16×16 тайлов по 256px). */
-export const MAP_ZOOM = { min: 0, max: 6, native: 4 } as const;
+export const MAP_ZOOM = { min: 0, max: 4, native: 4 } as const;
 
 export const MAP_TILES_URL = "/images/map/{z}/{x}x{y}.png";
 
