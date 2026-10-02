@@ -13,19 +13,21 @@ export type Category = (typeof categories)[number];
 export type VehicleCategory = Exclude<Category, "Все">;
 export type FuelType = "Premium" | "Plus" | "Regular" | "Diesel" | "Electro" | "Нет";
 
-export type UpgradeLevel = { level: number; price: number; bonus?: string };
+export type UpgradeLevel = {
+  /** Цена установки именно этого уровня */
+  price: number;
+  /** Прирост, который даёт уровень (если известен) */
+  bonus?: string;
+};
+
+export type PlateDesign = { name: string; source?: string };
 
 export type VehicleUpgrade = {
   name: string;
   description: string;
-  total: number;
-  /** Уровни улучшения (двигатель, коробка, турбо, тормоза). */
-  levels?: UpgradeLevel[];
-  /** Настройки подвески: название, описание, цена и значение по умолчанию. */
-  options?: { name: string; description: string; price: number; value: string }[];
+  /** Уровни по порядку: levels[0] — первый уровень, последний — максимальный */
+  levels: UpgradeLevel[];
 };
-
-export type PlateDesign = { name: string; source?: string };
 
 export type Vehicle = {
   /** Уникальный ID — используется в адресе страницы: /dashboard/transport/[code] */
@@ -53,9 +55,6 @@ export type Vehicle = {
   /** Путь к картинке: локальный (/images/transport/...) или внешний URL */
   imageUrl?: string;
   upgrades?: VehicleUpgrade[];
-  /** Сколько колёс доступно по типам резины */
-  wheels?: { type: string; count: number }[];
-  plates?: PlateDesign[];
 };
 
 export const vehicles: Vehicle[] = [
@@ -114,99 +113,23 @@ export const vehicles: Vehicle[] = [
       {
         name: "Двигатель",
         description: "Увеличивает максимальную скорость и ускорение",
-        total: 2679600,
-        levels: [{ level: 4, price: 957000, bonus: "+20 км/ч" }],
+        levels: [{ price: 382800 }, { price: 574200 }, { price: 765600 }, { price: 957000, bonus: "+20 км/ч" }],
       },
       {
         name: "Коробка",
         description: "Улучшает переключение передач и разгон",
-        total: 861300,
-        levels: [{ level: 3, price: 382800, bonus: "+12 км/ч" }],
+        levels: [{ price: 191400 }, { price: 287100 }, { price: 382800, bonus: "+12 км/ч" }],
       },
       {
         name: "Турбо",
         description: "Добавляет кратковременное ускорение",
-        total: 733700,
-        levels: [{ level: 1, price: 733700, bonus: "+2 км/ч" }],
+        levels: [{ price: 733700, bonus: "+2 км/ч" }],
       },
       {
         name: "Тормоза",
         description: "Улучшает эффективность торможения",
-        total: 430650,
-        levels: [{ level: 3, price: 191400 }],
+        levels: [{ price: 95700 }, { price: 143550 }, { price: 191400 }],
       },
-      {
-        name: "Передняя колесная база",
-        description: "Настройка передней подвески автомобиля",
-        total: 37500,
-        options: [
-          {
-            name: "Отрицательный развал",
-            description: "Наклон колес внутрь для лучшего сцепления",
-            price: 30000,
-            value: "100%",
-          },
-          { name: "Настройка высоты", description: "Регулировка высоты подвески", price: 7500, value: "100%" },
-        ],
-      },
-      {
-        name: "Задняя колесная база",
-        description: "Настройка задней подвески автомобиля",
-        total: 37500,
-        options: [
-          {
-            name: "Отрицательный развал",
-            description: "Наклон колес внутрь для лучшего сцепления",
-            price: 30000,
-            value: "100%",
-          },
-          { name: "Настройка высоты", description: "Регулировка высоты подвески", price: 7500, value: "100%" },
-        ],
-      },
-    ],
-    wheels: [
-      { type: "Низкопрофильная резина", count: 78 },
-      { type: "Обычная резина", count: 69 },
-      { type: "Толстая резина", count: 19 },
-      { type: "Внедорожная резина", count: 8 },
-    ],
-    plates: [
-      { name: "Wanted", source: "Зимний пропуск 2025" },
-      { name: "Quiet", source: "Зимний пропуск 2025" },
-      { name: "Wondow", source: "Зимний пропуск 2025" },
-      { name: "Cyber", source: "Зимний пропуск 2025" },
-      { name: "Christmas", source: "Зимняя сказка 2025" },
-      { name: "N.E.O Tribal", source: "Формула весны 2025" },
-      { name: "Spring Sakura", source: "Формула весны 2025" },
-      { name: "Flowers", source: "Летний пропуск 2025" },
-      { name: "Isometrics", source: "Летний пропуск 2025" },
-      { name: "Vice City", source: "Летний пропуск 2025" },
-      { name: "Los Angels", source: "Летний пропуск 2025" },
-      { name: "Autumn Fall", source: "Осенний кейс 2025" },
-      { name: "GUCHI", source: "Осенний кейс 2025" },
-      { name: "The Dead Are Here", source: "Хэллоуин 2025" },
-      { name: "White Rose", source: "Зимний пропуск 2026" },
-      { name: "Glassery", source: "Зимний пропуск 2026" },
-      { name: "Winter Drops", source: "Зимний пропуск 2026" },
-      { name: "Deore", source: "Зимний пропуск 2026" },
-      { name: "Silence Japan", source: "Весенний кейс 2026" },
-      { name: "Superman", source: "Весенний кейс 2026" },
-      { name: "ANGEL's" },
-      { name: "B&W" },
-      { name: "Pussy Cats" },
-      { name: "Chrome Cres" },
-      { name: "Unreachable" },
-      { name: "I'm a Girl" },
-      { name: "Japanis Sunrise", source: "Летний пропуск 2026" },
-      { name: "Alter Dimenshion", source: "Летний пропуск 2026" },
-      { name: "All-White", source: "Летний пропуск 2026" },
-      { name: "Sunset Vibes", source: "Летний пропуск 2026" },
-      { name: "US Amrican", source: "Летний пропуск 2026" },
-      { name: "STARZ", source: "Летний пропуск 2026" },
-      { name: "Fine Lines", source: "Осенний кейс 2026" },
-      { name: "Crazy Sh1tt", source: "Осенний кейс 2026" },
-      { name: "DEDNET", source: "Осенний кейс 2026" },
-      { name: "Bandana", source: "Осенний кейс 2026" },
     ],
   },
   {
@@ -288,23 +211,30 @@ export const vehicles: Vehicle[] = [
   },
 ];
 
-/** Типы покраски (общие для всего транспорта). */
-export const paintGroups: { name: string; types: string[] }[] = [
-  {
-    name: "Основная покраска",
-    types: [
-      "Яркий металлик",
-      "Металлик",
-      "Насыщенный металлик",
-      "Темный металлик",
-      "Матовый",
-      "Матовый металл",
-      "Сатин",
-      "Металл",
-      "Теневой хром",
-      "Чистый хром",
-    ],
-  },
+export type PaintColor = { name: string; hex: string };
+
+/** Палитра покраски (общая для всего транспорта). */
+export const paintColors: PaintColor[] = [
+  { name: "Чёрный", hex: "#111111" },
+  { name: "Графит", hex: "#3b3f45" },
+  { name: "Серебристый", hex: "#a8adb3" },
+  { name: "Белый", hex: "#f4f4f2" },
+  { name: "Красный", hex: "#d62828" },
+  { name: "Бордовый", hex: "#6d1a24" },
+  { name: "Оранжевый", hex: "#f77f00" },
+  { name: "Жёлтый", hex: "#f7c600" },
+  { name: "Золотой", hex: "#c9a227" },
+  { name: "Салатовый", hex: "#8ac926" },
+  { name: "Зелёный", hex: "#2e8b57" },
+  { name: "Тёмно-зелёный", hex: "#1b4332" },
+  { name: "Бирюзовый", hex: "#1fb5ad" },
+  { name: "Голубой", hex: "#4cc9f0" },
+  { name: "Синий", hex: "#2b59c3" },
+  { name: "Тёмно-синий", hex: "#14213d" },
+  { name: "Фиолетовый", hex: "#7b2cbf" },
+  { name: "Розовый", hex: "#ff6fb5" },
+  { name: "Коричневый", hex: "#6f4518" },
+  { name: "Бежевый", hex: "#d9c5a0" },
 ];
 
 export const formatPrice = (price: number) => `$${price.toLocaleString("ru-RU")}`;
