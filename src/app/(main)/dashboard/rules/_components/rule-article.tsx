@@ -59,7 +59,7 @@ function RuleCard({ rule, query }: { rule: RuleItem; query: string }) {
   return (
     <article
       id={rule.anchor}
-      className="group/rule scroll-mt-24 rounded-xl border bg-card p-4 shadow-xs transition-colors target:border-primary target:ring-2 target:ring-primary/30 md:p-5"
+      className="group/rule min-w-0 scroll-mt-24 rounded-xl border bg-card p-4 shadow-xs transition-colors target:border-primary target:ring-2 target:ring-primary/30 md:p-5"
     >
       <div className="flex items-start gap-3">
         <a
@@ -199,7 +199,9 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
         <div className="flex min-w-0 flex-col gap-8">
           {isFiltering && (
             <p className="text-sm text-muted-foreground">
-              {shownRules > 0 ? `Найдено пунктов: ${shownRules}` : "Ничего не найдено. Попробуйте другие слова или номер пункта."}
+              {shownRules > 0
+                ? `Найдено пунктов: ${shownRules}`
+                : "Ничего не найдено. Попробуйте другие слова или номер пункта."}
             </p>
           )}
 
@@ -210,7 +212,11 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
                 entry.type === "rule" ? (
                   <RuleCard key={entry.anchor} rule={entry} query={query} />
                 ) : (
-                  <TextBlock key={`${section.id}-${entry.text.slice(0, 32)}-${entry.items.length}`} entry={entry} query={query} />
+                  <TextBlock
+                    key={`${section.id}-${entry.text.slice(0, 32)}-${entry.items.length}`}
+                    entry={entry}
+                    query={query}
+                  />
                 ),
               )}
             </section>
