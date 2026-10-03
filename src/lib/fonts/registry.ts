@@ -1,8 +1,8 @@
-import { Geist } from "next/font/google";
+import { Roboto } from "next/font/google";
 
-const geist = Geist({
+const roboto = Roboto({
   subsets: ["latin"],
-  variable: "--font-geist",
+  variable: "--font-roboto",
 });
 
-export const fontVars = geist.variable;
+export const fontVars = roboto.variable;
