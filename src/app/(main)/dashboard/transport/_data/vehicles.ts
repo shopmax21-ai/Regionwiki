@@ -13,6 +13,11 @@ export type Category = (typeof categories)[number];
 export type VehicleCategory = Exclude<Category, "Все">;
 export type FuelType = "АИ-92" | "АИ-95" | "АИ-98" | "АИ-100" | "ДТ" | "Электро" | "Нет";
 
+export type PlateDesign = {
+  name: string;
+  source?: string;
+};
+
 export type UpgradeLevel = {
   /** Цена установки именно этого уровня */
   price: number;
