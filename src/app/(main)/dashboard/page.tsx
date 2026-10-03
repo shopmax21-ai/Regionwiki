@@ -1,5 +1,5 @@
-import WikiPage from "./_components/wiki-page";
+import { WikiHome } from "./_components/wiki-home";
 
 export default function Page() {
-  return <WikiPage />;
+  return <WikiHome />;
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Fuel, Gauge, Weight, Zap } from "lucide-react";
+import { Fuel, Weight } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -21,28 +21,23 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
         <div className="relative">
           <VehicleImage
             vehicle={vehicle}
-            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-            className="aspect-[16/10] border-b"
-            imageClassName="transition-transform duration-300 group-hover/vehicle:scale-105"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+            className="aspect-[16/9] border-b"
+            imageClassName="p-4 transition-transform duration-300 group-hover/vehicle:scale-105"
           />
-          <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+          <div className="absolute top-2 left-2 flex flex-wrap gap-1">
             {vehicle.isNew && <Badge>Новый</Badge>}
-            {vehicle.nitro && (
-              <Badge variant="secondary">
-                <Zap data-icon="inline-start" /> Нитро
-              </Badge>
-            )}
             {vehicle.driftChip && <Badge variant="secondary">Дрифт-чип</Badge>}
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col gap-4 p-4">
+        <div className="flex flex-1 flex-col gap-3 p-3">
           <div className="min-w-0">
-            <p className="truncate text-sm text-muted-foreground">{vehicle.name}</p>
-            <h2 className="truncate text-xl font-semibold tracking-tight">{vehicle.model}</h2>
+            <p className="truncate text-xs text-muted-foreground">{vehicle.name}</p>
+            <h2 className="truncate text-base font-semibold tracking-tight">{vehicle.model}</h2>
           </div>
 
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+          <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
             <div>
               <dt className="text-muted-foreground">Скорость</dt>
               <dd className="font-medium">{vehicle.speed} км/ч</dd>
@@ -53,7 +48,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
             </div>
             <div className="col-span-2">
               <dt className="text-muted-foreground">Гос. стоимость</dt>
-              <dd className="text-lg font-semibold">{formatPrice(vehicle.price)}</dd>
+              <dd className="text-base font-semibold">{formatPrice(vehicle.price)}</dd>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 <Badge variant="outline">{mainSource}</Badge>
                 {otherSources.length > 0 && <Badge variant="outline">ещё {otherSources.length}</Badge>}
@@ -62,9 +57,14 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
           </dl>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t px-4 py-3 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t px-3 py-2 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            <Gauge className="size-3.5" aria-hidden="true" />
+            <span
+              className="flex h-3.5 items-center rounded-[3px] bg-muted-foreground/70 px-1 text-[9px] leading-none font-bold text-card"
+              aria-hidden="true"
+            >
+              ID
+            </span>
             <span className="sr-only">ID:</span>
             {vehicle.code}
           </span>

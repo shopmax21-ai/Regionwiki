@@ -11,7 +11,12 @@ export const categories = [
 
 export type Category = (typeof categories)[number];
 export type VehicleCategory = Exclude<Category, "Все">;
-export type FuelType = "Premium" | "Plus" | "Regular" | "Diesel" | "Electro" | "Нет";
+export type FuelType = "АИ-92" | "АИ-95" | "АИ-98" | "АИ-100" | "ДТ" | "Электро" | "Нет";
+
+export type PlateDesign = {
+  name: string;
+  source?: string;
+};
 
 export type UpgradeLevel = {
   /** Цена установки именно этого уровня */
@@ -19,8 +24,6 @@ export type UpgradeLevel = {
   /** Прирост, который даёт уровень (если известен) */
   bonus?: string;
 };
-
-export type PlateDesign = { name: string; source?: string };
 
 export type VehicleUpgrade = {
   name: string;
@@ -67,7 +70,7 @@ export const vehicles: Vehicle[] = [
     tunedSpeed: 325,
     price: 17000000,
     sources: ["Majestic Премиум"],
-    fuel: "Premium",
+    fuel: "АИ-98",
     trunkKg: 100,
     transferable: true,
     driftChip: false,
@@ -84,7 +87,7 @@ export const vehicles: Vehicle[] = [
     tunedSpeed: 335,
     price: 20000000,
     sources: ["Majestic Премиум"],
-    fuel: "Premium",
+    fuel: "АИ-98",
     trunkKg: 70,
     transferable: true,
     driftChip: false,
@@ -101,7 +104,7 @@ export const vehicles: Vehicle[] = [
     price: 29000000,
     scrapPrice: 14500000,
     sources: ["Осенний кейс 2026"],
-    fuel: "Premium",
+    fuel: "АИ-98",
     trunkKg: 30,
     transferable: true,
     driftChip: false,
@@ -133,6 +136,100 @@ export const vehicles: Vehicle[] = [
     ],
   },
   {
+    code: "supra-a80",
+    name: "Tayota",
+    model: "Supra A80",
+    category: "Легковые",
+    speed: 280,
+    tunedSpeed: 302,
+    price: 1780000,
+    sources: ["Samurai Motors"],
+    fuel: "АИ-95",
+    trunkKg: 55,
+    transferable: true,
+    driftChip: false,
+    nitro: false,
+    imageUrl: "/images/transport/supra80.png",
+    upgrades: [
+      {
+        name: "Двигатель",
+        description: "Увеличивает максимальную скорость и ускорение",
+        levels: [
+          { price: 382800, bonus: "+5 км/ч" },
+          { price: 574200, bonus: "+10 км/ч" },
+          { price: 765600, bonus: "+15 км/ч" },
+          { price: 957000, bonus: "+20 км/ч" },
+        ],
+      },
+      {
+        name: "Коробка",
+        description: "Улучшает переключение передач и разгон",
+        levels: [
+          { price: 191400, bonus: "+4 км/ч" },
+          { price: 287100, bonus: "+8 км/ч" },
+          { price: 382800, bonus: "+12 км/ч" },
+        ],
+      },
+      {
+        name: "Турбо",
+        description: "Добавляет кратковременное ускорение",
+        levels: [{ price: 733700, bonus: "+2 км/ч" }],
+      },
+      {
+        name: "Тормоза",
+        description: "Улучшает эффективность торможения",
+        levels: [{ price: 95700 }, { price: 143550 }, { price: 191400 }],
+      },
+    ],
+  },
+  {
+    code: "camry70",
+    name: "Tayota",
+    model: "Camry 70",
+    category: "Легковые",
+    speed: 210,
+    tunedSpeed: 302,
+    price: 1780000,
+    sources: ["Samurai Motors"],
+    fuel: "АИ-95",
+    trunkKg: 90,
+    transferable: true,
+    driftChip: false,
+    nitro: false,
+    imageUrl: "/images/transport/camry.png",
+    upgrades: [
+      {
+        name: "Двигатель",
+        description: "Увеличивает максимальную скорость и ускорение",
+        levels: [
+          { price: 382800, bonus: "+5 км/ч" },
+          { price: 574200, bonus: "+10 км/ч" },
+          { price: 765600, bonus: "+15 км/ч" },
+          { price: 957000, bonus: "+20 км/ч" },
+        ],
+      },
+      {
+        name: "Коробка",
+        description: "Улучшает переключение передач и разгон",
+        levels: [
+          { price: 191400, bonus: "+4 км/ч" },
+          { price: 287100, bonus: "+8 км/ч" },
+          { price: 382800, bonus: "+12 км/ч" },
+        ],
+      },
+      {
+        name: "Турбо",
+        description: "Добавляет кратковременное ускорение",
+        levels: [{ price: 733700, bonus: "+2 км/ч" }],
+      },
+      {
+        name: "Тормоза",
+        description: "Улучшает эффективность торможения",
+        levels: [{ price: 95700 }, { price: 143550 }, { price: 191400 }],
+      },
+    ],
+  },
+  {
     code: "cascadia",
     name: "Freightways",
     model: "Cuscadia II",
@@ -141,7 +238,7 @@ export const vehicles: Vehicle[] = [
     tunedSpeed: 170,
     price: 20000000,
     sources: ["Осенний кейс 2026"],
-    fuel: "Premium",
+    fuel: "АИ-98",
     trunkKg: 0,
     loadTons: 24,
     transferable: true,
@@ -158,7 +255,7 @@ export const vehicles: Vehicle[] = [
     tunedSpeed: 302,
     price: 8500000,
     sources: ["Автосалон"],
-    fuel: "Plus",
+    fuel: "АИ-95",
     trunkKg: 60,
     transferable: true,
     driftChip: false,
@@ -173,7 +270,7 @@ export const vehicles: Vehicle[] = [
     tunedSpeed: 320,
     price: 12000000,
     sources: ["Автосалон"],
-    fuel: "Premium",
+    fuel: "АИ-98",
     trunkKg: 0,
     transferable: true,
     driftChip: false,
@@ -188,7 +285,7 @@ export const vehicles: Vehicle[] = [
     tunedSpeed: 310,
     price: 9200000,
     sources: ["Автосалон"],
-    fuel: "Premium",
+    fuel: "АИ-98",
     trunkKg: 40,
     transferable: true,
     driftChip: false,

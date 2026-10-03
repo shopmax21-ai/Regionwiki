@@ -6,10 +6,12 @@ import L from "leaflet";
 import { Maximize, Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 
 import { getCategory, MAP_TRANSFORMATION, MAP_WORLD, MAP_ZOOM, type MapPlace } from "./map-data";
 
 import "leaflet/dist/leaflet.css";
+import "./game-map.css";
 
 interface GameMapProps {
   places: MapPlace[];
@@ -27,7 +29,7 @@ function createIcon(place: MapPlace, selected: boolean) {
     className: "",
     iconSize: [44, 44],
     iconAnchor: [22, 22],
-    html: `<div class="flex size-11 items-center justify-center"><span class="${dot} ${category.dotClass} rounded-full border-2 border-zinc-950 shadow-md transition-all"></span></div>`,
+    html: `<div class="flex size-11 items-center justify-center"><span class="${dot} ${category.dotClass} rounded-full border-2 border-background shadow-md transition-all"></span></div>`,
   });
 }
 
@@ -62,11 +64,21 @@ export default function GameMap({ places, selectedId, onSelect }: GameMapProps) 
       maxBoundsViscosity: 1,
     });
 
-    const mapImage = L.imageOverlay("/images/map-vector-with-land.svg", worldBounds, {
-      opacity: 1,
-      interactive: false,
-      className: "region-map-image",
-    }).addTo(map);
+    // SVG вставляем в DOM (а не как <img>), чтобы он наследовал CSS-переменные темы:
+    // --map-land, --map-buildings, --map-roads задаются в game-map.css.
+    let disposed = false;
+    let mapImage: L.SVGOverlay | null = null;
+    fetch("/images/map-vector-with-land.svg")
+      .then((response) => response.text())
+      .then((text) => {
+        if (disposed) return;
+        const svg = new DOMParser().parseFromString(text, "image/svg+xml").documentElement;
+        svg.querySelector("metadata")?.remove();
+        mapImage = L.svgOverlay(svg as unknown as SVGElement, worldBounds, { interactive: false }).addTo(map);
+      })
+      .catch(() => {
+        // Без картинки остаётся фон темы — метки продолжают работать.
+      });
 
     map.fitBounds(worldBounds, { animate: false });
     map.setMinZoom(map.getZoom());
@@ -82,9 +94,10 @@ export default function GameMap({ places, selectedId, onSelect }: GameMapProps) 
 
     const markers = markersRef.current;
     return () => {
+      disposed = true;
       observer.disconnect();
       markers.clear();
-      mapImage.remove();
+      mapImage?.remove();
       map.remove();
       mapRef.current = null;
     };
@@ -143,33 +156,27 @@ export default function GameMap({ places, selectedId, onSelect }: GameMapProps) 
 
   return (
     <div className="relative size-full">
-      <div ref={containerRef} className="isolate size-full overscroll-none bg-zinc-900! font-sans! outline-none" />
-      <div className="absolute top-1/2 right-3 z-10 flex -translate-y-1/2 flex-col gap-2">
-        <Button
-          variant="outline"
-          className="size-11 bg-background/90 shadow-sm backdrop-blur"
-          aria-label="Приблизить"
-          onClick={() => mapRef.current?.zoomIn(1)}
-        >
+      <div ref={containerRef} className="region-map isolate size-full overscroll-none" />
+      <ButtonGroup
+        orientation="vertical"
+        aria-label="Масштаб карты"
+        className="absolute top-1/2 right-3 z-10 -translate-y-1/2 shadow-sm"
+      >
+        <Button variant="outline" className="size-11" aria-label="Приблизить" onClick={() => mapRef.current?.zoomIn(1)}>
           <Plus className="size-5" />
         </Button>
-        <Button
-          variant="outline"
-          className="size-11 bg-background/90 shadow-sm backdrop-blur"
-          aria-label="Отдалить"
-          onClick={() => mapRef.current?.zoomOut(1)}
-        >
+        <Button variant="outline" className="size-11" aria-label="Отдалить" onClick={() => mapRef.current?.zoomOut(1)}>
           <Minus className="size-5" />
         </Button>
         <Button
           variant="outline"
-          className="size-11 bg-background/90 shadow-sm backdrop-blur"
+          className="size-11"
           aria-label="Показать всю карту"
           onClick={() => mapRef.current?.fitBounds(worldBounds)}
         >
           <Maximize className="size-5" />
         </Button>
-      </div>
+      </ButtonGroup>
     </div>
   );
 }

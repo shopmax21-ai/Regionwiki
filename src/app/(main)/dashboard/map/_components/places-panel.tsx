@@ -29,7 +29,7 @@ export function PlacesPanel({ places, query, onQueryChange, selectedId, onSelect
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder="Найти место"
           aria-label="Поиск по местам на карте"
-          className="h-11 rounded-xl pl-9 text-base md:text-sm"
+          className="h-11 pl-9 text-base md:text-sm"
         />
       </div>
 
@@ -47,7 +47,7 @@ export function PlacesPanel({ places, query, onQueryChange, selectedId, onSelect
                   onClick={() => onSelect(place.id)}
                   aria-pressed={selectedId === place.id}
                   className={cn(
-                    "flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2 text-left outline-none transition-colors",
+                    "flex min-h-14 w-full items-center gap-3 rounded-lg px-2 py-2 text-left outline-none transition-colors",
                     "hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:bg-muted",
                   )}
                 >

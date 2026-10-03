@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import WikiPage from "../_components/wiki-page";
+import { WikiHome } from "../_components/wiki-home";
 
 export const metadata: Metadata = {
   title: "Region Wiki",
@@ -11,5 +11,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <WikiPage />;
+  return <WikiHome />;
 }

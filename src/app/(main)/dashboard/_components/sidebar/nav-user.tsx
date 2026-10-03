@@ -80,9 +80,14 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={async () => {
+                await fetch("/api/auth/logout", { method: "POST" });
+                window.location.assign("/auth/v2/login");
+              }}
+            >
               <LogOut />
-              Log out
+              Выйти
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

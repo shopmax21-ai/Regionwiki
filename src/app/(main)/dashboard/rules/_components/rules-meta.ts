@@ -136,7 +136,8 @@ export const ruleGroups: Record<RuleGroup, RuleGroupMeta> = {
         tag: "ПГО",
         title: "Правила государственных организаций",
         updatedAt: "24.02.2026",
-        description: "Общие положения, кадры, Правительство, Вооружённые силы, МВД / ГИБДД, ЦГБ, СМИ, новости, суд и прокуратура",
+        description:
+          "Общие положения, кадры, Правительство, Вооружённые силы, МВД / ГИБДД, ЦГБ, СМИ, новости, суд и прокуратура",
       },
     ],
   },
@@ -168,19 +169,66 @@ export type RuleSearchEntry = {
 
 export type RuleArticleCard = RuleArticleMeta & { ruleCount: number };
 
-export const changelog: {
+export type RuleChangeType = "added" | "changed" | "removed";
+
+export type RuleChange = {
+  type: RuleChangeType;
+  /** Номер пункта, например «1.3» */
+  number: string;
+  /** Текст до изменения (для «changed» и «removed») */
+  before?: string;
+  /** Текст после изменения (для «changed» и «added») */
+  after?: string;
+};
+
+export type ChangelogEntry = {
   date: string;
   title: string;
   section: string;
   group: RuleGroup;
   slug: string;
-}[] = [
+  /** Что именно изменилось. Если не указано, в ленте показывается только ссылка на правила. */
+  changes?: RuleChange[];
+};
+
+/**
+ * TODO: поля changes у записей ниже — ПРИМЕРНЫЕ данные для демонстрации «Было / Стало».
+ * Замените их реальными изменениями с форума.
+ */
+export const changelog: ChangelogEntry[] = [
   {
     date: "22.09.2026",
     title: "Правила поставок и перехвата",
     section: "Основные правила",
     group: "general",
     slug: "pravila-postavok-i-perekhvata",
+    changes: [
+      {
+        type: "changed",
+        number: "1.3",
+        before: "Поставки и перехваты могут осуществляться с 12:00 до 22:00. | Demorgan 30 - 60 минут всем участникам.",
+        after:
+          "Поставки и перехваты могут осуществляться с 12:00 до 23:00. | Demorgan 30 - 60 минут всем участникам + Устный / Строгий выговор лидеру.",
+      },
+      {
+        type: "changed",
+        number: "1.4",
+        before:
+          "Запрещено поджидать организации на точке загрузки, а также менее 500 метров от неё. | Demorgan 100 минут.",
+        after:
+          "Запрещено поджидать организации на точке загрузки, а также менее 550 метров от неё. | Demorgan 100 минут.",
+      },
+      {
+        type: "added",
+        number: "1.10",
+        after: "Запрещено намеренно отдавать преимущество и поставки. | Выговор лидеру / Снятие лидера.",
+      },
+      {
+        type: "removed",
+        number: "1.9",
+        before: "Пункт утратил силу.",
+      },
+    ],
   },
   {
     date: "21.09.2026",
@@ -188,6 +236,15 @@ export const changelog: {
     section: "Основные правила",
     group: "general",
     slug: "obshchiye-pravila",
+    changes: [
+      {
+        type: "changed",
+        number: "2.2",
+        before: "Запрещено иметь более 1-го игрового / форумного аккаунта для одного игрока. | Ban от 15 дней.",
+        after:
+          "Запрещено иметь более 1-го игрового / форумного аккаунта для одного игрока, если данная возможность используется для обхода игровых систем / наказаний или преднамеренных нарушений. | Ban от 15 дней / Hard Ban от 15 дней.",
+      },
+    ],
   },
   {
     date: "21.09.2026",
@@ -195,6 +252,14 @@ export const changelog: {
     section: "Основные правила",
     group: "general",
     slug: "pravila-ograblenii-i-pokhishchenii",
+    changes: [
+      {
+        type: "changed",
+        number: "2.3",
+        before: "Запрещено похищать более 3 человек за раз. | Demorgan 30 - 90 минут.",
+        after: "Запрещено похищать более 5 человек за раз. | Demorgan 30 - 90 минут.",
+      },
+    ],
   },
   {
     date: "24.02.2026",

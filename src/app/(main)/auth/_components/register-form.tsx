@@ -1,27 +1,29 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Lock, Mail } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { Button } from "@/components/ui/button";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { Field, FieldError, FieldGroup } from "@/components/ui/field";
+
+import { AuthField } from "./auth-field";
+import { authButtonClass } from "./auth-styles";
 
 const formSchema = z
   .object({
-    email: z.email({ message: "Please enter a valid email address." }),
-    password: z.string().min(6, { message: "Password must be at least 6 characters." }),
-    confirmPassword: z.string().min(6, { message: "Confirm Password must be at least 6 characters." }),
+    email: z.email({ message: "Введите корректный email." }),
+    password: z.string().min(6, { message: "Пароль должен быть не короче 6 символов." }),
+    confirmPassword: z.string().min(6, { message: "Повторите пароль (минимум 6 символов)." }),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match.",
+    message: "Пароли не совпадают.",
     path: ["confirmPassword"],
   });
 
 function onSubmit(data: z.infer<typeof formSchema>) {
-  toast("You submitted the following values", {
+  toast("Данные формы (демо, без регистрации)", {
     description: (
       <pre className="mt-2 w-[320px] rounded-md bg-neutral-950 p-4">
         <code className="text-white">{JSON.stringify(data, null, 2)}</code>
@@ -33,27 +35,23 @@ function onSubmit(data: z.infer<typeof formSchema>) {
 export function RegisterForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      confirmPassword: "",
-    },
+    defaultValues: { email: "", password: "", confirmPassword: "" },
   });
 
   return (
     <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <FieldGroup className="gap-4">
+      <FieldGroup className="gap-3">
         <Controller
           control={form.control}
           name="email"
           render={({ field, fieldState }) => (
             <Field className="gap-1.5" data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="register-email">Email Address</FieldLabel>
-              <Input
+              <AuthField
                 {...field}
-                id="register-email"
+                icon={<Mail />}
                 type="email"
-                placeholder="you@example.com"
+                placeholder="Email"
+                aria-label="Email"
                 autoComplete="email"
                 aria-invalid={fieldState.invalid}
               />
@@ -66,12 +64,12 @@ export function RegisterForm() {
           name="password"
           render={({ field, fieldState }) => (
             <Field className="gap-1.5" data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="register-password">Password</FieldLabel>
-              <Input
+              <AuthField
                 {...field}
-                id="register-password"
+                icon={<Lock />}
                 type="password"
-                placeholder="••••••••"
+                placeholder="Пароль"
+                aria-label="Пароль"
                 autoComplete="new-password"
                 aria-invalid={fieldState.invalid}
               />
@@ -84,12 +82,12 @@ export function RegisterForm() {
           name="confirmPassword"
           render={({ field, fieldState }) => (
             <Field className="gap-1.5" data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="register-confirm-password">Confirm Password</FieldLabel>
-              <Input
+              <AuthField
                 {...field}
-                id="register-confirm-password"
+                icon={<Lock />}
                 type="password"
-                placeholder="••••••••"
+                placeholder="Повторите пароль"
+                aria-label="Повторите пароль"
                 autoComplete="new-password"
                 aria-invalid={fieldState.invalid}
               />
@@ -98,9 +96,9 @@ export function RegisterForm() {
           )}
         />
       </FieldGroup>
-      <Button className="w-full" type="submit">
-        Register
-      </Button>
+      <button type="submit" className={authButtonClass}>
+        Продолжить
+      </button>
     </form>
   );
 }

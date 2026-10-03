@@ -48,10 +48,7 @@ function CategoryChips({
           key={chip.id}
           variant={value === chip.id ? "default" : "outline"}
           aria-pressed={value === chip.id}
-          className={cn(
-            "h-11 shrink-0 rounded-full px-4 shadow-sm md:h-9",
-            value !== chip.id && "bg-background/90 backdrop-blur",
-          )}
+          className={cn("h-11 shrink-0 px-4 shadow-sm md:h-9", value !== chip.id && "bg-card/90 backdrop-blur")}
           onClick={() => onChange(chip.id)}
         >
           {chip.label}
@@ -85,14 +82,14 @@ export function MapSection() {
     <section
       data-content-padding="false"
       aria-label="Карта штата"
-      className="relative h-[calc(100dvh-var(--dashboard-header-height))] min-h-96 overflow-hidden bg-zinc-900"
+      className="relative h-[calc(100dvh-var(--dashboard-header-height))] min-h-96 overflow-hidden bg-muted"
     >
       <h1 className="sr-only">Карта штата Region</h1>
 
       <GameMap places={places} selectedId={selected?.id ?? null} onSelect={setSelectedId} />
 
       {/* Десктоп: боковая панель */}
-      <aside className="absolute top-4 bottom-4 left-4 z-10 hidden w-80 flex-col gap-3 rounded-2xl border bg-card/95 py-4 shadow-sm backdrop-blur md:flex">
+      <aside className="absolute top-4 bottom-4 left-4 z-10 hidden w-80 flex-col gap-3 rounded-xl bg-card/95 py-4 shadow-sm ring-1 ring-foreground/10 backdrop-blur md:flex">
         <div className="flex flex-col gap-3 px-4">
           <div>
             <h2 className="font-medium text-lg leading-none tracking-tight">Карта штата</h2>
@@ -114,7 +111,7 @@ export function MapSection() {
       <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-2 p-3 md:hidden">
         <Button
           variant="outline"
-          className="h-11 shrink-0 gap-2 rounded-full bg-background/90 px-4 shadow-sm backdrop-blur"
+          className="h-11 shrink-0 gap-2 bg-card/90 px-4 shadow-sm backdrop-blur"
           onClick={() => setListOpen(true)}
         >
           <List className="size-4" />

@@ -1,23 +1,17 @@
 import type { Metadata } from "next";
 
-import { createDirectoryData } from "@/app/(main)/dashboard/_components/directory-data";
-import { DirectoryPage } from "@/app/(main)/dashboard/_components/directory-page";
+import { BusinessWiki } from "@/app/(main)/dashboard/business/_components/business-wiki";
 
 export const metadata: Metadata = {
-  title: "Бизнес | Region WIKI",
-  description: "Документы и материалы раздела Бизнес.",
+  title: "Бизнесы | Region WIKI",
+  description: "Каталог бизнесов штата: магазины, заправки, банкоматы, салоны и мастерские со стоимостью.",
 };
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ view?: string | string[] }> }) {
-  const { view } = await searchParams;
-  const data = createDirectoryData("business");
-  return (
-    <DirectoryPage
-      title="Бизнес"
-      description="Объявления, документы и материалы для бизнеса."
-      viewPath="/dashboard/business"
-      view={view}
-      {...data}
-    />
-  );
+interface PageProps {
+  searchParams: Promise<{ q?: string | string[] }>;
+}
+
+export default async function Page({ searchParams }: PageProps) {
+  const { q } = await searchParams;
+  return <BusinessWiki initialQuery={typeof q === "string" ? q.slice(0, 100) : ""} />;
 }

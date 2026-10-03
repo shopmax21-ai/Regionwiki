@@ -6,8 +6,6 @@ import {
   ArrowLeft,
   ArrowLeftRight,
   Banknote,
-  Cpu,
-  Flame,
   Fuel,
   Gauge,
   Hash,
@@ -104,7 +102,7 @@ export function VehicleDetails({ vehicle }: { vehicle: Vehicle }) {
       </Card>
 
       <section aria-label="Характеристики">
-        <dl className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+        <dl className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
           <SpecTile icon={Banknote} label="Гос. стоимость" value={formatPrice(vehicle.price)} />
           <SpecTile icon={Recycle} label="Стоимость свалки" value={formatPrice(getScrapPrice(vehicle))} />
           <SpecTile icon={Gauge} label="Максимальная скорость" value={`${vehicle.speed} км/ч`} />
@@ -112,8 +110,6 @@ export function VehicleDetails({ vehicle }: { vehicle: Vehicle }) {
           <SpecTile icon={ArrowLeftRight} label="Возможность передачи" value={yesNo(vehicle.transferable)} />
           <SpecTile icon={Package} label="Вместимость багажника" value={formatTrunk(vehicle)} />
           <SpecTile icon={Fuel} label="Тип топлива" value={vehicle.fuel} />
-          <SpecTile icon={Cpu} label="Дрифт-чип" value={yesNo(vehicle.driftChip)} />
-          <SpecTile icon={Flame} label="Нитро" value={yesNo(vehicle.nitro)} />
           <SpecTile
             icon={Hash}
             label="Уникальный ID"

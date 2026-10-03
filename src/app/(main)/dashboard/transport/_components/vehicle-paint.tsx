@@ -12,11 +12,11 @@ export function VehiclePaint({ colors = paintColors }: { colors?: PaintColor[] }
 
   return (
     <div className="flex flex-col gap-4">
-      <ul className="grid grid-cols-5 gap-3 sm:grid-cols-8 lg:grid-cols-10">
+      <ul className="flex flex-wrap gap-2">
         {colors.map((color) => {
           const active = selected?.hex === color.hex;
           return (
-            <li key={color.hex}>
+            <li key={color.hex} className="size-8">
               <button
                 type="button"
                 title={color.name}
@@ -24,12 +24,12 @@ export function VehiclePaint({ colors = paintColors }: { colors?: PaintColor[] }
                 aria-pressed={active}
                 onClick={() => setSelected(active ? null : color)}
                 className={cn(
-                  "relative flex aspect-square w-full items-center justify-center rounded-full border outline-none transition-transform hover:scale-105 focus-visible:ring-3 focus-visible:ring-ring/50",
-                  active && "ring-2 ring-primary ring-offset-2 ring-offset-card",
+                  "relative flex size-full items-center justify-center rounded-md border outline-none transition-transform hover:scale-110 focus-visible:ring-3 focus-visible:ring-ring/50",
+                  active && "ring-2 ring-primary ring-offset-1 ring-offset-card",
                 )}
                 style={{ backgroundColor: color.hex }}
               >
-                {active && <Check className="size-5 text-white mix-blend-difference" aria-hidden="true" />}
+                {active && <Check className="size-4 text-white mix-blend-difference" aria-hidden="true" />}
               </button>
             </li>
           );
