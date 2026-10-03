@@ -30,7 +30,7 @@ export default async function PendingV2() {
   return (
     <>
       <div className="flex flex-col items-center gap-3 text-center">
-        <RegionLogo />
+        <RegionLogo className="[@media(max-height:720px)]:text-4xl" />
         <h1 className="font-medium text-foreground/80 text-xs">Панель управления Region WIKI</h1>
       </div>
       <PendingStatus initial={user.status} name={user.name} />

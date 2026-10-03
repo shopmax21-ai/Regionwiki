@@ -217,3 +217,16 @@ export async function decideUser(
     WHERE telegram_id = ${telegramId} AND role <> 'admin' RETURNING *`;
   return rows[0] ? toUser(rows[0] as UserRow) : null;
 }
+
+export type LoginEvent = { createdAt: Date; ip: string | null; userAgent: string | null };
+
+export async function getLoginEvents(telegramId: string, limit = 8): Promise<LoginEvent[]> {
+  await ensureSchema();
+  const rows = await sql`SELECT created_at, ip, user_agent FROM login_events
+    WHERE telegram_id = ${telegramId} ORDER BY created_at DESC LIMIT ${limit}`;
+  return (rows as { created_at: string; ip: string | null; user_agent: string | null }[]).map((row) => ({
+    createdAt: new Date(row.created_at),
+    ip: row.ip,
+    userAgent: row.user_agent,
+  }));
+}

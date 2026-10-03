@@ -132,15 +132,15 @@ export function LoginForm({ next, disabled = false }: { next: string; disabled?:
   const codeReady = linked === "code_sent";
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center gap-4 rounded-xl bg-foreground/[0.05] p-3">
-        <div className="hidden shrink-0 rounded-lg bg-white p-2 sm:block">
+        <div className="hidden shrink-0 rounded-lg bg-white p-2 sm:block [@media(max-height:680px)]:hidden">
           <QRCodeSVG value={link} size={92} level="M" marginSize={0} aria-label="QR-код для открытия бота" />
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <p className="text-sm leading-snug">
             <span className="font-medium">1.</span> Откройте бота и нажмите <span className="font-medium">Start</span>
-            <span className="hidden sm:inline"> или наведите камеру на QR-код</span>
+            <span className="hidden sm:inline [@media(max-height:680px)]:hidden"> или наведите камеру на QR-код</span>
           </p>
           <a
             href={link}

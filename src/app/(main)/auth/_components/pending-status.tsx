@@ -67,7 +67,7 @@ export function PendingStatus({ initial, name }: { initial: Status; name: string
   const done = status === "approved" ? 3 : 1;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col items-center gap-3 text-center">
         <span className="relative flex size-14 items-center justify-center rounded-full bg-primary/15 text-primary">
           {status === "pending" && <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />}
