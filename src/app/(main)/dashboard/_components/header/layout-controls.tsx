@@ -6,9 +6,7 @@ import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { type FontKey, fontOptions } from "@/lib/fonts/registry";
 import type { ContentLayout, NavbarStyle, SidebarCollapsible, SidebarVariant } from "@/lib/preferences/layout";
 import type { ThemeMode } from "@/lib/preferences/theme";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
@@ -28,7 +26,6 @@ export function LayoutControls() {
     navbar_style: navbarStyle,
     sidebar_variant: variant,
     sidebar_collapsible: collapsible,
-    font,
   } = values;
 
   const onThemeModeChange = (mode: ThemeMode | "") => {
@@ -56,11 +53,6 @@ export function LayoutControls() {
     setPreference("sidebar_collapsible", value);
   };
 
-  const onFontChange = (value: FontKey | "") => {
-    if (!value) return;
-    setPreference("font", value);
-  };
-
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -75,24 +67,6 @@ export function LayoutControls() {
             <p className="text-muted-foreground text-xs">Customize your dashboard layout preferences.</p>
           </div>
           <div className="space-y-3 **:data-[slot=toggle-group]:w-full **:data-[slot=toggle-group-item]:flex-1 **:data-[slot=toggle-group-item]:text-xs">
-            <div className="space-y-1">
-              <Label className="font-medium text-xs">Fonts</Label>
-              <Select value={font} onValueChange={onFontChange}>
-                <SelectTrigger size="sm" className="w-full text-xs">
-                  <SelectValue placeholder="Select font" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {fontOptions.map((font) => (
-                      <SelectItem key={font.key} className="text-xs" value={font.key}>
-                        {font.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-1">
               <Label className="font-medium text-xs">Theme Mode</Label>
               <ToggleGroup
