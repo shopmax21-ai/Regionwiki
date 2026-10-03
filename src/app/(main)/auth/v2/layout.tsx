@@ -6,8 +6,8 @@ import { RegionMarkOutline } from "../_components/region-mark-outline";
 
 export default function Layout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <main className="region-auth dark min-h-dvh bg-background text-foreground">
-      <div className="grid h-dvh p-2 lg:grid-cols-2">
+    <main className="region-auth dark h-dvh overflow-hidden bg-background text-foreground">
+      <div className="grid h-full min-h-0 p-2 lg:grid-cols-2">
         {/* Левая колонка: форма */}
         <div className="relative order-1 flex h-full items-center justify-center px-6">
           <div className="flex w-full max-w-[372px] flex-col gap-6">{children}</div>
