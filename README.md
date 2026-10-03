@@ -25,7 +25,7 @@
 | Бизнес | `/dashboard/business` | Таблица бизнесов штата со стоимостью, поиском и сортировкой |
 | Карта | `/dashboard/map` | Интерактивная карта штата с метками мест |
 | Правила | `/dashboard/rules/*` | Основные правила, правила госструктур и история изменений, с поиском по пунктам |
-| Вход | `/auth/v2/login` | Страница входа в стиле Region (тёмный фон, красный акцент, логотип R) |
+| Вход | `/auth/v2/login` | Вход через Telegram-бота: кнопка или QR → Start в боте → код из 6 цифр → доступ после одобрения администратора |
 
 ## Стек
 
@@ -66,7 +66,7 @@ npm run dev
 src
 ├── app
 │   ├── (main)
-│   │   ├── auth/v2              # Вход и регистрация
+│   │   ├── auth/v2              # Вход через бота, страница ожидания
 │   │   └── dashboard
 │   │       ├── jobs             # Работы: page.tsx, [slug]/, _components/, _data/
 │   │       ├── transport        # Транспорт
@@ -164,3 +164,18 @@ public/images                    # Картинки: jobs, transport, real-estat
 ## Лицензия
 
 MIT. Исходная лицензия шаблона лежит в файле [LICENSE](./LICENSE).
+
+## Вход через Telegram-бота
+
+1. Создайте бота в @BotFather и заполните переменные из `.env.example`: `DATABASE_URL`, `AUTH_SECRET`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_ADMIN_IDS`.
+2. Один раз подключите вебхук (после деплоя):
+
+```bash
+curl "https://api.telegram.org/bot<TOKEN>/setWebhook" \
+  -d url=https://<сайт>/api/telegram/webhook \
+  -d secret_token=<TELEGRAM_WEBHOOK_SECRET>
+```
+
+3. Как это работает: «Войти через Telegram» → бот (ссылка или QR) → Start → бот присылает код из 6 цифр → ввод на сайте.
+   Первый вход создаёт заявку и шлёт администраторам кнопки «Одобрить» и «Отклонить». Пока заявка не одобрена, пользователь видит страницу ожидания.
+   Каждый вход пишется в таблицу `login_events`. Администраторы из `TELEGRAM_ADMIN_IDS` входят без одобрения, заявками можно управлять и в панели: `/dashboard/access`.

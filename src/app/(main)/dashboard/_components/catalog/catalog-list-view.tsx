@@ -20,14 +20,7 @@ interface CatalogListViewProps {
   onRemove: (entryId: string) => void;
 }
 
-export function CatalogListView({
-  ownerColumn,
-  sharedLabel,
-  entries,
-  onOpen,
-  onToggleStar,
-  onRemove,
-}: CatalogListViewProps) {
+export function CatalogListView({ ownerColumn, sharedLabel, entries, onOpen, onToggleStar, onRemove }: CatalogListViewProps) {
   return (
     <Table>
       <TableHeader>
@@ -49,12 +42,7 @@ export function CatalogListView({
                 <div className="shrink-0 text-muted-foreground [&>svg]:size-5" aria-hidden="true">
                   {entry.icon}
                 </div>
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="h-auto max-w-72 justify-start px-0"
-                  onClick={() => onOpen(entry.id)}
-                >
+                <Button variant="link" size="sm" className="h-auto max-w-72 justify-start px-0" onClick={() => onOpen(entry.id)}>
                   <span className="truncate">{entry.name}</span>
                 </Button>
                 {entry.isNew && <Badge>Новый</Badge>}

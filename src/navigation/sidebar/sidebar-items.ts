@@ -24,6 +24,7 @@ import {
   ReceiptText,
   Server,
   ShoppingBag,
+  ShieldCheck,
   SquareArrowUpRight,
   UserRound,
   Users,
@@ -222,6 +223,12 @@ export const sidebarItems: NavGroup[] = [
         icon: Users,
       },
       {
+        id: "access",
+        title: "Заявки на доступ",
+        url: "/dashboard/access",
+        icon: ShieldCheck,
+      },
+      {
         id: "roles",
         title: "Роли",
         url: "/dashboard/roles",
@@ -233,7 +240,6 @@ export const sidebarItems: NavGroup[] = [
         icon: Fingerprint,
         subItems: [
           { id: "auth-login-v2", title: "Вход", url: "/auth/v2/login", newTab: true },
-          { id: "auth-register-v2", title: "Регистрация", url: "/auth/v2/register", newTab: true },
         ],
       },
     ],
