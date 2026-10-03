@@ -4,8 +4,9 @@ import * as React from "react";
 
 import { useRouter } from "next/navigation";
 
-import { Search } from "lucide-react";
+import { LoaderCircle, Search } from "lucide-react";
 
+import { SearchExternalIcon, SearchHighlight, searchKindIcons } from "@/components/search/search-ui";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -17,10 +18,12 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
+import { useSiteSearch } from "@/hooks/use-site-search";
+import type { SearchHit } from "@/lib/search/types";
 import type { NavMainItem } from "@/navigation/sidebar/sidebar-items";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 
-type SearchItem = {
+type NavEntry = {
   id: string;
   group: string;
   label: string;
@@ -33,10 +36,10 @@ type SearchItem = {
 const sidebarGroupLabels = new Set(sidebarItems.flatMap((group) => (group.label ? [group.label] : [])));
 
 function getSubItemGroup(groupLabel: string | undefined, itemTitle: string) {
-  return sidebarGroupLabels.has(itemTitle) ? (groupLabel ?? "Other") : itemTitle;
+  return sidebarGroupLabels.has(itemTitle) ? (groupLabel ?? "Другое") : itemTitle;
 }
 
-const searchItems: SearchItem[] = sidebarItems.flatMap((group) =>
+const navEntries: NavEntry[] = sidebarItems.flatMap((group) =>
   group.items.flatMap((item) => {
     if (item.subItems) {
       return item.subItems.map((sub) => ({
@@ -52,7 +55,7 @@ const searchItems: SearchItem[] = sidebarItems.flatMap((group) =>
     return [
       {
         id: item.id,
-        group: group.label ?? "Other",
+        group: group.label ?? "Другое",
         label: item.title,
         url: item.url,
         icon: item.icon,
@@ -63,24 +66,19 @@ const searchItems: SearchItem[] = sidebarItems.flatMap((group) =>
   }),
 );
 
-function getAvailableItems(items: SearchItem[]) {
-  return items.filter((item) => !item.disabled && !item.url.includes("coming-soon"));
-}
+const recommendations = navEntries.filter((item) => !item.disabled && !item.url.includes("coming-soon"));
 
-const recommendations = getAvailableItems(searchItems);
-
-function groupBy(items: SearchItem[]) {
+function groupNav(items: NavEntry[]) {
   const groups = [...new Set(items.map((item) => item.group))];
-  return groups.map((group) => ({
-    group,
-    items: items.filter((item) => item.group === group),
-  }));
+  return groups.map((group) => ({ group, items: items.filter((item) => item.group === group) }));
 }
 
 export function SearchDialog() {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const router = useRouter();
+  const search = useSiteSearch(query, { limit: 5 });
+  const trimmed = query.trim();
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -98,37 +96,43 @@ export function SearchDialog() {
     if (!value) setQuery("");
   };
 
-  const handleSelect = (item: SearchItem) => {
-    if (item.disabled) return;
+  const openUrl = (url: string, options: { external?: boolean } = {}) => {
     handleOpenChange(false);
-    if (item.newTab) {
-      window.open(item.url, "_blank", "noopener,noreferrer");
+    if (options.external) {
+      window.open(url, "_blank", "noopener,noreferrer");
     } else {
-      router.push(item.url);
+      router.push(url);
     }
   };
 
-  const renderGroups = (items: SearchItem[]) =>
-    groupBy(items).map(({ group, items: groupItems }, index) => (
-      <React.Fragment key={group}>
-        {index > 0 && <CommandSeparator />}
-        <CommandGroup heading={group}>
-          {groupItems.map((item) => (
-            <CommandItem
-              disabled={item.disabled}
-              key={`${group}-${item.id}`}
-              value={`${item.group} ${item.label}`}
-              onSelect={() => handleSelect(item)}
-            >
-              <span className="flex min-w-0 items-center gap-2">
-                {item.icon && <item.icon />}
-                <span className="truncate">{item.label}</span>
-              </span>
-            </CommandItem>
-          ))}
-        </CommandGroup>
-      </React.Fragment>
-    ));
+  // Пока запрос короче двух символов — просто фильтруем меню слева, на сервер не ходим
+  const shortFiltered = React.useMemo(() => {
+    if (!trimmed) return recommendations;
+    const needle = trimmed.toLowerCase();
+    return recommendations.filter((item) => item.label.toLowerCase().includes(needle));
+  }, [trimmed]);
+
+  const showRemote = search.active;
+
+  const renderHit = (hit: SearchHit) => {
+    const Icon = searchKindIcons[hit.kind];
+    return (
+      <CommandItem key={hit.id} value={hit.id} onSelect={() => openUrl(hit.href, { external: hit.external })}>
+        <Icon />
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate">
+            <SearchHighlight text={hit.title} query={trimmed} />
+          </span>
+          {Boolean(hit.snippet ?? hit.subtitle) && (
+            <span className="truncate text-muted-foreground text-xs">
+              {hit.snippet ? <SearchHighlight text={hit.snippet} query={trimmed} /> : hit.subtitle}
+            </span>
+          )}
+        </span>
+        {hit.external && <SearchExternalIcon className="size-3.5 shrink-0 text-muted-foreground" />}
+      </CommandItem>
+    );
+  };
 
   return (
     <>
@@ -138,17 +142,76 @@ export function SearchDialog() {
         className="px-0! font-normal text-muted-foreground hover:no-underline"
       >
         <Search data-icon="inline-start" />
-        Search
+        Поиск
         <kbd className="inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-medium text-[10px]">
           <span className="text-xs">⌘</span>J
         </kbd>
       </Button>
-      <CommandDialog open={open} onOpenChange={handleOpenChange}>
-        <Command>
-          <CommandInput placeholder="Search dashboards, users, and more…" value={query} onValueChange={setQuery} />
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            {query ? renderGroups(searchItems) : renderGroups(recommendations)}
+      <CommandDialog
+        open={open}
+        onOpenChange={handleOpenChange}
+        title="Поиск по сайту"
+        description="Правила, работы, транспорт, бизнесы, недвижимость, карта и разделы"
+      >
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="Правила, работы, транспорт, недвижимость…"
+            value={query}
+            onValueChange={setQuery}
+          />
+          <CommandList className="max-h-[min(28rem,70dvh)]">
+            {showRemote ? (
+              <>
+                {search.loading && (
+                  <div className="flex items-center justify-center gap-2 py-6 text-muted-foreground text-sm">
+                    <LoaderCircle className="size-4 animate-spin" />
+                    Ищем…
+                  </div>
+                )}
+                {!search.loading && search.error && (
+                  <div className="py-6 text-center text-muted-foreground text-sm">
+                    Не удалось выполнить поиск. Попробуйте ещё раз.
+                  </div>
+                )}
+                {!search.loading && !search.error && search.groups.length === 0 && (
+                  <CommandEmpty>По запросу «{trimmed}» ничего не найдено.</CommandEmpty>
+                )}
+                {!search.loading &&
+                  search.groups.map((group, index) => (
+                    <React.Fragment key={group.kind}>
+                      {index > 0 && <CommandSeparator />}
+                      <CommandGroup
+                        heading={group.total > group.hits.length ? `${group.label} · ${group.total}` : group.label}
+                      >
+                        {group.hits.map(renderHit)}
+                      </CommandGroup>
+                    </React.Fragment>
+                  ))}
+              </>
+            ) : (
+              <>
+                {shortFiltered.length === 0 && <CommandEmpty>Ничего не найдено.</CommandEmpty>}
+                {groupNav(shortFiltered).map(({ group, items }, index) => (
+                  <React.Fragment key={group}>
+                    {index > 0 && <CommandSeparator />}
+                    <CommandGroup heading={group}>
+                      {items.map((item) => (
+                        <CommandItem
+                          key={`${group}-${item.id}`}
+                          value={`${group}-${item.id}`}
+                          onSelect={() => openUrl(item.url, { external: item.newTab })}
+                        >
+                          <span className="flex min-w-0 items-center gap-2">
+                            {item.icon && <item.icon />}
+                            <span className="truncate">{item.label}</span>
+                          </span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </React.Fragment>
+                ))}
+              </>
+            )}
           </CommandList>
         </Command>
       </CommandDialog>

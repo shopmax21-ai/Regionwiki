@@ -1,23 +1,17 @@
 import type { Metadata } from "next";
 
-import { createDirectoryData } from "@/app/(main)/dashboard/_components/directory-data";
-import { DirectoryPage } from "@/app/(main)/dashboard/_components/directory-page";
+import { RealtyWiki } from "@/app/(main)/dashboard/real-estate/_components/realty-wiki";
 
 export const metadata: Metadata = {
   title: "Недвижимость | Region WIKI",
-  description: "Документы и материалы раздела Недвижимость.",
+  description: "Каталог недвижимости штата: дома, квартиры, офисы и склады со стоимостью и характеристиками.",
 };
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ view?: string | string[] }> }) {
-  const { view } = await searchParams;
-  const data = createDirectoryData("real-estate");
-  return (
-    <DirectoryPage
-      title="Недвижимость"
-      description="Объявления, документы и материалы о недвижимости."
-      viewPath="/dashboard/real-estate"
-      view={view}
-      {...data}
-    />
-  );
+interface PageProps {
+  searchParams: Promise<{ q?: string | string[] }>;
+}
+
+export default async function Page({ searchParams }: PageProps) {
+  const { q } = await searchParams;
+  return <RealtyWiki initialQuery={typeof q === "string" ? q.slice(0, 100) : ""} />;
 }

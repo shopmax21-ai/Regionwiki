@@ -1,0 +1,38 @@
+/* Стили Leaflet на семантических токенах проекта: карта следует теме, пресету и светлой/тёмной схеме. */
+
+.leaflet-container.region-map {
+  /* Эти переменные читает сама SVG-карта (слои land / buildings / roads). */
+  --map-land: var(--card);
+  --map-buildings: color-mix(in oklch, var(--foreground) 14%, var(--card));
+  --map-roads: color-mix(in oklch, var(--foreground) 32%, var(--card));
+
+  background: var(--muted);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  outline: none;
+}
+
+/* Подсказка у метки — в том же виде, что и Tooltip из shadcn (инверсные цвета). */
+.region-map .leaflet-tooltip {
+  padding: 0.375rem 0.75rem;
+  border: 0;
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  box-shadow: none;
+}
+
+.region-map .leaflet-tooltip::before {
+  display: none;
+}
+
+/* Фокус с клавиатуры — кольцо как у кнопок проекта вместо стандартного прямоугольника браузера. */
+.region-map .leaflet-marker-icon {
+  border-radius: 9999px;
+  outline: none;
+}
+
+.region-map .leaflet-marker-icon:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 50%, transparent);
+}

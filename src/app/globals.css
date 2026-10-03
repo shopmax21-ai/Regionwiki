@@ -299,3 +299,15 @@ html:has([data-landing-page]) {
     -webkit-print-color-adjust: exact;
   }
 }
+
+/* Страницы авторизации: всегда тёмные, с красным акцентом Region */
+.region-auth.dark {
+  --background: oklch(0.155 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.19 0 0);
+  --primary: oklch(0.585 0.235 27);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.585 0.235 27);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 12%);
+}

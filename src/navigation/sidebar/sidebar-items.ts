@@ -29,6 +29,8 @@ import {
   Users,
 } from "lucide-react";
 
+import { jobs } from "@/app/(main)/dashboard/jobs/_data/jobs";
+
 export type NavBadge = "new" | "soon";
 
 export interface NavSubItem {
@@ -159,8 +161,11 @@ export const sidebarItems: NavGroup[] = [
       {
         id: "jobs",
         title: "Работы",
-        url: "/dashboard/jobs",
         icon: HardHat,
+        subItems: [
+          { id: "jobs-all", title: "Всё о работах", url: "/dashboard/jobs" },
+          ...jobs.map((job) => ({ id: `job-${job.slug}`, title: job.title, url: `/dashboard/jobs/${job.slug}` })),
+        ],
       },
     ],
   },

@@ -3,12 +3,19 @@
 import { useState } from "react";
 
 import { cn } from "cn";
-import { Minus, Plus, Rocket, RotateCcw } from "lucide-react";
+import { Cog, Disc3, type LucideIcon, Minus, Plus, Rocket, RotateCcw, Settings2, Wind, Wrench } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 import { formatPrice, type VehicleUpgrade } from "../_data/vehicles";
+
+const upgradeIcons: Record<string, LucideIcon> = {
+  Двигатель: Cog,
+  Коробка: Settings2,
+  Турбо: Wind,
+  Тормоза: Disc3,
+};
 
 const sumLevels = (upgrade: VehicleUpgrade, count: number) =>
   upgrade.levels.slice(0, count).reduce((sum, level) => sum + level.price, 0);
@@ -47,17 +54,22 @@ export function VehicleTuning({ upgrades }: { upgrades: VehicleUpgrade[] }) {
           const max = upgrade.levels.length;
           const cost = sumLevels(upgrade, level);
           const next = upgrade.levels[level];
+          const Icon = upgradeIcons[upgrade.name] ?? Wrench;
           const bonus = upgrade.levels.slice(0, level).findLast((item) => item.bonus)?.bonus;
 
           return (
             <li
               key={upgrade.name}
               className={cn(
-                "flex flex-col gap-4 rounded-xl border p-4 transition-colors",
+                "relative flex flex-col gap-4 overflow-hidden rounded-xl border p-4 transition-colors",
                 level > 0 ? "border-primary/40 bg-muted/40" : "bg-card",
               )}
             >
-              <div className="flex items-start justify-between gap-3">
+              <Icon
+                className="pointer-events-none absolute right-2.5 bottom-2.5 size-12 stroke-[1.25] text-foreground/10"
+                aria-hidden="true"
+              />
+              <div className="relative flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h3 className="font-medium">{upgrade.name}</h3>
                   <p className="text-sm text-muted-foreground">{upgrade.description}</p>
@@ -65,7 +77,7 @@ export function VehicleTuning({ upgrades }: { upgrades: VehicleUpgrade[] }) {
                 {bonus && <Badge variant="secondary">{bonus}</Badge>}
               </div>
 
-              <div className="flex items-center gap-1.5" role="img" aria-label={`Уровень ${level} из ${max}`}>
+              <div className="relative flex items-center gap-1.5" role="img" aria-label={`Уровень ${level} из ${max}`}>
                 {upgrade.levels.map((item, index) => (
                   <span
                     key={item.price + String(index)}
@@ -77,7 +89,7 @@ export function VehicleTuning({ upgrades }: { upgrades: VehicleUpgrade[] }) {
                 ))}
               </div>
 
-              <div className="flex items-center justify-between gap-3">
+              <div className="relative flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"

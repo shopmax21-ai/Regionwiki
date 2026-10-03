@@ -33,13 +33,13 @@ export interface PlaceCategory {
   id: PlaceCategoryId;
   label: string;
   icon: LucideIcon;
-  /** Карта всегда тёмная, поэтому цвета меток фиксированные, а не из темы. */
+  /** Цвета меток берутся из темы, поэтому следуют пресету и светлой/тёмной схеме. */
   dotClass: string;
   ringClass: string;
 }
 
 export const placeCategories: PlaceCategory[] = [
-  { id: "job", label: "Работы", icon: HardHat, dotClass: "bg-amber-400", ringClass: "ring-amber-400/40" },
+  { id: "job", label: "Работы", icon: HardHat, dotClass: "bg-primary", ringClass: "ring-primary/30" },
 ];
 
 export function getCategory(id: PlaceCategoryId): PlaceCategory {

@@ -1,23 +1,12 @@
 import type { Metadata } from "next";
 
-import { createDirectoryData } from "@/app/(main)/dashboard/_components/directory-data";
-import { DirectoryPage } from "@/app/(main)/dashboard/_components/directory-page";
+import { JobsHub } from "@/app/(main)/dashboard/jobs/_components/jobs-hub";
 
 export const metadata: Metadata = {
-  title: "Работы | Region WIKI",
-  description: "Документы и материалы раздела Работы.",
+  title: "Всё о работах | Region WIKI",
+  description: "Гайды по всем работам штата: условия доступа, процесс, советы и путь прокачки.",
 };
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ view?: string | string[] }> }) {
-  const { view } = await searchParams;
-  const data = createDirectoryData("jobs");
-  return (
-    <DirectoryPage
-      title="Работы"
-      description="Вакансии, резюме и полезные материалы о работе."
-      viewPath="/dashboard/jobs"
-      view={view}
-      {...data}
-    />
-  );
+export default function Page() {
+  return <JobsHub />;
 }

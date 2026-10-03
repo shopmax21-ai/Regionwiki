@@ -2,25 +2,25 @@
 
 import { useMemo, useState } from "react";
 
-import { ChevronLeft, ChevronRight, Search, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, CircleDollarSign, Funnel, LayoutGrid, Rows2, Search, Sparkles } from "lucide-react";
 
+import { FilterDropdown } from "@/app/(main)/dashboard/_components/filter-dropdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { Separator } from "@/components/ui/separator";
 
 import { type Category, categories, vehicles } from "../_data/vehicles";
+import { type PriceRange, PriceRangeFilter } from "./price-range-filter";
 import { VehicleCard } from "./vehicle-card";
+import { VehicleRow } from "./vehicle-row";
 
 const PAGE_SIZE = 12;
 
-const priceRanges = [
-  { id: "any", label: "Любая цена", min: 0, max: Number.POSITIVE_INFINITY },
-  { id: "1", label: "До $1 000 000", min: 0, max: 1_000_000 },
-  { id: "2", label: "$1 000 000 – $5 000 000", min: 1_000_000, max: 5_000_000 },
-  { id: "3", label: "$5 000 000 – $10 000 000", min: 5_000_000, max: 10_000_000 },
-  { id: "4", label: "От $10 000 000", min: 10_000_000, max: Number.POSITIVE_INFINITY },
-] as const;
+const priceBounds: PriceRange = [
+  Math.min(...vehicles.map((vehicle) => vehicle.price)),
+  Math.max(...vehicles.map((vehicle) => vehicle.price)),
+];
 
 const sortOptions = [
   { id: "new", label: "Сначала новые" },
@@ -29,26 +29,38 @@ const sortOptions = [
   { id: "speed", label: "По скорости" },
 ] as const;
 
-type PriceId = (typeof priceRanges)[number]["id"];
+const ALL_SOURCES = "all";
+
+const sourceOptions = [
+  { id: ALL_SOURCES, label: "Все источники" },
+  ...Array.from(new Set(vehicles.flatMap((vehicle) => vehicle.sources))).map((source) => ({
+    id: source,
+    label: source,
+  })),
+];
+
 type SortId = (typeof sortOptions)[number]["id"];
+type ViewMode = "grid" | "list";
 
 export function TransportWiki() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<Category>("Все");
-  const [priceId, setPriceId] = useState<PriceId>("any");
+  const [priceRange, setPriceRange] = useState<PriceRange>(priceBounds);
   const [sort, setSort] = useState<SortId>("new");
+  const [source, setSource] = useState<string>(ALL_SOURCES);
+  const [view, setView] = useState<ViewMode>("grid");
   const [page, setPage] = useState(1);
 
   const filteredVehicles = useMemo(() => {
-    const range = priceRanges.find((item) => item.id === priceId) ?? priceRanges[0];
     const normalizedQuery = query.trim().toLowerCase();
 
     return vehicles
       .filter((vehicle) => {
         const matchesCategory = category === "Все" || vehicle.category === category;
-        const matchesPrice = vehicle.price >= range.min && vehicle.price < range.max;
+        const matchesPrice = vehicle.price >= priceRange[0] && vehicle.price <= priceRange[1];
+        const matchesSource = source === ALL_SOURCES || vehicle.sources.includes(source);
         const haystack = `${vehicle.name} ${vehicle.model} ${vehicle.code}`.toLowerCase();
-        return matchesCategory && matchesPrice && haystack.includes(normalizedQuery);
+        return matchesCategory && matchesPrice && matchesSource && haystack.includes(normalizedQuery);
       })
       .sort((a, b) => {
         if (sort === "expensive") return b.price - a.price;
@@ -56,7 +68,7 @@ export function TransportWiki() {
         if (sort === "speed") return b.speed - a.speed;
         return Number(b.isNew ?? false) - Number(a.isNew ?? false);
       });
-  }, [category, priceId, query, sort]);
+  }, [category, priceRange, query, sort, source]);
 
   const pageCount = Math.max(1, Math.ceil(filteredVehicles.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
@@ -70,12 +82,12 @@ export function TransportWiki() {
         </Badge>
         <h1 className="text-3xl font-semibold tracking-tight md:text-5xl">Таблица транспорта</h1>
         <p className="max-w-xl text-sm text-muted-foreground md:text-base">
-          Подробные характеристики автомобилей и другой техники в штате
+          Подробные характеристики автомобилей и другой техники
         </p>
       </header>
 
       <section className="flex flex-col gap-3" aria-label="Фильтры транспорта">
-        <div className="flex flex-col gap-3 lg:flex-row">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative min-w-0 flex-1">
             <Search
               className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -92,37 +104,52 @@ export function TransportWiki() {
               className="h-10 pl-9"
             />
           </div>
-          <div className="flex flex-wrap gap-2">
-            <NativeSelect
-              aria-label="Диапазон цены"
-              value={priceId}
-              onChange={(event) => {
-                setPriceId(event.target.value as PriceId);
+
+          <Separator orientation="vertical" className="hidden h-6 data-vertical:self-center lg:block" />
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant={view === "list" ? "secondary" : "outline"}
+              size="icon"
+              className="size-10"
+              aria-pressed={view === "list"}
+              aria-label={view === "list" ? "Показать карточками" : "Показать списком"}
+              onClick={() => setView(view === "list" ? "grid" : "list")}
+            >
+              {view === "list" ? <LayoutGrid className="size-4" /> : <Rows2 className="size-4" />}
+            </Button>
+            <FilterDropdown
+              icon={CircleDollarSign}
+              label="Источник"
+              value={source}
+              options={sourceOptions}
+              onChange={(value) => {
+                setSource(value);
                 setPage(1);
               }}
-              className="max-sm:w-full"
-            >
-              {priceRanges.map((item) => (
-                <NativeSelectOption key={item.id} value={item.id}>
-                  {item.label}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-            <NativeSelect
-              aria-label="Сортировка"
+              className="max-sm:flex-1"
+            />
+            <PriceRangeFilter
+              min={priceBounds[0]}
+              max={priceBounds[1]}
+              value={priceRange}
+              onChange={(value) => {
+                setPriceRange(value);
+                setPage(1);
+              }}
+              className="max-sm:flex-1"
+            />
+            <FilterDropdown
+              icon={Funnel}
+              label="Сортировка"
               value={sort}
-              onChange={(event) => {
-                setSort(event.target.value as SortId);
+              options={sortOptions}
+              onChange={(value) => {
+                setSort(value);
                 setPage(1);
               }}
-              className="max-sm:w-full"
-            >
-              {sortOptions.map((item) => (
-                <NativeSelectOption key={item.id} value={item.id}>
-                  {item.label}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
+              className="max-sm:flex-1"
+            />
           </div>
         </div>
 
@@ -147,11 +174,19 @@ export function TransportWiki() {
       </section>
 
       {visibleVehicles.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {visibleVehicles.map((vehicle) => (
-            <VehicleCard key={vehicle.code} vehicle={vehicle} />
-          ))}
-        </div>
+        view === "grid" ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {visibleVehicles.map((vehicle) => (
+              <VehicleCard key={vehicle.code} vehicle={vehicle} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {visibleVehicles.map((vehicle) => (
+              <VehicleRow key={vehicle.code} vehicle={vehicle} />
+            ))}
+          </div>
+        )
       ) : (
         <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
           Транспорт не найден. Измените запрос или выберите другую категорию.

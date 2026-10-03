@@ -1,36 +1,44 @@
 import type { ReactNode } from "react";
 
-import { Command } from "lucide-react";
-
-import { Separator } from "@/components/ui/separator";
 import { APP_CONFIG } from "@/config/app-config";
+
+import { RegionMarkOutline } from "../_components/region-mark-outline";
 
 export default function Layout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <main>
-      <div className="grid h-dvh justify-center p-2 lg:grid-cols-2">
-        <div className="relative order-2 hidden h-full rounded-3xl bg-primary lg:flex">
-          <div className="absolute top-10 space-y-1 px-10 text-primary-foreground">
-            <Command className="size-10" />
-            <h1 className="font-medium text-2xl">{APP_CONFIG.name}</h1>
-            <p className="text-sm">Design. Build. Launch. Repeat.</p>
-          </div>
-
-          <div className="absolute bottom-10 flex w-full justify-between px-10">
-            <div className="flex-1 space-y-1 text-primary-foreground">
-              <h2 className="font-medium">Ready to launch?</h2>
-              <p className="text-sm">Clone the repo, install dependencies, and your dashboard is live in minutes.</p>
-            </div>
-            <Separator orientation="vertical" className="mx-3 h-auto!" />
-            <div className="flex-1 space-y-1 text-primary-foreground">
-              <h2 className="font-medium">Need help?</h2>
-              <p className="text-sm">
-                Check out the docs or open an issue on GitHub, community support is just a click away.
-              </p>
-            </div>
-          </div>
+    <main className="region-auth dark min-h-dvh bg-background text-foreground">
+      <div className="grid h-dvh p-2 lg:grid-cols-2">
+        {/* Левая колонка: форма */}
+        <div className="relative order-1 flex h-full items-center justify-center px-6">
+          <div className="flex w-full max-w-[372px] flex-col gap-6">{children}</div>
+          <p className="absolute bottom-5 text-muted-foreground text-xs">{APP_CONFIG.copyright}</p>
         </div>
-        <div className="relative order-1 flex h-full">{children}</div>
+
+        {/* Правая панель: узор из букв R и большой логотип */}
+        <div className="relative order-2 hidden h-full items-center justify-center overflow-hidden rounded-2xl bg-card lg:flex">
+          <svg aria-hidden="true" className="absolute inset-0 size-full text-foreground">
+            <defs>
+              <pattern id="region-r-pattern" width="98" height="64" patternUnits="userSpaceOnUse">
+                <g fill="currentColor" fillOpacity="0.045" fontSize="20" fontStyle="italic" fontWeight="800">
+                  <text x="0" y="24">
+                    R
+                  </text>
+                  <text x="49" y="24">
+                    R
+                  </text>
+                  <text x="24" y="56">
+                    R
+                  </text>
+                  <text x="73" y="56">
+                    R
+                  </text>
+                </g>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#region-r-pattern)" />
+          </svg>
+          <RegionMarkOutline id="rmo-auth" className="relative w-72 xl:w-80" />
+        </div>
       </div>
     </main>
   );

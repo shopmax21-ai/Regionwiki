@@ -1,146 +1,166 @@
-# Next.js Admin Template with TypeScript & Shadcn UI
+# Region WIKI
 
-**Studio Admin** - Includes multiple dashboards, authentication layouts, customizable theme presets, and more.
+База знаний для игроков проекта **Region**: правила, работы, транспорт, недвижимость, бизнесы и интерактивная карта штата.
 
-<img src="https://github.com/arhamkhnz/next-shadcn-admin-dashboard/blob/main/media/dashboard.png?version=5" alt="Dashboard Screenshot">
+Проект сделан на основе открытого шаблона [next-shadcn-admin-dashboard](https://github.com/arhamkhnz/next-shadcn-admin-dashboard) (лицензия MIT, автор Mohammed Arham Khan). Оболочка и часть демо-страниц остались от шаблона, весь контент Region лежит в разделах, перечисленных ниже.
 
-Most admin templates I found, free or paid, felt cluttered, outdated, or too rigid. I built this as a cleaner alternative with features often missing in others, such as theme toggling and layout controls, while keeping the design modern, minimal, and flexible.
+## Содержание
 
-> **View demo:** [studio admin](https://studio-admin.arhamkhnz.com)
+- [Разделы](#разделы)
+- [Стек](#стек)
+- [Быстрый старт](#быстрый-старт)
+- [Структура проекта](#структура-проекта)
+- [Как редактировать контент](#как-редактировать-контент)
+- [Оформление и тема](#оформление-и-тема)
+- [Что осталось от шаблона](#что-осталось-от-шаблона)
+- [Лицензия](#лицензия)
 
-> [!NOTE]
-> Looking for the Base UI version? Check out [next-shadcn-admin-dashboard-baseui](https://github.com/arhamkhnz/next-shadcn-admin-dashboard-baseui).
->
-> Looking for the React Aria version? Check out [arhamkhnz/next-shadcn-admin-dashboard-aria](https://github.com/arhamkhnz/next-shadcn-admin-dashboard-aria).
->
-> Looking for the TanStack Start version? Check out [tanstack-shadcn-admin-dashboard](https://github.com/arhamkhnz/tanstack-shadcn-admin-dashboard).
+## Разделы
 
-> [!TIP]
-> I’m also working on Nuxt.js and Svelte versions of this dashboard. They’ll be live soon.
+| Раздел | Адрес | Что внутри |
+| --- | --- | --- |
+| Работы | `/dashboard/jobs` | Хаб и 23 гайда по работам: условия доступа, процесс, советы, цепочка открытия |
+| Транспорт | `/dashboard/transport` | Каталог автомобилей с фильтрами, тюнингом, номерами и покраской |
+| Недвижимость | `/dashboard/real-estate` | Каталог домов, квартир, офисов и складов с фото экстерьера и интерьера |
+| Бизнес | `/dashboard/business` | Таблица бизнесов штата со стоимостью, поиском и сортировкой |
+| Карта | `/dashboard/map` | Интерактивная карта штата с метками мест |
+| Правила | `/dashboard/rules/*` | Основные правила, правила госструктур и история изменений, с поиском по пунктам |
+| Вход | `/auth/v2/login` | Страница входа в стиле Region (тёмный фон, красный акцент, логотип R) |
 
-## Features
+## Стек
 
-- Built with Next.js 16, TypeScript, Tailwind CSS v4, and Shadcn UI  
-- Responsive and mobile-friendly  
-- Customizable theme presets (light/dark modes with color schemes like Tangerine, Brutalist, and more)  
-- Flexible layouts (collapsible sidebar, variable content widths)  
-- Authentication flows and screens  
-- Prebuilt dashboards (Default, CRM, Finance, Analytics, Productivity) plus legacy variants  
-- Role-Based Access Control (RBAC) with config-driven UI and multi-tenant support *(planned)*  
+- Next.js 16 (App Router), React 19, TypeScript (strict)
+- Tailwind CSS v4 и shadcn/ui (стиль `radix-nova`)
+- Leaflet и d3-geo для карты
+- React Hook Form и Zod для форм
+- Biome и Husky для форматирования и проверки
 
-> [!NOTE]
-> The default dashboard uses the **shadcn neutral** theme.  
-> It also includes additional color presets inspired by [Tweakcn](https://tweakcn.com):  
->
-> - Tangerine  
-> - Neo Brutalism  
-> - Soft Pop  
->
-> You can create more presets by following the same structure as the existing ones.
+## Быстрый старт
 
-> Looking for the **Next.js 15** version?  
-> Check out the [`archive/next15`](https://github.com/arhamkhnz/next-shadcn-admin-dashboard/tree/archive/next15) branch.  
-> This branch contains the setup prior to upgrading to Next 16 and the React Compiler.
+Нужны Node.js 20+ и npm.
 
-> Looking for the **Next.js 14 + Tailwind CSS v3** version?  
-> Check out the [`archive/next14-tailwindv3`](https://github.com/arhamkhnz/next-shadcn-admin-dashboard/tree/archive/next14-tailwindv3) branch.  
-> It has a different color theme and is not actively maintained, but I try to keep it updated with major changes.  
-
-## Tech Stack
-
-- **Framework**: Next.js 16 (App Router), TypeScript, Tailwind CSS v4  
-- **UI Components**: Shadcn UI  
-- **Validation**: Zod  
-- **Forms & State Management**: React Hook Form, Zustand  
-- **Tables & Data Handling**: TanStack Table  
-- **Tooling & DX**: Biome, Husky  
-
-## Screens
-
-### Available
-- Default Dashboard  
-- CRM Dashboard  
-- Finance Dashboard  
-- Analytics Dashboard  
-- Productivity Dashboard  
-- E-commerce Dashboard  
-- Academy Dashboard  
-- Logistics Dashboard  
-- Infrastructure Dashboard  
-- File Manager  
-
-- Chat Page  
-- Email Page  
-- Profile  
-- Users Management  
-- Roles Management  
-- Kanban Board  
-- Tasks Page  
-- Invoice Page  
-- Calendar Page  
-- Authentication (4 screens)  
-- Legacy: Default v1, CRM v1, Finance v1, Analytics v1
-
-### Planned
-I’ve added all the planned screens. Feel free to open an issue for requesting something specific.
-
-## Colocation File System Architecture
-
-This project follows a **colocation-based architecture** each feature keeps its own pages, components, and logic inside its route folder.  
-Shared UI, hooks, and configuration live at the top level, making the codebase modular, scalable, and easier to maintain as the app grows.
-
-For a full breakdown of the structure with examples, see the [Next Colocation Template](https://github.com/arhamkhnz/next-colocation-template).
-
-## Getting Started
-
-You can run this project locally, or deploy it instantly with Vercel.
-
-### Deploy with Vercel
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Farhamkhnz%2Fnext-shadcn-admin-dashboard)
-
-_Deploy your own copy with one click._
-
-### Run locally
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/arhamkhnz/next-shadcn-admin-dashboard.git
-   ```
-   
-2. **Navigate into the project**
-   ```bash
-    cd next-shadcn-admin-dashboard
-   ```
-   
-3. **Install dependencies**
-   ```bash
-    npm install
-   ```
-
-4. **Start the development server**
-   ```bash
-   npm run dev
-   ```
-
-Your app will be running at [http://localhost:3000](http://localhost:3000)
-
-### Formatting and Linting
-
-Format, lint, and organize imports
 ```bash
-npx @biomejs/biome check --write
+npm install
+npm run dev
 ```
-> For more information on available rules, fixes, and CLI options, refer to the [Biome documentation](https://biomejs.dev/).
 
----
+Сайт откроется на [http://localhost:3000](http://localhost:3000).
 
-> [!IMPORTANT]  
-> This project is updated frequently. If you’re working from a fork or an older clone, pull the latest changes before syncing. Some updates may include breaking changes.
+| Команда | Что делает |
+| --- | --- |
+| `npm run dev` | Запуск в режиме разработки |
+| `npm run build` | Production-сборка |
+| `npm run start` | Запуск собранной версии |
+| `npm run lint` | Проверка кода Biome |
+| `npm run format` | Форматирование |
+| `npm run check` / `check:fix` | Полная проверка (линтер, форматирование, импорты) |
+| `npm run generate:presets` | Пересборка цветовых пресетов темы |
 
----
+Автоматических тестов в проекте нет.
 
-Contributions are welcome. Feel free to open issues, feature requests, or start a discussion.
+## Структура проекта
 
+Код организован по принципу colocation: страница и всё, что нужно только ей, лежат рядом.
 
-**Happy Vibe Coding!**
+```text
+src
+├── app
+│   ├── (main)
+│   │   ├── auth/v2              # Вход и регистрация
+│   │   └── dashboard
+│   │       ├── jobs             # Работы: page.tsx, [slug]/, _components/, _data/
+│   │       ├── transport        # Транспорт
+│   │       ├── real-estate      # Недвижимость
+│   │       ├── business         # Бизнесы
+│   │       ├── map              # Карта
+│   │       ├── rules            # Правила: _content/ (тексты), _components/ (вёрстка)
+│   │       └── _components      # Общие компоненты дашборда (сайдбар, шапка, фильтры)
+│   └── api/rules/sync           # Проверка доступности источников правил
+├── components/ui                # Компоненты shadcn (не редактируются)
+├── navigation/sidebar           # Меню сайдбара
+├── config/app-config.ts         # Название сайта и копирайт
+└── styles/presets               # Цветовые пресеты темы
+public/images                    # Картинки: jobs, transport, real-estate, map
+```
+
+Правила работы с кодом описаны в [AGENTS.md](./AGENTS.md), порядок вклада в проект в [CONTRIBUTING.md](./CONTRIBUTING.md). Файлы в `src/components/ui/` менять не нужно: кастомизация делается там, где компонент используется.
+
+## Как редактировать контент
+
+### Работы
+
+Все гайды лежат в одном файле: `src/app/(main)/dashboard/jobs/_data/jobs.ts`. Каждая работа описывается объектом с полями: уровень доступа, альтернативный путь через 2 ранг, условия, доход, процесс, советы, совместная работа и подсказка по навигатору.
+
+Чтобы добавить работу:
+
+1. Добавьте объект в массив `jobs` в `_data/jobs.ts`.
+2. Добавьте иконку в `_components/job-icons.ts` (иначе будет иконка по умолчанию).
+3. Добавьте картинку в `_data/job-images.ts`.
+
+Страница гайда, пункт в сайдбаре и переходы «Предыдущая / Следующая» появятся сами.
+
+В гайдах пока нет точных цифр: сумм аренды, порогов рангов и размеров бонусов. Их нужно вписать в поля `conditions` и `income`.
+
+### Картинки работ
+
+Картинки лежат в `public/images/jobs/`, по одной на работу, имя файла совпадает с `slug`. Сейчас там SVG-заглушки. Чтобы заменить:
+
+- положите свой файл поверх (тот же путь), или
+- положите файл с другим именем или форматом (`.webp`, `.jpg`, `.png`) и поправьте путь в `_data/job-images.ts`.
+
+Рекомендуемый формат: 16:9, например 1280×720. Если для работы нет записи, показывается серая заглушка с иконкой.
+
+### Правила
+
+Тексты правил лежат в `src/app/(main)/dashboard/rules/_content/*.ts` в простом текстовом формате:
+
+```text
+## Название раздела
+
+1.1 Текст правила. | Наказание 1 / Наказание 2
+Примечание: дополнительное пояснение.
+```
+
+Подпись раздела, дата обновления и описание задаются в `rules/_components/rules-meta.ts`. Источники для проверки обновлений указаны в `src/app/api/rules/sync/route.ts`, проверка выполняется раз в 3 часа.
+
+### Транспорт, недвижимость, бизнесы
+
+| Раздел | Файл данных |
+| --- | --- |
+| Транспорт | `dashboard/transport/_data/vehicles.ts` |
+| Недвижимость | `dashboard/real-estate/_data/realties.ts` |
+| Бизнесы | `dashboard/business/_data/businesses.ts` |
+
+В бизнесах и недвижимости сейчас временные тестовые данные (помечены `TODO`), их нужно заменить реальным списком. Фото кладутся в `public/images/<раздел>/` и подключаются через поле `imageUrl` (или `exteriorUrl` и `interiorUrl` для недвижимости).
+
+### Карта
+
+Метки и границы мира задаются в `dashboard/map/_components/map-data.ts`. Плитки карты лежат в `public/images/map/`.
+
+Координаты `MAP_WORLD` пока условные (центр карты = 0, 0). Подставьте реальные координаты углов карты, чтобы метки вставали точно.
+
+### Меню сайдбара
+
+Пункты меню описаны в `src/navigation/sidebar/sidebar-items.ts`. Раздел «Работы» собирается из массива `jobs`, поэтому отдельно его править не нужно.
+
+### Название и копирайт
+
+Название сайта и копирайт задаются в `src/config/app-config.ts`.
+
+## Оформление и тема
+
+- Основная тема переключается в шапке сайта, доступны пресеты (в том числе Tangerine, Neo Brutalism, Soft Pop).
+- Страницы входа и регистрации всегда тёмные с красным акцентом Region. Цвета заданы в `src/app/globals.css`, блок `.region-auth.dark` (переменные `--primary` и `--ring`).
+- В новых экранах используйте семантические токены темы (`bg-card`, `text-muted-foreground`, `text-primary` и т. д.), а не произвольные цвета, чтобы страницы работали в светлой и тёмной теме.
+
+## Что осталось от шаблона
+
+Вход и регистрация пока работают как демо: форма показывает введённые данные во всплывающем уведомлении и никого не авторизует. Для реальной авторизации нужен ваш бэкенд.
+
+В репозитории всё ещё лежат демо-страницы шаблона: дашборды (CRM, Финансы, Аналитика и другие), почта, чат, канбан, календарь, задачи, счета, профиль, пользователи, роли. Они не относятся к контенту Region и при желании могут быть удалены вместе с пунктами в `sidebar-items.ts`. Страница регистрации остаётся на английском шаблоне.
+
+`vercel.json` содержит редирект на демо-домен шаблона. Если будете выкладывать проект на Vercel, замените или удалите его.
+
+## Лицензия
+
+MIT. Исходная лицензия шаблона лежит в файле [LICENSE](./LICENSE).

@@ -35,7 +35,7 @@ export function PlaceCard({ place, onClose }: PlaceCardProps) {
     >
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-start gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
             <Icon className="size-5" />
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -46,7 +46,7 @@ export function PlaceCard({ place, onClose }: PlaceCardProps) {
             <X className="size-5" />
           </Button>
         </div>
-        <Button variant="outline" className="h-11 justify-between rounded-xl px-3 text-sm" onClick={copyCoordinates}>
+        <Button variant="outline" className="h-11 justify-between px-3 text-sm" onClick={copyCoordinates}>
           <span className="text-muted-foreground">Координаты</span>
           <span className="flex items-center gap-2 tabular-nums">
             {coordinates}

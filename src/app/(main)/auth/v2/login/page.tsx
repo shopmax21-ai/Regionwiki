@@ -1,55 +1,77 @@
-import Link from "next/link";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-import { Globe } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import type { Metadata } from "next";
+import { siTelegram } from "simple-icons";
 
-import { APP_CONFIG } from "@/config/app-config";
+import { SimpleIcon } from "@/components/simple-icon";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { getAuthConfig, SESSION_COOKIE, safeNext } from "@/lib/auth/config";
+import { readSessionToken } from "@/lib/auth/session";
 
-import { LoginForm } from "../../_components/login-form";
-import { GoogleButton } from "../../_components/social-auth/google-button";
+import { authButtonClass } from "../../_components/auth-styles";
+import { RegionLogo } from "../../_components/region-logo";
 
 export const metadata: Metadata = {
-  title: "Open Source Branded Login Page with shadcn/ui",
-  description:
-    "Explore an open source branded login page with a two-column layout, social sign-in, and email and password fields.",
-  alternates: {
-    canonical: "/auth/v2/login",
+  title: "Вход | Region WIKI",
+  description: "Вход в Region WIKI через Telegram.",
+  robots: { index: false, follow: false },
+};
+
+const errors: Record<string, { title: string; text: string }> = {
+  forbidden: {
+    title: "Нет доступа",
+    text: "Этот Telegram-аккаунт не добавлен в список доступа. Обратитесь к куратору проекта.",
+  },
+  denied: {
+    title: "Вход отменён",
+    text: "Вы отклонили запрос в Telegram. Попробуйте ещё раз.",
+  },
+  failed: {
+    title: "Не удалось войти",
+    text: "Telegram не подтвердил вход. Попробуйте ещё раз.",
+  },
+  config: {
+    title: "Вход не настроен",
+    text: "Не заданы ключи Telegram или список разрешённых аккаунтов. Сообщите администратору сайта.",
   },
 };
 
-export default function LoginV2() {
+export default async function LoginV2({ searchParams }: { searchParams: Promise<{ error?: string; next?: string }> }) {
+  const { error, next } = await searchParams;
+  const nextPath = safeNext(next);
+
+  const auth = getAuthConfig();
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (auth && token && (await readSessionToken(token, auth.secret))) redirect(nextPath);
+
+  const message = error ? (errors[error] ?? errors.failed) : null;
+  const href = `/api/auth/telegram/login?next=${encodeURIComponent(nextPath)}`;
+
   return (
     <>
-      <div className="mx-auto flex w-full flex-col justify-center space-y-8 sm:w-[350px]">
-        <div className="space-y-2 text-center">
-          <h1 className="font-medium text-3xl">Login to your account</h1>
-          <p className="text-muted-foreground text-sm">Please enter your details to login.</p>
-        </div>
-        <div className="space-y-4">
-          <GoogleButton className="w-full" />
-          <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-border after:border-t">
-            <span className="relative z-10 bg-background px-2 text-muted-foreground">Or continue with</span>
-          </div>
-          <LoginForm />
-        </div>
+      <div className="flex flex-col items-center gap-3 text-center">
+        <RegionLogo />
+        <h1 className="font-medium text-foreground/80 text-xs">Панель управления Region WIKI</h1>
       </div>
 
-      <div className="absolute top-5 flex w-full justify-end px-10">
-        <div className="text-muted-foreground text-sm">
-          Don&apos;t have an account?{" "}
-          <Link prefetch={false} className="text-foreground" href="register">
-            Register
-          </Link>
-        </div>
-      </div>
+      {message && (
+        <Alert variant="destructive">
+          <CircleAlert />
+          <AlertTitle>{message.title}</AlertTitle>
+          <AlertDescription>{message.text}</AlertDescription>
+        </Alert>
+      )}
 
-      <div className="absolute bottom-5 flex w-full justify-between px-10">
-        <div className="text-sm">{APP_CONFIG.copyright}</div>
-        <div className="flex items-center gap-1 text-sm">
-          <Globe className="size-4 text-muted-foreground" />
-          ENG
-        </div>
-      </div>
+      <a href={href} className={authButtonClass}>
+        <SimpleIcon icon={siTelegram} className="size-4" />
+        Войти через Telegram
+      </a>
+
+      <p className="text-center text-muted-foreground text-xs">
+        Доступ только для администрации проекта. Мы получаем из Telegram имя, username и фото профиля.
+      </p>
     </>
   );
 }

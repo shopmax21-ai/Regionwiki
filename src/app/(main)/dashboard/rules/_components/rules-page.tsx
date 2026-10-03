@@ -10,10 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
+import { ChangelogFeed } from "./changelog-feed";
 import { Highlight, matchesQuery, PunishmentList } from "./rule-ui";
 import {
   articleHref,
-  changelog,
   formatRuleRef,
   type RuleArticleCard,
   type RuleGroup,
@@ -188,29 +188,12 @@ export function ChangelogPage() {
           <RefreshCw className="size-3.5" /> Автоматическая синхронизация
         </Badge>
         <h1 className="text-3xl font-semibold tracking-tight">История изменений</h1>
-        <p className="mt-3 max-w-2xl text-muted-foreground">Изменения правил проекта Region.</p>
+        <p className="mt-3 max-w-2xl text-muted-foreground">
+          Лента изменений правил проекта Region: что добавили, изменили или убрали. Проверка источников выполняется
+          каждые 3 часа.
+        </p>
       </section>
-      <Card>
-        <CardHeader>
-          <CardTitle>Журнал обновлений</CardTitle>
-          <CardDescription>Проверка источников выполняется каждые 3 часа</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {changelog.map((item) => (
-            <Link
-              key={`${item.date}-${item.title}`}
-              href={articleHref(item.group, item.slug)}
-              className="flex flex-col gap-2 rounded-xl border p-4 transition-colors hover:border-primary/50 hover:bg-muted/40 sm:flex-row sm:items-center"
-            >
-              <Badge variant="outline" className="w-fit">
-                {item.date}
-              </Badge>
-              <span className="flex-1 text-sm font-medium">{item.title}</span>
-              <span className="text-xs text-muted-foreground">{item.section}</span>
-            </Link>
-          ))}
-        </CardContent>
-      </Card>
+      <ChangelogFeed />
     </main>
   );
 }

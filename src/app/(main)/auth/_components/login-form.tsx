@@ -1,23 +1,23 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Lock, Mail } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldContent, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { Field, FieldError, FieldGroup } from "@/components/ui/field";
+
+import { AuthField } from "./auth-field";
+import { authButtonClass } from "./auth-styles";
 
 const formSchema = z.object({
-  email: z.email({ message: "Please enter a valid email address." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
-  remember: z.boolean().optional(),
+  email: z.email({ message: "Введите корректный email." }),
+  password: z.string().min(6, { message: "Пароль должен быть не короче 6 символов." }),
 });
 
 function onSubmit(data: z.infer<typeof formSchema>) {
-  toast("You submitted the following values", {
+  toast("Данные формы (демо, без авторизации)", {
     description: (
       <pre className="mt-2 w-[320px] rounded-md bg-neutral-950 p-4">
         <code className="text-white">{JSON.stringify(data, null, 2)}</code>
@@ -29,27 +29,23 @@ function onSubmit(data: z.infer<typeof formSchema>) {
 export function LoginForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      remember: false,
-    },
+    defaultValues: { email: "", password: "" },
   });
 
   return (
     <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <FieldGroup className="gap-4">
+      <FieldGroup className="gap-3">
         <Controller
           control={form.control}
           name="email"
           render={({ field, fieldState }) => (
             <Field className="gap-1.5" data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="login-email">Email Address</FieldLabel>
-              <Input
+              <AuthField
                 {...field}
-                id="login-email"
+                icon={<Mail />}
                 type="email"
-                placeholder="you@example.com"
+                placeholder="Email"
+                aria-label="Email"
                 autoComplete="email"
                 aria-invalid={fieldState.invalid}
               />
@@ -62,12 +58,12 @@ export function LoginForm() {
           name="password"
           render={({ field, fieldState }) => (
             <Field className="gap-1.5" data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="login-password">Password</FieldLabel>
-              <Input
+              <AuthField
                 {...field}
-                id="login-password"
+                icon={<Lock />}
                 type="password"
-                placeholder="••••••••"
+                placeholder="Пароль"
+                aria-label="Пароль"
                 autoComplete="current-password"
                 aria-invalid={fieldState.invalid}
               />
@@ -75,31 +71,10 @@ export function LoginForm() {
             </Field>
           )}
         />
-        <Controller
-          control={form.control}
-          name="remember"
-          render={({ field, fieldState }) => (
-            <Field orientation="horizontal" data-invalid={fieldState.invalid}>
-              <Checkbox
-                id="login-remember"
-                name={field.name}
-                checked={field.value}
-                onCheckedChange={(checked) => field.onChange(Boolean(checked))}
-                aria-invalid={fieldState.invalid}
-              />
-              <FieldContent>
-                <FieldLabel htmlFor="login-remember" className="font-normal">
-                  Remember me for 30 days
-                </FieldLabel>
-                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-              </FieldContent>
-            </Field>
-          )}
-        />
       </FieldGroup>
-      <Button className="w-full" type="submit">
-        Login
-      </Button>
+      <button type="submit" className={authButtonClass}>
+        Продолжить
+      </button>
     </form>
   );
 }

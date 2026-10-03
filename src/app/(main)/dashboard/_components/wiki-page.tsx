@@ -1,219 +1,481 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { type ComponentType, useEffect, useRef, useState } from "react";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+import { cn } from "cn";
 import {
   ArrowRight,
-  BookOpen,
+  ArrowUpRight,
   BriefcaseBusiness,
-  Building2,
   CarFront,
-  ChevronRight,
-  CircleHelp,
-  FileText,
+  HardHat,
+  History,
+  House,
+  LifeBuoy,
+  Map as MapIcon,
+  Scale,
   Search,
-  Shield,
   Sparkles,
   Users,
+  X,
 } from "lucide-react";
 
+import { RegionMarkOutline } from "@/app/(main)/auth/_components/region-mark-outline";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Kbd } from "@/components/ui/kbd";
+import { useSiteSearch } from "@/hooks/use-site-search";
 
-const sections = [
-  {
-    title: "Начало игры",
-    description: "Всё, что нужно знать перед первым входом на сервер",
-    icon: Sparkles,
-    count: 12,
-  },
-  {
-    title: "Основные правила",
-    description: "Общие правила проекта, игровые ситуации и ответственность",
-    icon: Shield,
-    count: 12,
-    href: "https://forum.region.game/forums/obshchiye-pravila-proyekta.43/",
-  },
-  {
-    title: "Государственные структуры",
-    description: "Правила государственных организаций и фракционной игры",
-    icon: Users,
-    count: 1,
-    href: "https://forum.region.game/forums/pravila-gosudarstvennykh-organizatsii.3/",
-  },
-  {
-    title: "Работы и бизнес",
-    description: "Как зарабатывать, открывать бизнес и развиваться",
-    icon: BriefcaseBusiness,
-    count: 31,
-  },
-  { title: "Транспорт", description: "Автомобили, лицензии, тюнинг и дорожные правила", icon: CarFront, count: 16 },
-  { title: "Города и места", description: "Карта штата, важные локации и полезные адреса", icon: Building2, count: 27 },
-];
+import {
+  type KindFilter,
+  pluralResults,
+  SearchEmpty,
+  SearchKindTabs,
+  SearchResultGroups,
+  SearchSkeleton,
+} from "./wiki-search-results";
 
-const ruleGroups = [
-  {
-    title: "Основные правила",
-    description: "Общие правила проекта и специальные игровые ситуации",
-    href: "https://forum.region.game/forums/obshchiye-pravila-proyekta.43/",
-    topics: [
-      "Общие правила",
-      "Правила поставок и перехвата",
-      "Правила ограблений и похищений",
-      "Правила семейных организаций",
-      "Правила войны за воздушный груз (ВЗА)",
-      "Правила для лидеров фракций",
-      "Правила и обязанности администрации",
-      "Правила нападения на воинскую часть",
-      "Правила об игровом имуществе",
-      "Правила игровых зон",
-      "Правила проверки на стороннее ПО",
-      "Правила форума",
-    ],
-  },
-  {
-    title: "Государственные структуры",
-    description: "Правила государственных организаций",
-    href: "https://forum.region.game/forums/pravila-gosudarstvennykh-organizatsii.3/",
-    topics: ["Правила государственных организаций"],
-  },
-];
+const FORUM_URL = "https://forum.region.game";
 
-const popularArticles = ruleGroups.flatMap((group) =>
-  group.topics.slice(0, group.title === "Основные правила" ? 3 : 1).map((topic) => [
-    topic,
-    "Официальный форум",
-    group.title,
-    group.href,
-  ]),
-);
+export type WikiStats = {
+  rules: number;
+  generalArticles: number;
+  governmentArticles: number;
+  jobs: number;
+  businesses: number;
+  realties: number;
+  vehicles: number;
+  places: number;
+};
 
-export function WikiPage() {
-  const [query, setQuery] = useState("");
-  const filteredSections = useMemo(
-    () =>
-      sections.filter((section) =>
-        `${section.title} ${section.description}`.toLowerCase().includes(query.toLowerCase()),
-      ),
-    [query],
+export type RecentArticle = {
+  title: string;
+  href: string;
+  tag?: string;
+  group: string;
+  updatedAt: string;
+  ruleCount: number;
+};
+
+function plural(n: number, forms: [string, string, string]) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  let form = forms[2];
+  if (mod10 === 1 && mod100 !== 11) form = forms[0];
+  else if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) form = forms[1];
+  return `${n} ${form}`;
+}
+
+type Section = {
+  title: string;
+  description: string;
+  icon: ComponentType<{ className?: string }>;
+  meta?: string;
+  href?: string;
+};
+
+function buildSections(stats: WikiStats): Section[] {
+  return [
+    {
+      title: "Основные правила",
+      description: "Общие правила проекта, игровые ситуации и ответственность игроков",
+      icon: Scale,
+      meta: `${plural(stats.generalArticles, ["раздел", "раздела", "разделов"])} · ${plural(stats.rules, ["пункт", "пункта", "пунктов"])} в правилах`,
+      href: "/dashboard/rules/general",
+    },
+    {
+      title: "Государственные структуры",
+      description: "Правила государственных организаций и фракционной игры",
+      icon: Users,
+      meta: plural(stats.governmentArticles, ["раздел", "раздела", "разделов"]),
+      href: "/dashboard/rules/government",
+    },
+    {
+      title: "История изменений",
+      description: "Что и когда поменялось в правилах: изменения подсвечены по словам",
+      icon: History,
+      meta: "Следим за форумом",
+      href: "/dashboard/rules/changelog",
+    },
+    {
+      title: "Работы",
+      description: "Легальный и нелегальный заработок: с какого уровня доступна работа и что на ней делать",
+      icon: HardHat,
+      meta: plural(stats.jobs, ["работа", "работы", "работ"]),
+      href: "/dashboard/jobs",
+    },
+    {
+      title: "Бизнес",
+      description: "Какие бизнесы есть на сервере, сколько стоят и что приносят",
+      icon: BriefcaseBusiness,
+      meta: plural(stats.businesses, ["бизнес", "бизнеса", "бизнесов"]),
+      href: "/dashboard/business",
+    },
+    {
+      title: "Недвижимость",
+      description: "Дома, квартиры, офисы и склады: цены, гаражи и количество жильцов",
+      icon: House,
+      meta: plural(stats.realties, ["объект", "объекта", "объектов"]),
+      href: "/dashboard/real-estate",
+    },
+    {
+      title: "Транспорт",
+      description: "Автомобили, лицензии, тюнинг и дорожные правила",
+      icon: CarFront,
+      meta: plural(stats.vehicles, ["машина", "машины", "машин"]),
+      href: "/dashboard/transport",
+    },
+    {
+      title: "Карта штата",
+      description: "Важные локации и полезные адреса на интерактивной карте",
+      icon: MapIcon,
+      meta: plural(stats.places, ["метка", "метки", "меток"]),
+      href: "/dashboard/map",
+    },
+    {
+      title: "Начало игры",
+      description: "Всё, что нужно знать перед первым входом на сервер",
+      icon: Sparkles,
+    },
+  ];
+}
+
+const suggestions = ["такси", "заправка", "ограбление", "Superior"];
+
+const CSS = `
+.wk-accent{display:inline-block;padding:.04em .16em .04em .08em;margin:-.04em -.16em -.04em -.08em;color:transparent;background-image:linear-gradient(100deg,var(--primary) 38%,#e63f3f 50%,var(--primary) 62%);background-size:300% 100%;background-position:100% 0;-webkit-background-clip:text;background-clip:text;animation:wk-drop .8s cubic-bezier(.2,.9,.3,1.25) both,wk-shine 3.4s ease-in-out .8s infinite}
+.wk-rise{animation:wk-rise .55s cubic-bezier(.2,.8,.2,1) both}
+.wk-ping{animation:wk-ping 2s cubic-bezier(0,0,.2,1) infinite}
+@keyframes wk-drop{from{opacity:0;transform:translateY(-.5em) rotate(-6deg)}to{opacity:1;transform:none}}
+@keyframes wk-shine{from{background-position:100% 0}to{background-position:0% 0}}
+@keyframes wk-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes wk-ping{75%,100%{transform:scale(2.2);opacity:0}}
+@media (prefers-reduced-motion:reduce){.wk-accent,.wk-rise,.wk-ping{animation:none}}
+`;
+
+function StatItem({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="flex flex-col">
+      <span className="font-semibold text-2xl tabular-nums tracking-tight">{value.toLocaleString("ru-RU")}</span>
+      <span className="text-muted-foreground text-xs">{label}</span>
+    </div>
   );
+}
+
+function SectionCard({ section, index }: { section: Section; index: number }) {
+  const Icon = section.icon;
+  const soon = !section.href;
+
+  const body = (
+    <div
+      style={{ animationDelay: `${index * 45}ms` }}
+      className={cn(
+        "wk-rise group relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl border p-5 transition-all",
+        soon
+          ? "border-dashed bg-muted/30"
+          : "bg-card hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5",
+      )}
+    >
+      <div className="flex items-start justify-between">
+        <span
+          className={cn(
+            "flex size-12 items-center justify-center rounded-xl transition-colors",
+            soon
+              ? "bg-muted text-muted-foreground"
+              : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground",
+          )}
+        >
+          <Icon className="size-6" />
+        </span>
+        {soon ? (
+          <Badge variant="secondary" className="rounded-full">
+            Скоро
+          </Badge>
+        ) : (
+          <ArrowUpRight className="size-5 text-muted-foreground opacity-0 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary group-hover:opacity-100" />
+        )}
+      </div>
+      <div className="flex-1">
+        <h3 className={cn("font-semibold text-lg tracking-tight", soon && "text-muted-foreground")}>{section.title}</h3>
+        <p className="mt-1.5 text-muted-foreground text-sm leading-6">{section.description}</p>
+      </div>
+      {section.meta && <p className="border-t pt-3 text-muted-foreground text-xs tabular-nums">{section.meta}</p>}
+    </div>
+  );
+
+  if (soon) return body;
+  return (
+    <Link
+      href={section.href as string}
+      prefetch={false}
+      className="block rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    >
+      {body}
+    </Link>
+  );
+}
+
+export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentArticle[] }) {
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<KindFilter>("all");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+
+  const trimmed = query.trim();
+  const search = useSiteSearch(query, { limit: filter === "all" ? 6 : 30 });
+  const sections = buildSections(stats);
+
+  // «/» — быстрый переход к поиску
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const typing =
+        target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+      if (event.key === "/" && !typing && !event.metaKey && !event.ctrlKey) {
+        event.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  const changeQuery = (value: string) => {
+    setQuery(value);
+    setFilter("all");
+  };
+
+  const openFirstResult = () => {
+    const group = filter === "all" ? search.groups[0] : search.groups.find((item) => item.kind === filter);
+    const hit = group?.hits[0];
+    if (!hit) return;
+    if (hit.external) window.open(hit.href, "_blank", "noopener,noreferrer");
+    else router.push(hit.href);
+  };
+
+  const showResults = trimmed.length > 0;
+
+  let statusText = "Ничего не найдено";
+  if (!search.active) statusText = "Введите минимум 2 символа";
+  else if (search.loading) statusText = "Ищем…";
+  else if (search.total > 0) statusText = pluralResults(search.total);
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 pb-10">
-      <section className="relative overflow-hidden rounded-3xl border bg-card px-6 py-10 shadow-sm md:px-10 md:py-14">
-        <div className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-primary/10 blur-3xl" />
-        <div className="relative max-w-2xl">
-          <Badge variant="secondary" className="mb-5 gap-2 rounded-full px-3 py-1">
-            <Sparkles className="size-3.5" /> Region Wiki
-          </Badge>
-          <h1 className="text-3xl font-semibold tracking-tight md:text-5xl">Добро пожаловать в штат Region</h1>
-          <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground md:text-lg">
-            База знаний для игроков. Найдите ответы, изучите правила и начните свою историю в новом городе.
-          </p>
-          <div className="relative mt-8 max-w-xl">
-            <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Что вы хотите найти?"
-              aria-label="Поиск по wiki"
-              className="h-14 rounded-2xl bg-background pl-12 pr-4 text-base shadow-sm"
-            />
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">Популярное: правила, старт, фракции, лицензии</p>
-        </div>
-      </section>
+      <style>{CSS}</style>
 
-      <section className="flex flex-col gap-4">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-primary">Исследуйте Region</p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight">Разделы wiki</h2>
-          </div>
-          <span className="text-sm text-muted-foreground">{filteredSections.length} разделов</span>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredSections.map((section) => {
-            const Icon = section.icon;
-            const content = (
-              <Card className="group cursor-pointer transition-colors hover:border-primary/50">
-                <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-                  <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Icon className="size-5" />
-                  </div>
-                  <ChevronRight className="size-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
-                </CardHeader>
-                <CardContent>
-                  <CardTitle className="text-base">{section.title}</CardTitle>
-                  <CardDescription className="mt-2 leading-6">{section.description}</CardDescription>
-                  <p className="mt-5 text-xs font-medium text-muted-foreground">{section.count} статей</p>
-                </CardContent>
-              </Card>
-            );
+      <section className="relative isolate overflow-hidden rounded-3xl border bg-card">
+        {/* Узор из «R», затухающий к тексту */}
+        <svg
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 size-full text-foreground [mask-image:linear-gradient(to_right,transparent_35%,black)]"
+        >
+          <defs>
+            <pattern id="region-home-pattern" width="98" height="64" patternUnits="userSpaceOnUse">
+              <g fill="currentColor" fillOpacity="0.06" fontSize="20" fontStyle="italic" fontWeight="800">
+                <text x="0" y="24">
+                  R
+                </text>
+                <text x="49" y="24">
+                  R
+                </text>
+                <text x="24" y="56">
+                  R
+                </text>
+                <text x="73" y="56">
+                  R
+                </text>
+              </g>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#region-home-pattern)" />
+        </svg>
 
-            return section.href ? (
-              <a key={section.title} href={section.href} target="_blank" rel="noreferrer">
-                {content}
-              </a>
-            ) : (
-              <div key={section.title}>{content}</div>
-            );
-          })}
+        {/* Фирменная R с бегущей «жидкостью», уходящая за нижний край */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-12 -bottom-20 hidden md:block lg:right-10 lg:-bottom-24"
+        >
+          <div className="absolute inset-10 rounded-full bg-primary/25 blur-3xl" />
+          <RegionMarkOutline id="rmo-home" className="relative w-72 lg:w-[23rem]" />
         </div>
-      </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-xl bg-muted">
-                <BookOpen className="size-5" />
-              </div>
-              <div>
-                <CardTitle>Популярные статьи</CardTitle>
-                <CardDescription>Чаще всего читают игроки Region</CardDescription>
-              </div>
+        <div className="relative px-6 py-10 md:px-12 md:py-14">
+          <div className="max-w-2xl">
+            <p className="wk-rise inline-flex items-center gap-2 rounded-full border bg-background/70 px-3 py-1 text-muted-foreground text-xs backdrop-blur">
+              <span className="relative flex size-2">
+                <span className="wk-ping absolute inline-flex size-full rounded-full bg-primary/70" />
+                <span className="relative inline-flex size-2 rounded-full bg-primary" />
+              </span>
+              Справочник игрока · Region WIKI
+            </p>
+
+            <h1 className="wk-rise mt-5 text-balance font-extrabold text-4xl leading-[1.05] tracking-tight [animation-delay:60ms] md:text-6xl">
+              Всё о жизни на <span className="wk-accent italic">Region</span>
+            </h1>
+            <p className="wk-rise mt-5 max-w-xl text-base text-muted-foreground leading-7 [animation-delay:120ms] md:text-lg">
+              Правила, работы, бизнес, недвижимость и транспорт. Поиск работает по всем разделам сразу, включая текст
+              каждого пункта правил.
+            </p>
+
+            <div className="wk-rise relative mt-8 max-w-xl [animation-delay:180ms]">
+              <Search className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                ref={inputRef}
+                value={query}
+                onChange={(event) => changeQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") changeQuery("");
+                  if (event.key === "Enter") openFirstResult();
+                }}
+                placeholder="Найти правило, работу, машину или раздел"
+                aria-label="Поиск по всем разделам"
+                className="h-14 rounded-2xl bg-background pr-14 pl-12 text-base shadow-sm"
+              />
+              {query ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    changeQuery("");
+                    inputRef.current?.focus();
+                  }}
+                  aria-label="Очистить поиск"
+                  className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <X className="size-4" />
+                </button>
+              ) : (
+                <Kbd className="absolute top-1/2 right-4 -translate-y-1/2">/</Kbd>
+              )}
             </div>
-          </CardHeader>
-          <CardContent className="grid gap-2">
-            {popularArticles.map(([title, time, category, href]) => (
+
+            <div className="wk-rise mt-4 flex max-w-xl flex-wrap items-center gap-2 text-sm [animation-delay:230ms]">
+              <span className="text-muted-foreground">Например:</span>
+              {suggestions.map((word) => (
+                <button
+                  key={word}
+                  type="button"
+                  onClick={() => {
+                    changeQuery(word);
+                    inputRef.current?.focus();
+                  }}
+                  className="rounded-full border bg-background/70 px-3 py-1 transition-colors hover:border-primary/60 hover:text-primary"
+                >
+                  {word}
+                </button>
+              ))}
+            </div>
+
+            <dl className="wk-rise mt-9 flex flex-wrap gap-x-10 gap-y-4 border-t pt-6 [animation-delay:280ms]">
+              <StatItem value={stats.rules} label="пунктов правил" />
+              <StatItem value={stats.jobs} label="работ" />
+              <StatItem value={stats.vehicles} label="машин" />
+              <StatItem value={stats.realties + stats.businesses} label="объектов и бизнесов" />
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      {showResults ? (
+        <section aria-live="polite" className="flex min-w-0 flex-col gap-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-semibold text-xl tracking-tight">Результаты поиска</h2>
+            <span className="text-muted-foreground text-sm">{statusText}</span>
+          </div>
+
+          {search.active && search.loading && <SearchSkeleton />}
+
+          {search.active && !search.loading && search.error && (
+            <div className="rounded-2xl border bg-card px-6 py-10 text-center text-muted-foreground text-sm">
+              Не удалось выполнить поиск. Проверьте соединение и попробуйте ещё раз.
+            </div>
+          )}
+
+          {search.active && !search.loading && !search.error && search.total === 0 && (
+            <SearchEmpty query={trimmed} suggestions={suggestions} onPick={changeQuery} />
+          )}
+
+          {search.active && !search.loading && search.total > 0 && (
+            <>
+              <SearchKindTabs groups={search.groups} total={search.total} value={filter} onChange={setFilter} />
+              <SearchResultGroups groups={search.groups} query={trimmed} filter={filter} />
+            </>
+          )}
+        </section>
+      ) : (
+        <>
+          <section className="flex flex-col gap-4">
+            <div className="flex items-baseline justify-between gap-4">
+              <h2 className="font-semibold text-xl tracking-tight">Разделы</h2>
+              <span className="text-muted-foreground text-sm">{sections.length} разделов</span>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {sections.map((section, index) => (
+                <SectionCard key={section.title} section={section} index={index} />
+              ))}
+            </div>
+          </section>
+
+          <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+            <section className="flex flex-col gap-4 rounded-2xl border bg-card p-5 sm:p-6">
+              <div>
+                <h2 className="font-semibold text-lg tracking-tight">Недавно обновлённые правила</h2>
+                <p className="mt-1 text-muted-foreground text-sm">Свежие изменения, которые стоит перечитать</p>
+              </div>
+              <ul className="-mx-2 grid gap-1">
+                {recent.map((article) => (
+                  <li key={article.href}>
+                    <Link
+                      href={article.href}
+                      prefetch={false}
+                      className="group flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/60"
+                    >
+                      {article.tag && (
+                        <span className="flex h-8 min-w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 px-2 font-bold text-primary text-xs">
+                          {article.tag}
+                        </span>
+                      )}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium text-sm">{article.title}</span>
+                        <span className="mt-0.5 block truncate text-muted-foreground text-xs">
+                          {article.group} · {plural(article.ruleCount, ["пункт", "пункта", "пунктов"])}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-muted-foreground text-xs tabular-nums">{article.updatedAt}</span>
+                      <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-foreground" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <aside className="relative isolate flex flex-col overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground">
+              <LifeBuoy
+                aria-hidden="true"
+                className="absolute -right-6 -bottom-6 -z-10 size-36 rotate-12 text-primary-foreground/10"
+              />
+              <div className="flex size-10 items-center justify-center rounded-xl bg-primary-foreground/15">
+                <LifeBuoy className="size-5" />
+              </div>
+              <h2 className="mt-4 font-semibold text-lg tracking-tight">Не нашли ответ?</h2>
+              <p className="mt-1.5 text-primary-foreground/75 text-sm leading-6">
+                Задайте вопрос сообществу на форуме Region или напишите в поддержку.
+              </p>
               <a
-                key={title}
-                href={href}
+                href={FORUM_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="group flex items-center gap-4 rounded-xl border border-transparent p-3 text-left transition-colors hover:border-border hover:bg-muted/50"
+                className="mt-auto inline-flex items-center gap-2 pt-6 font-medium text-sm hover:underline"
               >
-                <FileText className="size-5 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{title}</span>
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    {category} · {time}
-                  </span>
-                </span>
-                <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                Открыть форум <ArrowUpRight className="size-4" />
               </a>
-            ))}
-          </CardContent>
-        </Card>
-        <Card className="bg-primary text-primary-foreground">
-          <CardHeader>
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary-foreground/15">
-              <CircleHelp className="size-5" />
-            </div>
-            <CardTitle className="mt-4">Не нашли ответ?</CardTitle>
-            <CardDescription className="text-primary-foreground/75">
-              Задайте вопрос сообществу Region или обратитесь в поддержку.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <button type="button" className="inline-flex items-center gap-2 text-sm font-medium hover:underline">
-              Перейти в поддержку <ArrowRight className="size-4" />
-            </button>
-          </CardContent>
-        </Card>
-      </section>
+            </aside>
+          </div>
+        </>
+      )}
     </main>
   );
 }
