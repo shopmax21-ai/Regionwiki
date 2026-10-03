@@ -21,7 +21,7 @@ const NETWORK_ERROR_CODES = new Set([
 ]);
 
 const NETWORK_ERROR_PATTERN =
-  /ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|EHOSTUNREACH|ENETUNREACH|fetch failed|Error connecting to database/i;
+  /ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|EHOSTUNREACH|ENETUNREACH|fetch failed|Error connecting to database|Connection terminated|connection timeout|timeout expired/i;
 
 /** Ошибки драйверов вкладывают первопричину в cause / sourceError, поэтому идём по цепочке. */
 function errorChain(error: unknown): unknown[] {

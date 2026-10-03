@@ -1,19 +1,61 @@
-import { neon } from "@neondatabase/serverless";
+import { Pool, type PoolConfig } from "pg";
 
 import { AuthDependencyError } from "./errors";
 import type { AccessRole, AccessStatus } from "./session";
 
 /**
- * Postgres (Neon / Vercel Postgres). Нужна одна переменная DATABASE_URL.
+ * Обычный Postgres (Railway, Neon, Supabase, свой сервер). Нужна одна переменная DATABASE_URL.
  * Таблицы создаются автоматически при первом обращении.
+ *
+ * SSL: для хостов *.railway.internal и localhost шифрование выключено, для остальных включено
+ * (без проверки цепочки сертификатов — у Railway и многих провайдеров он самоподписанный).
+ * Принудительно: DATABASE_SSL=disable — выключить, DATABASE_SSL=require — включить.
  */
-const rawSql = neon(process.env.DATABASE_URL ?? "postgres://unset");
+function poolConfig(): PoolConfig {
+  const raw = process.env.DATABASE_URL;
+  if (!raw) throw new Error("DATABASE_URL is not set");
+
+  const url = new URL(raw);
+  // sslmode из строки убираем: драйвер сам трактует require как строгую проверку сертификата.
+  url.searchParams.delete("sslmode");
+
+  const mode = (process.env.DATABASE_SSL ?? "").toLowerCase();
+  const isPrivate =
+    url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname.endsWith(".railway.internal");
+  const useSsl = mode === "require" || (mode !== "disable" && !isPrivate);
+
+  return {
+    connectionString: url.toString(),
+    ssl: useSsl ? { rejectUnauthorized: false } : false,
+    max: 5,
+    connectionTimeoutMillis: 10_000,
+    idleTimeoutMillis: 30_000,
+  };
+}
+
+// Пул живёт в globalThis, чтобы не плодить соединения при горячей перезагрузке в dev.
+const globalForPool = globalThis as unknown as { __regionPool?: Pool };
+
+function getPool(): Pool {
+  if (!globalForPool.__regionPool) {
+    const pool = new Pool(poolConfig());
+    // Без обработчика обрыв соединения в простое роняет весь процесс.
+    pool.on("error", (error) => console.error("[auth] Ошибка неактивного соединения с базой", error));
+    globalForPool.__regionPool = pool;
+  }
+  return globalForPool.__regionPool;
+}
 
 /** Любая ошибка запроса оборачивается, чтобы API мог отличить проблемы с базой от остальных. */
-const sql = (strings: TemplateStringsArray, ...params: unknown[]) =>
-  Promise.resolve(rawSql(strings, ...params)).catch((error: unknown) => {
+const sql = async (strings: TemplateStringsArray, ...params: unknown[]): Promise<Record<string, unknown>[]> => {
+  try {
+    const text = strings.reduce((acc, part, i) => acc + (i === 0 ? "" : `$${i}`) + part, "");
+    const result = await getPool().query(text, params);
+    return result.rows;
+  } catch (error: unknown) {
     throw error instanceof AuthDependencyError ? error : new AuthDependencyError("database", error);
-  });
+  }
+};
 
 /** Хост из DATABASE_URL без логина и пароля, чтобы его можно было писать в логи. */
 export function databaseHost(): string | null {
@@ -113,7 +155,8 @@ const toUser = (row: UserRow): DbUser => ({
 
 export async function countRecentAttempts(ip: string): Promise<number> {
   await ensureSchema();
-  const rows = await sql`SELECT count(*)::int AS n FROM login_attempts WHERE ip = ${ip} AND created_at > now() - interval '1 minute'`;
+  const rows =
+    await sql`SELECT count(*)::int AS n FROM login_attempts WHERE ip = ${ip} AND created_at > now() - interval '1 minute'`;
   return (rows[0] as { n: number }).n;
 }
 
@@ -135,8 +178,12 @@ export async function getAttempt(tokenHash: string): Promise<Attempt | null> {
   await ensureSchema();
   const rows = await sql`SELECT telegram_id, consumed, attempts, expires_at < now() AS expired
     FROM login_attempts WHERE token_hash = ${tokenHash}`;
-  const row = rows[0] as { telegram_id: string | null; consumed: boolean; attempts: number; expired: boolean } | undefined;
-  return row ? { telegramId: row.telegram_id, consumed: row.consumed, expired: row.expired, attempts: row.attempts } : null;
+  const row = rows[0] as
+    | { telegram_id: string | null; consumed: boolean; attempts: number; expired: boolean }
+    | undefined;
+  return row
+    ? { telegramId: row.telegram_id, consumed: row.consumed, expired: row.expired, attempts: row.attempts }
+    : null;
 }
 
 /**
