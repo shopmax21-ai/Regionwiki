@@ -36,7 +36,11 @@ export function LoginForm({ next, disabled = false }: { next: string; disabled?:
   const poll = useCallback(async () => {
     try {
       const res = await fetch("/api/auth/poll", { cache: "no-store" });
-      const data = (await res.json()) as { state: string; link?: string };
+      const data = (await res.json()) as { state?: string; link?: string; message?: string };
+      if (!res.ok && data.message) {
+        setError(data.message);
+        return;
+      }
       if (data.state === "waiting" || data.state === "code_sent") {
         setLink((prev) => data.link ?? prev);
         setLinked(data.state);
@@ -65,12 +69,14 @@ export function LoginForm({ next, disabled = false }: { next: string; disabled?:
     setError(null);
     try {
       const res = await fetch("/api/auth/start", { method: "POST" });
-      const data = (await res.json()) as { link?: string; error?: string };
+      const data = (await res.json().catch(() => ({}))) as { link?: string; error?: string; message?: string };
       if (!res.ok || !data.link) {
         return setError(
           data.error === "too_many"
             ? "Слишком много попыток. Подождите минуту и попробуйте снова."
-            : "Не удалось начать вход. Попробуйте ещё раз.",
+            : data.error === "config"
+              ? "Вход через Telegram не настроен на сервере."
+              : (data.message ?? "Не удалось начать вход. Попробуйте ещё раз."),
         );
       }
       setLink(data.link);
@@ -97,11 +103,18 @@ export function LoginForm({ next, disabled = false }: { next: string; disabled?:
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code: value, next }),
         });
-        const data = (await res.json()) as { error?: string; status?: string; next?: string };
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          message?: string;
+          status?: string;
+          next?: string;
+        };
         if (res.ok) {
           return window.location.assign(data.status === "approved" ? (data.next ?? next) : "/auth/v2/pending");
         }
         if (data.error === "expired") return reset("Код истёк или попытки закончились. Начните вход заново.");
+        if (data.message) return setError(data.message);
+        if (data.error === "config") return setError("Вход через Telegram не настроен на сервере.");
         setCode("");
         setError("Неверный код. Проверьте сообщение от бота и попробуйте снова.");
       } catch {
