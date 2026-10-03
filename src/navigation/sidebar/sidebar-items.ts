@@ -233,7 +233,7 @@ export const sidebarItems: NavGroup[] = [
         icon: Fingerprint,
         subItems: [
           { id: "auth-login-v2", title: "Вход", url: "/auth/v2/login", newTab: true },
-          { id: "auth-register-v2", title: "Регистрация", url: "/auth/v2/register", newTab: true },
+          { id: "auth-code-v2", title: "Код Telegram", url: "/auth/v2/code", newTab: true },
         ],
       },
     ],

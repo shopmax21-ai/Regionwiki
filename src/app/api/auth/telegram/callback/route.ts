@@ -90,7 +90,9 @@ export async function GET(request: NextRequest) {
       config.secret,
     );
 
-    const response = NextResponse.redirect(new URL(safeNext(saved.next), origin));
+    const nextPath = safeNext(saved.next);
+    const codePath = `/auth/v2/code?next=${encodeURIComponent(nextPath)}`;
+    const response = NextResponse.redirect(new URL(codePath, origin));
     response.cookies.set(SESSION_COOKIE, token, {
       httpOnly: true,
       sameSite: "lax",

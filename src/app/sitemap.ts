@@ -26,7 +26,7 @@ const PUBLIC_ROUTES = [
   "/dashboard/users",
   "/dashboard/roles",
   "/auth/v2/login",
-  "/auth/v2/register",
+  "/auth/v2/code",
   "/chat",
   "/mail",
 ] as const;
