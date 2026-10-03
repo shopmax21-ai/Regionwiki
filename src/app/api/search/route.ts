@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   if (auth) {
     const token = request.cookies.get(SESSION_COOKIE)?.value;
     const user = token ? await readSessionToken(token, auth.secret) : null;
-    if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    if (user?.status !== "approved") return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
   const query = (request.nextUrl.searchParams.get("q") ?? "").trim().slice(0, 100);

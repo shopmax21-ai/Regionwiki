@@ -11,10 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
 import {
-  businesses,
+  type Category,
   businessKey,
   businessTitle,
-  type Category,
+  businesses,
   categories,
   compareByCategory,
   pluralBusinesses,

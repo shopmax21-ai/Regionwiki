@@ -2,7 +2,16 @@
 
 import { useMemo, useState } from "react";
 
-import { ChevronLeft, ChevronRight, CircleDollarSign, Funnel, LayoutGrid, Rows2, Search, Sparkles } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  CircleDollarSign,
+  Funnel,
+  LayoutGrid,
+  Rows2,
+  Search,
+  Sparkles,
+} from "lucide-react";
 
 import { FilterDropdown } from "@/app/(main)/dashboard/_components/filter-dropdown";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
 import { type Category, categories, vehicles } from "../_data/vehicles";
-import { type PriceRange, PriceRangeFilter } from "./price-range-filter";
+import { PriceRangeFilter, type PriceRange } from "./price-range-filter";
 import { VehicleCard } from "./vehicle-card";
 import { VehicleRow } from "./vehicle-row";
 

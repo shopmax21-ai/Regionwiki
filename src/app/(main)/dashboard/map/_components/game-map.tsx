@@ -162,10 +162,20 @@ export default function GameMap({ places, selectedId, onSelect }: GameMapProps) 
         aria-label="Масштаб карты"
         className="absolute top-1/2 right-3 z-10 -translate-y-1/2 shadow-sm"
       >
-        <Button variant="outline" className="size-11" aria-label="Приблизить" onClick={() => mapRef.current?.zoomIn(1)}>
+        <Button
+          variant="outline"
+          className="size-11"
+          aria-label="Приблизить"
+          onClick={() => mapRef.current?.zoomIn(1)}
+        >
           <Plus className="size-5" />
         </Button>
-        <Button variant="outline" className="size-11" aria-label="Отдалить" onClick={() => mapRef.current?.zoomOut(1)}>
+        <Button
+          variant="outline"
+          className="size-11"
+          aria-label="Отдалить"
+          onClick={() => mapRef.current?.zoomOut(1)}
+        >
           <Minus className="size-5" />
         </Button>
         <Button

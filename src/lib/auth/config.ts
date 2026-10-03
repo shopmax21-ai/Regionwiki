@@ -1,29 +1,35 @@
 export const SESSION_COOKIE = "region_session";
-export const OAUTH_COOKIE = "region_tg_oauth";
-export const OAUTH_COOKIE_PATH = "/api/auth/telegram";
+export const ATTEMPT_COOKIE = "region_login_attempt";
 export const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 дней
+/** Раз в сколько секунд сессия сверяется с базой (одобрение, блокировка). */
+export const SESSION_RECHECK_SECONDS = 5 * 60;
 
 export const LOGIN_PATH = "/auth/v2/login";
+export const PENDING_PATH = "/auth/v2/pending";
 export const DEFAULT_REDIRECT = "/dashboard";
-export const CALLBACK_PATH = "/api/auth/telegram/callback";
 
-export const TELEGRAM_ISSUER = "https://oauth.telegram.org";
-export const TELEGRAM_AUTH_URL = `${TELEGRAM_ISSUER}/auth`;
-export const TELEGRAM_TOKEN_URL = `${TELEGRAM_ISSUER}/token`;
-export const TELEGRAM_JWKS_URL = `${TELEGRAM_ISSUER}/.well-known/jwks.json`;
+/** Код: 6 цифр, живёт 5 минут, на один код даётся 5 попыток. */
+export const CODE_LENGTH = 6;
+export const CODE_TTL_SECONDS = 5 * 60;
+export const CODE_MAX_ATTEMPTS = 5;
+/** Не больше стольких попыток входа в минуту с одного IP. */
+export const START_LIMIT_PER_MINUTE = 10;
+
+export const TELEGRAM_API_URL = "https://api.telegram.org";
 
 export const isProduction = process.env.NODE_ENV === "production";
 
 export type AuthConfig = {
-  /** Секрет для подписи сессии (не короче 32 символов) */
+  /** Секрет подписи сессии и хэшей кодов (не короче 32 символов) */
   secret: string;
-  /** Client ID из @BotFather → Login Widget */
-  clientId: string;
-  clientSecret: string;
-  /** Telegram ID пользователей, которым разрешён вход */
-  allowedIds: string[];
-  /** Публичный адрес сайта (если не задан, берётся из запроса) */
-  baseUrl?: string;
+  /** Токен бота из @BotFather */
+  botToken: string;
+  /** Username бота без @ — нужен для ссылки и QR-кода */
+  botUsername: string;
+  /** Секрет, который Telegram присылает вместе с каждым запросом вебхука */
+  webhookSecret: string;
+  /** Telegram ID администраторов: входят без одобрения и подтверждают заявки */
+  adminIds: string[];
 };
 
 /**
@@ -32,20 +38,23 @@ export type AuthConfig = {
  */
 export function getAuthConfig(): AuthConfig | null {
   const secret = process.env.AUTH_SECRET;
-  const clientId = process.env.TELEGRAM_CLIENT_ID;
-  const clientSecret = process.env.TELEGRAM_CLIENT_SECRET;
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  const botUsername = process.env.TELEGRAM_BOT_USERNAME?.replace(/^@/, "");
+  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
 
-  if (!secret || secret.length < 32 || !clientId || !clientSecret) return null;
+  if (!process.env.DATABASE_URL || !secret || secret.length < 32 || !botToken || !botUsername || !webhookSecret) {
+    return null;
+  }
 
   return {
     secret,
-    clientId,
-    clientSecret,
-    allowedIds: (process.env.TELEGRAM_ALLOWED_IDS ?? "")
+    botToken,
+    botUsername,
+    webhookSecret,
+    adminIds: (process.env.TELEGRAM_ADMIN_IDS ?? "")
       .split(",")
       .map((id) => id.trim())
       .filter(Boolean),
-    baseUrl: process.env.AUTH_URL?.replace(/\/+$/, ""),
   };
 }
 

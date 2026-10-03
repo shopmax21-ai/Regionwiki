@@ -48,7 +48,10 @@ function CategoryChips({
           key={chip.id}
           variant={value === chip.id ? "default" : "outline"}
           aria-pressed={value === chip.id}
-          className={cn("h-11 shrink-0 px-4 shadow-sm md:h-9", value !== chip.id && "bg-card/90 backdrop-blur")}
+          className={cn(
+            "h-11 shrink-0 px-4 shadow-sm md:h-9",
+            value !== chip.id && "bg-card/90 backdrop-blur",
+          )}
           onClick={() => onChange(chip.id)}
         >
           {chip.label}
