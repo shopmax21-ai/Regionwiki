@@ -13,8 +13,11 @@ async function call(config: AuthConfig, method: string, body: Record<string, unk
       body: JSON.stringify(body),
       cache: "no-store",
     });
+    if (!res.ok) console.error(`[auth] Telegram ${method} responded with HTTP ${res.status}`);
     return res.ok;
-  } catch {
+  } catch (error) {
+    // Токен бота в URL, поэтому логируем только метод и саму ошибку.
+    console.error(`[auth] Telegram ${method} request failed`, error);
     return false;
   }
 }

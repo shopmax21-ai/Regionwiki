@@ -1,12 +1,35 @@
 import { neon } from "@neondatabase/serverless";
 
+import { AuthDependencyError } from "./errors";
 import type { AccessRole, AccessStatus } from "./session";
 
 /**
  * Postgres (Neon / Vercel Postgres). Нужна одна переменная DATABASE_URL.
  * Таблицы создаются автоматически при первом обращении.
  */
-const sql = neon(process.env.DATABASE_URL ?? "postgres://unset");
+const rawSql = neon(process.env.DATABASE_URL ?? "postgres://unset");
+
+/** Любая ошибка запроса оборачивается, чтобы API мог отличить проблемы с базой от остальных. */
+const sql = (strings: TemplateStringsArray, ...params: unknown[]) =>
+  Promise.resolve(rawSql(strings, ...params)).catch((error: unknown) => {
+    throw error instanceof AuthDependencyError ? error : new AuthDependencyError("database", error);
+  });
+
+/** Хост из DATABASE_URL без логина и пароля, чтобы его можно было писать в логи. */
+export function databaseHost(): string | null {
+  const url = process.env.DATABASE_URL;
+  if (!url) return null;
+  try {
+    return new URL(url).host;
+  } catch {
+    return "invalid-url";
+  }
+}
+
+/** Проверяет, что база отвечает. Бросает AuthDependencyError, если нет. */
+export async function checkDatabase(): Promise<void> {
+  await sql`SELECT 1`;
+}
 
 let ready: Promise<void> | null = null;
 
@@ -153,6 +176,7 @@ export async function takeAttempt(
 
 /** Помечает код использованным. false — кто-то уже успел (защита от двойного входа). */
 export async function consumeAttempt(tokenHash: string): Promise<boolean> {
+  await ensureSchema();
   const rows = await sql`UPDATE login_attempts SET consumed = true
     WHERE token_hash = ${tokenHash} AND consumed = false RETURNING token_hash`;
   return rows.length > 0;

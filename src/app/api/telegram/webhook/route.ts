@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { generateCode, hashCode, hashToken, isAttemptToken } from "@/lib/auth/attempt";
 import { getAuthConfig } from "@/lib/auth/config";
 import { bindAttempt, decideUser } from "@/lib/auth/db";
+import { authErrorResponse } from "@/lib/auth/errors";
 import {
   answerCallback,
   codeMessage,
@@ -32,6 +33,15 @@ const displayName = (user: TelegramUser) =>
  * curl "https://api.telegram.org/bot<TOKEN>/setWebhook" -d url=https://<сайт>/api/telegram/webhook -d secret_token=<TELEGRAM_WEBHOOK_SECRET>
  */
 export async function POST(request: NextRequest) {
+  try {
+    return await handleUpdate(request);
+  } catch (error) {
+    // Отдаём 500, чтобы Telegram повторил доставку, когда база снова станет доступна.
+    return authErrorResponse("telegram webhook", error);
+  }
+}
+
+async function handleUpdate(request: NextRequest) {
   const config = getAuthConfig();
   if (!config) return NextResponse.json({ ok: false }, { status: 503 });
   if (!sameSecret(request.headers.get("x-telegram-bot-api-secret-token"), config.webhookSecret)) {
