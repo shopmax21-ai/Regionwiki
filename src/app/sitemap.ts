@@ -21,7 +21,6 @@ const PUBLIC_ROUTES = [
   "/dashboard/calendar",
   "/dashboard/kanban",
   "/dashboard/tasks",
-  "/dashboard/invoice",
   "/dashboard/profile",
   "/dashboard/users",
   "/dashboard/roles",

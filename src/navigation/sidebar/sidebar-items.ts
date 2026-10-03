@@ -21,7 +21,6 @@ import {
   Mail,
   Map as MapIcon,
   MessageSquare,
-  ReceiptText,
   Server,
   ShoppingBag,
   ShieldCheck,
@@ -203,12 +202,6 @@ export const sidebarItems: NavGroup[] = [
         title: "Задачи",
         url: "/dashboard/tasks",
         icon: CheckSquare,
-      },
-      {
-        id: "invoice",
-        title: "Счета",
-        url: "/dashboard/invoice",
-        icon: ReceiptText,
       },
       {
         id: "profile",

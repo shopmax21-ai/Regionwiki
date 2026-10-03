@@ -7,11 +7,11 @@ import { RegionMarkOutline } from "../_components/region-mark-outline";
 export default function Layout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <main className="region-auth dark h-dvh overflow-hidden bg-background text-foreground">
-      <div className="grid h-full min-h-0 p-2 lg:grid-cols-2">
+      <div className="grid h-full p-2 lg:grid-cols-2">
         {/* Левая колонка: форма */}
-        <div className="relative order-1 flex h-full items-center justify-center px-6">
-          <div className="flex w-full max-w-[372px] flex-col gap-6">{children}</div>
-          <p className="absolute bottom-5 text-muted-foreground text-xs">{APP_CONFIG.copyright}</p>
+        <div className="relative order-1 flex h-full min-h-0 items-center justify-center overflow-hidden px-6">
+          <div className="flex w-full max-w-[372px] flex-col gap-5 [@media(max-height:720px)]:gap-3">{children}</div>
+          <p className="absolute bottom-4 text-muted-foreground text-xs [@media(max-height:760px)]:hidden">{APP_CONFIG.copyright}</p>
         </div>
 
         {/* Правая панель: узор из букв R и большой логотип */}
