@@ -46,6 +46,8 @@ export type Permission =
   | "access.decide"
   | "groups.assign"
   | "transport.edit"
+  | "replies.view"
+  | "replies.edit"
   | "permissions.view"
   | "permissions.edit";
 
@@ -84,6 +86,18 @@ export const permissionDefs: readonly PermissionDef[] = [
     category: "Контент",
   },
   {
+    key: "replies.view",
+    label: "Быстрые ответы на репорты",
+    description: "Открывает раздел «Быстрые ответы» и позволяет копировать готовые ответы.",
+    category: "Контент",
+  },
+  {
+    key: "replies.edit",
+    label: "Редактирование быстрых ответов",
+    description: "Добавлять, изменять и удалять быстрые ответы на репорты.",
+    category: "Контент",
+  },
+  {
     key: "permissions.view",
     label: "Просмотр прав",
     description: "Открывает раздел «Роли и права» только для чтения.",
@@ -111,7 +125,15 @@ export const isToggleablePermission = (value: unknown): value is Permission =>
 
 /** Права по умолчанию. Применяются, пока Гл.Администратор ничего не менял. */
 export const defaultPermissions: Record<EditableGroup, readonly Permission[]> = {
-  helper: ["users.view", "permissions.view"],
-  junior: ["users.view", "access.decide", "permissions.view"],
-  admin: ["users.view", "access.decide", "groups.assign", "transport.edit", "permissions.view"],
+  helper: ["users.view", "replies.view", "permissions.view"],
+  junior: ["users.view", "access.decide", "replies.view", "permissions.view"],
+  admin: [
+    "users.view",
+    "access.decide",
+    "groups.assign",
+    "transport.edit",
+    "replies.view",
+    "replies.edit",
+    "permissions.view",
+  ],
 };

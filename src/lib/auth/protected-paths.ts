@@ -8,6 +8,7 @@ export const PROTECTED_PATHS: readonly string[] = [
   "/dashboard/users",
   "/dashboard/access",
   "/dashboard/roles",
+  "/dashboard/replies",
 ];
 
 export const isProtectedPath = (pathname: string) =>
@@ -21,6 +22,7 @@ export const PATH_PERMISSIONS: Readonly<Record<string, string>> = {
   "/dashboard/access": "access.decide",
   "/dashboard/users": "users.view",
   "/dashboard/roles": "permissions.view",
+  "/dashboard/replies": "replies.view",
 };
 
 export type Viewer = { authorized: boolean; permissions: readonly string[] };

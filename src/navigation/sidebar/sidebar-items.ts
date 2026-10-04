@@ -20,6 +20,7 @@ import {
   type LucideIcon,
   Map as MapIcon,
   MessageSquare,
+  MessageSquareReply,
   Package,
   Server,
   ShieldCheck,
@@ -215,6 +216,12 @@ export const sidebarItems: NavGroup[] = [
         title: "Пользователи",
         url: "/dashboard/users",
         icon: Users,
+      },
+      {
+        id: "replies",
+        title: "Быстрые ответы",
+        url: "/dashboard/replies",
+        icon: MessageSquareReply,
       },
       {
         id: "access",
