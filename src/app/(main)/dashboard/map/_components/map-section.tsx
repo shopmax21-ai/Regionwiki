@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import dynamic from "next/dynamic";
 
 import { cn } from "cn";
-import { List, Plus, X } from "lucide-react";
+import { List, Plus, Upload, X } from "lucide-react";
 
 import { PlaceCard } from "@/app/(main)/dashboard/map/_components/place-card";
 import { PlacesPanel } from "@/app/(main)/dashboard/map/_components/places-panel";
@@ -17,6 +17,7 @@ import { createPlaceAction, updatePlaceAction } from "../_actions";
 import type { DraftMarker, FocusRequest } from "./game-map";
 import { isInsideWorld, type MapPlace, type PlaceCategoryId, placeCategories } from "./map-data";
 import { type PlaceDraft, PlaceEditor } from "./place-editor";
+import { PlaceImport } from "./place-import";
 
 // Карта работает только в браузере
 const GameMap = dynamic(() => import("@/app/(main)/dashboard/map/_components/game-map"), {
@@ -88,6 +89,7 @@ export function MapSection({ places: allPlaces, editor, problem }: MapSectionPro
   const [focus, setFocus] = useState<FocusRequest | null>(null);
   const [fullscreen, setFullscreen] = useState<FullscreenMode>("off");
   const [draft, setDraft] = useState<PlaceDraft | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [editorError, setEditorError] = useState<string | null>(null);
   const [saving, startSaving] = useTransition();
 
@@ -179,6 +181,7 @@ export function MapSection({ places: allPlaces, editor, problem }: MapSectionPro
   const startCreate = () => {
     setSelectedId(null);
     setListOpen(false);
+    setImportOpen(false);
     setEditorError(null);
     setDraft({
       id: null,
@@ -190,7 +193,16 @@ export function MapSection({ places: allPlaces, editor, problem }: MapSectionPro
     });
   };
 
+  const startImport = () => {
+    setSelectedId(null);
+    setListOpen(false);
+    setDraft(null);
+    setEditorError(null);
+    setImportOpen(true);
+  };
+
   const startEdit = (place: MapPlace) => {
+    setImportOpen(false);
     setEditorError(null);
     setDraft({
       id: place.id,
@@ -245,17 +257,23 @@ export function MapSection({ places: allPlaces, editor, problem }: MapSectionPro
       // В поле ввода Escape не должен стирать набранное
       const typing = event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement;
       if (listOpen) setListOpen(false);
+      else if (importOpen && !typing) setImportOpen(false);
       else if (draft && !saving && !typing) cancelDraft();
       else if (fullscreen === "css") setFullscreen("off");
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [listOpen, draft, saving, fullscreen, cancelDraft]);
+  }, [listOpen, importOpen, draft, saving, fullscreen, cancelDraft]);
 
-  const addButton = (
-    <Button className="h-9" onClick={startCreate} disabled={draft !== null}>
-      <Plus data-icon="inline-start" /> Добавить метку
-    </Button>
+  const editorButtons = (
+    <div className="flex gap-2">
+      <Button className="h-9 flex-1" onClick={startCreate} disabled={draft !== null}>
+        <Plus data-icon="inline-start" /> Добавить метку
+      </Button>
+      <Button variant="outline" className="h-9" onClick={startImport} disabled={draft !== null || importOpen}>
+        <Upload data-icon="inline-start" /> Загрузить
+      </Button>
+    </div>
   );
 
   return (
@@ -296,7 +314,7 @@ export function MapSection({ places: allPlaces, editor, problem }: MapSectionPro
             <p className="mt-1 text-muted-foreground text-sm">Важные места и полезные адреса</p>
           </div>
           <CategoryChips value={category} onChange={setCategory} className="flex-wrap overflow-visible" />
-          {canEdit && addButton}
+          {canEdit && editorButtons}
           {editor === "unavailable" && (
             <p className="text-muted-foreground text-xs">
               Редактирование карты сейчас недоступно{problem ? `: ${problem}` : ""}
@@ -325,17 +343,40 @@ export function MapSection({ places: allPlaces, editor, problem }: MapSectionPro
           <Badge variant="secondary">{visiblePlaces.length}</Badge>
         </Button>
         {canEdit && (
-          <Button
-            className="size-11 shrink-0 shadow-sm"
-            onClick={startCreate}
-            disabled={draft !== null}
-            aria-label="Добавить метку"
-          >
-            <Plus className="size-5" />
-          </Button>
+          <>
+            <Button
+              className="size-11 shrink-0 shadow-sm"
+              onClick={startCreate}
+              disabled={draft !== null}
+              aria-label="Добавить метку"
+            >
+              <Plus className="size-5" />
+            </Button>
+            <Button
+              variant="outline"
+              className="size-11 shrink-0 bg-card/90 shadow-sm backdrop-blur"
+              onClick={startImport}
+              disabled={draft !== null || importOpen}
+              aria-label="Загрузить метки из файла"
+            >
+              <Upload className="size-5" />
+            </Button>
+          </>
         )}
         <CategoryChips value={category} onChange={setCategory} className="-mr-3 min-w-0 pr-3" />
       </div>
+
+      {importOpen && canEdit && (
+        <PlaceImport
+          places={allPlaces}
+          onClose={() => setImportOpen(false)}
+          onImported={() => {
+            // Фильтры могли бы спрятать загруженные метки
+            setQuery("");
+            setCategory("all");
+          }}
+        />
+      )}
 
       {draft ? (
         <PlaceEditor
@@ -347,7 +388,8 @@ export function MapSection({ places: allPlaces, editor, problem }: MapSectionPro
           error={editorError}
         />
       ) : (
-        selected && (
+        selected &&
+        !importOpen && (
           <PlaceCard
             key={selected.id}
             place={selected}

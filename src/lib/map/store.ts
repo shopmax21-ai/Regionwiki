@@ -141,3 +141,44 @@ export const deleteMapPlace = (id: string) =>
     if (result.rowCount === 0) throw new MapStoreError("not_found");
     version++;
   });
+
+const duplicateKey = (place: { name: string; x: number; y: number }) =>
+  `${place.name.trim().toLowerCase()}|${Math.round(place.x * 100)}|${Math.round(place.y * 100)}`;
+
+/**
+ * Добавляет много меток одной транзакцией: либо все, либо ни одной.
+ * Метки, которые уже есть на карте (то же название и те же координаты), пропускаются, поэтому повторная загрузка
+ * того же файла ничего не задваивает.
+ */
+export const createMapPlaces = (inputs: PlaceInput[], updatedBy: string) =>
+  run(async () => {
+    const client = await getPool().connect();
+    try {
+      await client.query("BEGIN");
+      const { rows } = await client.query<{ name: string; x: number; y: number }>("SELECT name, x, y FROM map_places");
+      const seen = new Set(rows.map(duplicateKey));
+      let added = 0;
+      let skipped = 0;
+      for (const input of inputs) {
+        const key = duplicateKey(input);
+        if (seen.has(key)) {
+          skipped++;
+          continue;
+        }
+        seen.add(key);
+        await client.query(
+          "INSERT INTO map_places (id, name, category, x, y, description, updated_by) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+          [randomUUID(), input.name, input.category, input.x, input.y, input.description, updatedBy],
+        );
+        added++;
+      }
+      await client.query("COMMIT");
+      if (added > 0) version++;
+      return { added, skipped };
+    } catch (error) {
+      await client.query("ROLLBACK").catch((rollbackError) => console.error("[map] ROLLBACK failed", rollbackError));
+      throw error;
+    } finally {
+      client.release();
+    }
+  });
