@@ -58,9 +58,9 @@ export function NavUser({
             className="justify-center bg-foreground/[0.08] font-extrabold text-foreground uppercase tracking-wide transition hover:bg-primary hover:text-primary-foreground active:bg-primary active:text-primary-foreground"
           >
             <Link prefetch={false} href={`/auth/v2/login${next}`}>
-              {/* Иконка видна только в свёрнутом сайдбаре, иначе кнопка была бы пустой */}
+              {/* В свёрнутом сайдбаре показываем только иконку, текст скрываем */}
               <LogIn className="hidden size-4 group-data-[collapsible=icon]:block" />
-              <span>Войти</span>
+              <span className="group-data-[collapsible=icon]:hidden">Войти</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
