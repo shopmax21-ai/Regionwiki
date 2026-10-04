@@ -4,8 +4,10 @@ import { ArrowLeft, ArrowRight, ChevronRight, Clock3, Compass, Lightbulb, Lock, 
 
 import { Badge } from "@/components/ui/badge";
 
-import { type Job, jobs, levelLabel, previousStages, readMinutes, unlockedBy } from "../_data/jobs";
+import { type Job, type JobEditorState, levelLabel, previousStages, readMinutes, unlockedBy } from "../_data/jobs";
 import { KindBadge } from "./job-badges";
+import { JobDelete } from "./job-delete";
+import { JobEditor } from "./job-editor";
 import { fallbackJobIcon, jobIcons } from "./job-icons";
 import { JobImage } from "./job-image";
 
@@ -25,8 +27,9 @@ function Block({ id, title, children }: { id: string; title: string; children: R
 function Bullets({ items }: { items: string[] }) {
   return (
     <ul className="flex list-disc flex-col gap-1.5 pl-5 marker:text-muted-foreground">
-      {items.map((item) => (
-        <li key={item}>{item}</li>
+      {items.map((item, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: пункты могут повторяться, порядок не меняется
+        <li key={`${index}-${item}`}>{item}</li>
       ))}
     </ul>
   );
@@ -52,32 +55,44 @@ function JobLink({ job }: { job: Job }) {
   );
 }
 
-export function JobArticle({ job }: { job: Job }) {
-  const previous = previousStages(job);
-  const next = unlockedBy(job);
+type JobArticleProps = { job: Job; jobs: Job[]; editor: JobEditorState };
+
+export function JobArticle({ job, jobs, editor }: JobArticleProps) {
+  const previous = previousStages(job, jobs);
+  const next = unlockedBy(job, jobs);
+  const extra = (job.sections ?? []).map((section, i) => ({ ...section, id: `razdel-${i + 1}` }));
   const index = jobs.findIndex((item) => item.slug === job.slug);
   const prevJob = jobs[index - 1];
   const nextJob = jobs[index + 1];
 
   const sections: Section[] = [
     { id: "dostup", title: "Условия доступа" },
-    { id: "usloviya", title: "Экипировка и условия" },
-    { id: "dohod", title: "Как зарабатывать" },
-    { id: "protsess", title: "Процесс работы" },
-    { id: "sovety", title: "Советы" },
+    ...(job.conditions.length > 0 ? [{ id: "usloviya", title: "Экипировка и условия" }] : []),
+    ...(job.income.length > 0 || job.navigator ? [{ id: "dohod", title: "Как зарабатывать" }] : []),
+    ...(job.process.length > 0 ? [{ id: "protsess", title: "Процесс работы" }] : []),
+    ...(job.tips.length > 0 ? [{ id: "sovety", title: "Советы" }] : []),
     ...(job.teamwork ? [{ id: "komanda", title: "Совместная работа" }] : []),
+    ...extra.map((section) => ({ id: section.id, title: section.title })),
     ...(next.length > 0 ? [{ id: "dalshe", title: "Что открывается дальше" }] : []),
   ];
 
   return (
     <main className="mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-6 pb-10">
       <section className="rounded-3xl border bg-card px-4 py-6 shadow-sm sm:px-6 sm:py-7 md:px-10">
-        <Link
-          href="/dashboard/jobs"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" /> Все работы
-        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link
+            href="/dashboard/jobs"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" /> Все работы
+          </Link>
+          {editor === "on" && (
+            <div className="flex items-center gap-2">
+              <JobEditor mode="edit" job={job} allJobs={jobs} />
+              <JobDelete slug={job.slug} title={job.title} />
+            </div>
+          )}
+        </div>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <KindBadge kind={job.kind} />
           <Badge variant="secondary" className="rounded-full px-3 py-1">
@@ -138,48 +153,59 @@ export function JobArticle({ job }: { job: Job }) {
             </div>
           </Block>
 
-          <Block id="usloviya" title="Экипировка и условия">
-            <Bullets items={job.conditions} />
-          </Block>
+          {job.conditions.length > 0 && (
+            <Block id="usloviya" title="Экипировка и условия">
+              <Bullets items={job.conditions} />
+            </Block>
+          )}
 
-          <Block id="dohod" title="Как зарабатывать">
-            <Bullets items={job.income} />
-            {job.navigator && (
-              <p className="mt-4 flex items-start gap-2 rounded-lg border-l-2 border-primary bg-primary/5 px-3 py-2">
-                <Compass className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                <span>
-                  <span className="font-semibold">Навигатор:</span> {job.navigator}
-                </span>
-              </p>
-            )}
-          </Block>
-
-          <Block id="protsess" title="Процесс работы">
-            <ol className="flex flex-col gap-3">
-              {job.process.map((step, stepIndex) => (
-                <li key={step} className="flex items-start gap-3">
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-semibold text-primary">
-                    {stepIndex + 1}
+          {(job.income.length > 0 || job.navigator) && (
+            <Block id="dohod" title="Как зарабатывать">
+              <Bullets items={job.income} />
+              {job.navigator && (
+                <p className="mt-4 flex items-start gap-2 rounded-lg border-l-2 border-primary bg-primary/5 px-3 py-2">
+                  <Compass className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                  <span>
+                    <span className="font-semibold">Навигатор:</span> {job.navigator}
                   </span>
-                  <span className="pt-0.5">{step}</span>
-                </li>
-              ))}
-            </ol>
-          </Block>
+                </p>
+              )}
+            </Block>
+          )}
 
-          <Block id="sovety" title="Советы">
-            <ul className="flex flex-col gap-2">
-              {job.tips.map((tip) => (
-                <li
-                  key={tip}
-                  className="flex items-start gap-2 rounded-lg border-l-2 border-amber-500/60 bg-amber-500/10 px-3 py-2"
-                >
-                  <Lightbulb className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-300" aria-hidden="true" />
-                  {tip}
-                </li>
-              ))}
-            </ul>
-          </Block>
+          {job.process.length > 0 && (
+            <Block id="protsess" title="Процесс работы">
+              <ol className="flex flex-col gap-3">
+                {job.process.map((step, stepIndex) => (
+                  <li key={step} className="flex items-start gap-3">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-semibold text-primary">
+                      {stepIndex + 1}
+                    </span>
+                    <span className="pt-0.5">{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </Block>
+          )}
+
+          {job.tips.length > 0 && (
+            <Block id="sovety" title="Советы">
+              <ul className="flex flex-col gap-2">
+                {job.tips.map((tip) => (
+                  <li
+                    key={tip}
+                    className="flex items-start gap-2 rounded-lg border-l-2 border-amber-500/60 bg-amber-500/10 px-3 py-2"
+                  >
+                    <Lightbulb
+                      className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-300"
+                      aria-hidden="true"
+                    />
+                    {tip}
+                  </li>
+                ))}
+              </ul>
+            </Block>
+          )}
 
           {job.teamwork && (
             <Block id="komanda" title="Совместная работа">
@@ -189,6 +215,16 @@ export function JobArticle({ job }: { job: Job }) {
               </p>
             </Block>
           )}
+
+          {extra.map((section) => (
+            <Block key={section.id} id={section.id} title={section.title}>
+              {section.items.length > 0 ? (
+                <Bullets items={section.items} />
+              ) : (
+                <p className="text-muted-foreground">Раздел пока пуст.</p>
+              )}
+            </Block>
+          ))}
 
           {next.length > 0 && (
             <Block id="dalshe" title="Что открывается дальше">

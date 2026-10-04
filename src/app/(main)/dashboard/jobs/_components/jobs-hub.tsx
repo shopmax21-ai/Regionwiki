@@ -4,15 +4,16 @@ import { useMemo, useState } from "react";
 
 import Link from "next/link";
 
-import { ArrowRight, BriefcaseBusiness, CloudSun, Info, Search, Users, X } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, CloudSun, Info, Search, TriangleAlert, Users, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-import { type Job, type JobKind, jobBySlug, jobKinds, jobs, levelLabel, pluralJobs } from "../_data/jobs";
+import { type Job, type JobEditorState, type JobKind, jobKinds, levelLabel, pluralJobs } from "../_data/jobs";
 import { KindBadge } from "./job-badges";
+import { JobEditor } from "./job-editor";
 import { JobImage } from "./job-image";
 
 type Filter = "all" | JobKind;
@@ -23,8 +24,8 @@ const filters: { id: Filter; label: string }[] = [
   { id: "illegal", label: "Нелегальные" },
 ];
 
-function JobCard({ job }: { job: Job }) {
-  const alt = job.altRanks?.map((slug) => jobBySlug.get(slug)?.title).filter(Boolean);
+function JobCard({ job, jobs }: { job: Job; jobs: readonly Job[] }) {
+  const alt = job.altRanks?.map((slug) => jobs.find((item) => item.slug === slug)?.title).filter(Boolean);
 
   return (
     <Link href={`/dashboard/jobs/${job.slug}`} prefetch={false} className="group/job block h-full">
@@ -50,7 +51,9 @@ function JobCard({ job }: { job: Job }) {
   );
 }
 
-export function JobsHub() {
+type JobsHubProps = { jobs: Job[]; editor: JobEditorState; problem?: string | null };
+
+export function JobsHub({ jobs, editor, problem }: JobsHubProps) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
 
@@ -60,7 +63,10 @@ export function JobsHub() {
       if (filter !== "all" && job.kind !== filter) return false;
       return !q || `${job.title} ${job.tagline}`.toLowerCase().includes(q);
     });
-  }, [filter, query]);
+  }, [jobs, filter, query]);
+
+  // Для новичков советуем первую работу без уровня; если таких нет, блок не показываем
+  const starter = jobs.find((job) => job.level === 0);
 
   const groups = (Object.keys(jobKinds) as JobKind[])
     .map((kind) => ({ kind, items: filtered.filter((job) => job.kind === kind) }))
@@ -79,6 +85,11 @@ export function JobsHub() {
             Работы приносят деньги и открывают новые способы заработка. Одни рассчитаны на спокойную добычу, другие — на
             перевозки, командные задания или риск.
           </p>
+          {editor === "on" && (
+            <div className="mt-6">
+              <JobEditor mode="create" allJobs={jobs} />
+            </div>
+          )}
           <div className="relative mt-8 max-w-xl">
             <Search
               className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground"
@@ -104,6 +115,24 @@ export function JobsHub() {
           </div>
         </div>
       </section>
+
+      {editor === "unavailable" && (
+        <div
+          role="status"
+          className="flex items-start gap-2 rounded-xl border border-dashed p-4 text-muted-foreground text-sm"
+        >
+          <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <span>
+            Редактирование временно недоступно, показаны встроенные работы.
+            {problem && (
+              <>
+                {" "}
+                Причина: <code className="break-all text-xs">{problem}</code>
+              </>
+            )}
+          </span>
+        </div>
+      )}
 
       <section className="flex flex-col gap-3" aria-label="Фильтр работ">
         <p className="text-sm text-muted-foreground">
@@ -141,7 +170,7 @@ export function JobsHub() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {items.map((job) => (
-                <JobCard key={job.slug} job={job} />
+                <JobCard key={job.slug} job={job} jobs={jobs} />
               ))}
             </div>
           </section>
@@ -182,26 +211,28 @@ export function JobsHub() {
             </p>
           </CardContent>
         </Card>
-        <Card className="bg-primary text-primary-foreground">
-          <CardHeader>
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary-foreground/15">
-              <Info className="size-5" />
-            </div>
-            <CardTitle className="mt-4">С чего начать?</CardTitle>
-            <CardDescription className="text-primary-foreground/75">
-              Новичкам подойдёт «Шахтёр»: он доступен сразу и не требует ничего, кроме желания работать.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link
-              href="/dashboard/jobs/shahter"
-              prefetch={false}
-              className="inline-flex items-center gap-2 text-sm font-medium hover:underline"
-            >
-              Открыть гайд <ArrowRight className="size-4" />
-            </Link>
-          </CardContent>
-        </Card>
+        {starter && (
+          <Card className="bg-primary text-primary-foreground">
+            <CardHeader>
+              <div className="flex size-10 items-center justify-center rounded-xl bg-primary-foreground/15">
+                <Info className="size-5" />
+              </div>
+              <CardTitle className="mt-4">С чего начать?</CardTitle>
+              <CardDescription className="text-primary-foreground/75">
+                Новичкам подойдёт «{starter.title}»: она доступна сразу и не требует ничего, кроме желания работать.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link
+                href={`/dashboard/jobs/${starter.slug}`}
+                prefetch={false}
+                className="inline-flex items-center gap-2 text-sm font-medium hover:underline"
+              >
+                Открыть гайд <ArrowRight className="size-4" />
+              </Link>
+            </CardContent>
+          </Card>
+        )}
       </section>
 
       <p className="text-center text-xs text-muted-foreground">

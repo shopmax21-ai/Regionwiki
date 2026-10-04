@@ -1,3 +1,6 @@
+/** "on" — можно менять, "off" — только читать, "unavailable" — право есть, но база не подключена. */
+export type JobEditorState = "on" | "off" | "unavailable";
+
 export type JobKind = "legal" | "illegal";
 
 export const jobKinds: Record<JobKind, { title: string; description: string }> = {
@@ -18,7 +21,7 @@ export type Job = {
   /** Уровень персонажа, с которого работа доступна. 0 — доступна сразу. */
   level: number;
   /** Альтернативный путь: 2 ранг на одной из работ предыдущего этапа (slug). */
-  altRanks?: [string, string];
+  altRanks?: string[];
   /** Короткое описание для карточки */
   tagline: string;
   /** Вводный абзац статьи */
@@ -35,7 +38,28 @@ export type Job = {
   teamwork?: string;
   /** Подсказка по навигатору */
   navigator?: string;
+  /** Картинка 16:9: путь вида /images/... или ссылка https://. Если не задана, берётся из job-images.ts или заглушка. */
+  image?: string;
+  /** Дополнительные разделы гайда, которые редакторы добавляют сами */
+  sections?: GuideSection[];
 };
+
+/** Свободный раздел гайда: заголовок и список пунктов. */
+export type GuideSection = { title: string; items: string[] };
+
+export const JOB_LIMITS = {
+  title: 80,
+  tagline: 200,
+  intro: 1500,
+  item: 600,
+  items: 30,
+  teamwork: 600,
+  navigator: 120,
+  image: 300,
+  sectionTitle: 80,
+  sections: 12,
+  level: 100,
+} as const;
 
 /**
  * TODO: точные суммы аренды, пороги рангов и размеры бонусов на сервере Region не заданы.
@@ -580,25 +604,31 @@ export const jobs: Job[] = [
 
 export const jobBySlug = new Map(jobs.map((job) => [job.slug, job] as const));
 
-export const jobsByKind = (kind: JobKind) => jobs.filter((job) => job.kind === kind);
-
-export function levelLabel(job: Job) {
-  return job.level === 0 ? "Без уровня" : `С ${job.level} уровня`;
-}
+export const levelLabel = (job: Job) => (job.level === 0 ? "Без уровня" : `С ${job.level} уровня`);
 
 /** Работы, которые открываются через 2 ранг на текущей */
-export function unlockedBy(job: Job) {
-  return jobs.filter((candidate) => candidate.altRanks?.includes(job.slug));
+export function unlockedBy(job: Job, all: readonly Job[]) {
+  return all.filter((candidate) => candidate.altRanks?.includes(job.slug));
 }
 
 /** Предыдущий этап для альтернативного пути */
-export function previousStages(job: Job) {
-  return (job.altRanks ?? []).map((slug) => jobBySlug.get(slug)).filter((item): item is Job => Boolean(item));
+export function previousStages(job: Job, all: readonly Job[]) {
+  const bySlug = new Map(all.map((item) => [item.slug, item] as const));
+  return (job.altRanks ?? []).map((slug) => bySlug.get(slug)).filter((item): item is Job => Boolean(item));
 }
 
 /** Примерное время чтения в минутах */
 export function readMinutes(job: Job) {
-  const text = [job.intro, ...job.conditions, ...job.income, ...job.process, ...job.tips, job.teamwork ?? ""].join(" ");
+  const extra = (job.sections ?? []).flatMap((section) => [section.title, ...section.items]);
+  const text = [
+    job.intro,
+    ...job.conditions,
+    ...job.income,
+    ...job.process,
+    ...job.tips,
+    job.teamwork ?? "",
+    ...extra,
+  ].join(" ");
   const words = text.split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 120));
 }

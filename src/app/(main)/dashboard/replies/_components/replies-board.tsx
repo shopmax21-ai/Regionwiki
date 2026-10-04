@@ -8,7 +8,6 @@ import { LayoutGrid, Rows3, Search, Sparkles, TriangleAlert } from "lucide-react
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { getLocalStorageValue, setLocalStorageValue } from "@/lib/local-storage.client";
 
 import type { QuickReply } from "../_data/replies";
@@ -20,10 +19,11 @@ type Layout = "rows" | "columns";
 const LAYOUT_KEY = "region-replies-layout";
 const ALL = "Все";
 
-const layouts = [
-  { id: "rows", label: "В строку", icon: Rows3 },
-  { id: "columns", label: "В 2 столбца", icon: LayoutGrid },
-] as const;
+/** Кнопка показывает вид, на который переключит нажатие. */
+const nextLayout: Record<Layout, { id: Layout; label: string; icon: typeof Rows3 }> = {
+  columns: { id: "rows", label: "Показать в строку", icon: Rows3 },
+  rows: { id: "columns", label: "Показать в 2 столбца", icon: LayoutGrid },
+};
 
 const isLayout = (value: string | null): value is Layout => value === "rows" || value === "columns";
 
@@ -49,12 +49,14 @@ export function RepliesBoard({
     if (isLayout(saved)) setLayout(saved);
   }, []);
 
-  const changeLayout = (next: string) => {
-    // Повторное нажатие на выбранный вариант в ToggleGroup даёт пустое значение, его игнорируем
-    if (!isLayout(next)) return;
+  const toggleLayout = () => {
+    const next = nextLayout[layout].id;
     setLayout(next);
     setLocalStorageValue(LAYOUT_KEY, next);
   };
+
+  const toggle = nextLayout[layout];
+  const ToggleIcon = toggle.icon;
 
   const categories = useMemo(() => Array.from(new Set(replies.map((reply) => reply.category))), [replies]);
   // Если выбранную категорию удалили вместе с последним ответом, возвращаемся ко всем
@@ -123,20 +125,17 @@ export function RepliesBoard({
           </div>
 
           <div className="flex items-center gap-2 max-lg:justify-between">
-            <ToggleGroup
-              type="single"
+            <Button
+              type="button"
               variant="outline"
-              value={layout}
-              onValueChange={changeLayout}
-              aria-label="Вид карточек"
+              size="icon"
+              className="size-10 shrink-0"
+              onClick={toggleLayout}
+              aria-label={toggle.label}
+              title={toggle.label}
             >
-              {layouts.map(({ id, label, icon: Icon }) => (
-                <ToggleGroupItem key={id} value={id} aria-label={label} title={label} className="h-10 gap-2 px-3">
-                  <Icon className="size-4" aria-hidden="true" />
-                  <span className="max-sm:sr-only">{label}</span>
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
+              <ToggleIcon className="size-4" aria-hidden="true" />
+            </Button>
 
             {editor === "on" && (
               <ReplyEditor

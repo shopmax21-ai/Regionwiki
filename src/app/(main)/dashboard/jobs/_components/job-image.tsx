@@ -6,7 +6,7 @@ import { jobImages } from "../_data/job-images";
 import type { Job } from "../_data/jobs";
 import { fallbackJobIcon, jobIcons } from "./job-icons";
 
-/** Картинка работы 16:9. Если картинки нет в job-images.ts — заглушка с иконкой. */
+/** Картинка работы 16:9. Берётся из самой работы (поле image), затем из job-images.ts, иначе заглушка с иконкой. */
 export function JobImage({
   job,
   sizes,
@@ -18,7 +18,7 @@ export function JobImage({
   priority?: boolean;
   className?: string;
 }) {
-  const src = jobImages[job.slug];
+  const src = job.image ?? jobImages[job.slug];
   const Icon = jobIcons[job.slug] ?? fallbackJobIcon;
 
   return (

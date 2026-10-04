@@ -48,6 +48,7 @@ export type Permission =
   | "transport.edit"
   | "replies.view"
   | "replies.edit"
+  | "jobs.edit"
   | "permissions.view"
   | "permissions.edit";
 
@@ -98,6 +99,12 @@ export const permissionDefs: readonly PermissionDef[] = [
     category: "Контент",
   },
   {
+    key: "jobs.edit",
+    label: "Редактирование работ и гайдов",
+    description: "Добавлять, изменять и удалять работы и их гайды в разделе «Всё о работах».",
+    category: "Контент",
+  },
+  {
     key: "permissions.view",
     label: "Просмотр прав",
     description: "Открывает раздел «Роли и права» только для чтения.",
@@ -134,6 +141,7 @@ export const defaultPermissions: Record<EditableGroup, readonly Permission[]> = 
     "transport.edit",
     "replies.view",
     "replies.edit",
+    "jobs.edit",
     "permissions.view",
   ],
 };

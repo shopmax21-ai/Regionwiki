@@ -44,8 +44,12 @@ async function init(): Promise<void> {
     await client.query("ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS category text NOT NULL DEFAULT ''");
     await client.query("ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS title text NOT NULL DEFAULT ''");
     await client.query("ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS text text NOT NULL DEFAULT ''");
-    await client.query("ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now()");
-    await client.query("ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now()");
+    await client.query(
+      "ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now()",
+    );
+    await client.query(
+      "ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now()",
+    );
     await client.query("ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS updated_by text");
     const existing = await client.query("SELECT 1 FROM quick_replies LIMIT 1");
     if (existing.rowCount === 0) {

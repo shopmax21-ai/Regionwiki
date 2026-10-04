@@ -67,7 +67,9 @@ export function ReplyCard({ reply, categories, editable }: ReplyCardProps) {
             {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
           </span>
         </span>
-        <span className="whitespace-pre-line break-words text-muted-foreground text-sm">{reply.text}</span>
+        <span className="whitespace-pre-line break-words rounded-lg border-primary/60 border-l-2 bg-muted/50 px-3 py-2.5 text-foreground text-sm leading-6">
+          {reply.text}
+        </span>
       </button>
 
       {editable && (
