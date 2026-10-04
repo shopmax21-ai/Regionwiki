@@ -51,8 +51,8 @@ export function PlacesPanel({ places, query, onQueryChange, selectedId, onSelect
                     "hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:bg-muted",
                   )}
                 >
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                    <Icon className="size-5" />
+                  <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-lg", category.dotClass)}>
+                    <Icon aria-hidden="true" className="size-5" />
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="truncate font-medium text-sm">{place.name}</span>

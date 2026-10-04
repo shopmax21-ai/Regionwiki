@@ -1,4 +1,4 @@
-import { HardHat, type LucideIcon } from "lucide-react";
+import { Car, HardHat, Landmark, MapPin, type LucideIcon, Store, Ticket } from "lucide-react";
 
 /**
  * Границы игрового мира, которые соответствуют краям картинки карты (4096×4096).
@@ -27,24 +27,62 @@ export const MAP_TRANSFORMATION: [number, number, number, number] = [
   scaleY * MAP_WORLD.maxY,
 ];
 
-export type PlaceCategoryId = "job";
+export const placeCategoryIds = ["job", "shop", "state", "transport", "leisure", "other"] as const;
+export type PlaceCategoryId = (typeof placeCategoryIds)[number];
 
 export interface PlaceCategory {
   id: PlaceCategoryId;
   label: string;
   icon: LucideIcon;
-  /** Цвета меток берутся из темы, поэтому следуют пресету и светлой/тёмной схеме. */
+  /** Цвет метки на карте. Работы используют цвет темы, остальные категории — именованные цвета Tailwind. */
   dotClass: string;
   ringClass: string;
 }
 
 export const placeCategories: PlaceCategory[] = [
-  { id: "job", label: "Работы", icon: HardHat, dotClass: "bg-primary", ringClass: "ring-primary/30" },
+  {
+    id: "job",
+    label: "Работы",
+    icon: HardHat,
+    dotClass: "bg-primary text-primary-foreground",
+    ringClass: "ring-primary/30",
+  },
+  {
+    id: "shop",
+    label: "Магазины",
+    icon: Store,
+    dotClass: "bg-emerald-500 text-white",
+    ringClass: "ring-emerald-500/30",
+  },
+  {
+    id: "state",
+    label: "Госструктуры",
+    icon: Landmark,
+    dotClass: "bg-sky-500 text-white",
+    ringClass: "ring-sky-500/30",
+  },
+  {
+    id: "transport",
+    label: "Транспорт",
+    icon: Car,
+    dotClass: "bg-violet-500 text-white",
+    ringClass: "ring-violet-500/30",
+  },
+  {
+    id: "leisure",
+    label: "Развлечения",
+    icon: Ticket,
+    dotClass: "bg-pink-500 text-white",
+    ringClass: "ring-pink-500/30",
+  },
+  { id: "other", label: "Другое", icon: MapPin, dotClass: "bg-slate-500 text-white", ringClass: "ring-slate-500/30" },
 ];
 
 export function getCategory(id: PlaceCategoryId): PlaceCategory {
-  return placeCategories.find((category) => category.id === id) ?? placeCategories[0];
+  return placeCategories.find((category) => category.id === id) ?? placeCategories[placeCategories.length - 1];
 }
+
+export const PLACE_LIMITS = { name: 80, description: 500 } as const;
 
 export interface MapPlace {
   id: string;
@@ -52,8 +90,10 @@ export interface MapPlace {
   x: number;
   y: number;
   category: PlaceCategoryId;
+  description?: string;
 }
 
+// Начальный набор меток: при первом обращении к базе он копируется в таблицу map_places.
 // TODO: координаты перенесены со старой карты LA — замените на координаты вашей карты.
 const allPlaces: MapPlace[] = [
   { id: "job-electrician", name: "Работа Электрик", x: 734.63855, y: 128.54727, category: "job" },
@@ -65,11 +105,30 @@ const allPlaces: MapPlace[] = [
   { id: "job-delivery", name: "Работа Развозчик товаров", x: 1737.877, y: 3709.549, category: "job" },
 ];
 
-function isInsideWorld(place: MapPlace) {
+export function isInsideWorld(point: { x: number; y: number }) {
   return (
-    place.x >= MAP_WORLD.minX && place.x <= MAP_WORLD.maxX && place.y >= MAP_WORLD.minY && place.y <= MAP_WORLD.maxY
+    point.x >= MAP_WORLD.minX && point.x <= MAP_WORLD.maxX && point.y >= MAP_WORLD.minY && point.y <= MAP_WORLD.maxY
   );
 }
 
 /** Метки за пределами карты не показываем, чтобы не ломать интерфейс. */
-export const mapPlaces: MapPlace[] = allPlaces.filter(isInsideWorld);
+export const seedPlaces: MapPlace[] = allPlaces.filter(isInsideWorld);
+
+/** Встроенный набор меток: его показывает поиск, пока база недоступна. */
+export const mapPlaces = seedPlaces;
+
+/** Переводит долю от размера карты (0..1, от левого верхнего угла) в игровые координаты. */
+export function fractionToWorld(fx: number, fy: number) {
+  return {
+    x: MAP_WORLD.minX + fx * (MAP_WORLD.maxX - MAP_WORLD.minX),
+    y: MAP_WORLD.maxY - fy * (MAP_WORLD.maxY - MAP_WORLD.minY),
+  };
+}
+
+/** Обратное преобразование: игровые координаты в долю от размера карты. */
+export function worldToFraction(x: number, y: number) {
+  return {
+    fx: (x - MAP_WORLD.minX) / (MAP_WORLD.maxX - MAP_WORLD.minX),
+    fy: (MAP_WORLD.maxY - y) / (MAP_WORLD.maxY - MAP_WORLD.minY),
+  };
+}

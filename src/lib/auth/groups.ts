@@ -50,6 +50,7 @@ export type Permission =
   | "replies.view"
   | "replies.edit"
   | "jobs.edit"
+  | "map.edit"
   | "permissions.view"
   | "permissions.edit";
 
@@ -112,6 +113,12 @@ export const permissionDefs: readonly PermissionDef[] = [
     category: "Контент",
   },
   {
+    key: "map.edit",
+    label: "Редактирование карты",
+    description: "Добавлять, перемещать, изменять и удалять метки на интерактивной карте.",
+    category: "Контент",
+  },
+  {
     key: "permissions.view",
     label: "Просмотр прав",
     description: "Открывает раздел «Роли и права» только для чтения.",
@@ -150,6 +157,7 @@ export const defaultPermissions: Record<EditableGroup, readonly Permission[]> = 
     "replies.view",
     "replies.edit",
     "jobs.edit",
+    "map.edit",
     "permissions.view",
   ],
 };

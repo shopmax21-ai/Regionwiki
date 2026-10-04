@@ -4,7 +4,7 @@ import {
   formatPrice as formatBusinessPrice,
 } from "@/app/(main)/dashboard/business/_data/businesses";
 import { type Job, jobKinds, jobText } from "@/app/(main)/dashboard/jobs/_data/jobs";
-import { mapPlaces } from "@/app/(main)/dashboard/map/_components/map-data";
+import type { MapPlace } from "@/app/(main)/dashboard/map/_components/map-data";
 import {
   formatPrice as formatRealtyPrice,
   realties,
@@ -21,6 +21,7 @@ import {
 import { isPathVisible } from "@/lib/auth/protected-paths";
 import { getJobsVersion, listJobs } from "@/lib/jobs/store";
 import { getRulesVersion } from "@/lib/rules/store";
+import { getMapPlacesVersion, listMapPlaces } from "@/lib/map/store";
 import { getVehiclesVersion, listVehicles } from "@/lib/vehicles/store";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 
@@ -207,11 +208,11 @@ function buildTerms(): IndexEntry[] {
   );
 }
 
-function buildPlaces(): IndexEntry[] {
-  return mapPlaces.map((place) =>
+function buildPlaces(places: MapPlace[]): IndexEntry[] {
+  return places.map((place) =>
     entry(
       { id: `place-${place.id}`, kind: "place", title: place.name, subtitle: "Метка на карте", href: "/dashboard/map" },
-      { weight: 12 },
+      { body: place.description, weight: 12 },
     ),
   );
 }
@@ -220,6 +221,7 @@ let cache: { sections: IndexEntry[]; after: IndexEntry[] } | null = null;
 let jobCache: { version: number; at: number; entries: IndexEntry[] } | null = null;
 let rulesCache: { version: string; entries: IndexEntry[] } | null = null;
 let vehicleCache: { version: number; at: number; entries: IndexEntry[] } | null = null;
+let placeCache: { version: number; at: number; entries: IndexEntry[] } | null = null;
 
 const VEHICLE_CACHE_MS = 60_000;
 
@@ -243,6 +245,17 @@ async function getVehicleEntries(): Promise<IndexEntry[]> {
   return vehicleCache.entries;
 }
 
+// Метки карты лежат в базе и меняются администрацией, поэтому их записи тоже обновляются отдельно.
+async function getPlaceEntries(): Promise<IndexEntry[]> {
+  const version = getMapPlacesVersion();
+  if (placeCache && placeCache.version === version && Date.now() - placeCache.at < VEHICLE_CACHE_MS) {
+    return placeCache.entries;
+  }
+  const { places } = await listMapPlaces();
+  placeCache = { version, at: Date.now(), entries: buildPlaces(places) };
+  return placeCache.entries;
+}
+
 // Правила обновляются с форума и лежат в базе: индекс пересобирается, когда меняется версия набора правил.
 async function getRuleEntries(): Promise<IndexEntry[]> {
   const version = await getRulesVersion().catch(() => "");
@@ -254,13 +267,14 @@ async function getRuleEntries(): Promise<IndexEntry[]> {
 async function getIndex(): Promise<IndexEntry[]> {
   cache ??= {
     sections: buildSections(),
-    after: [...buildBusinesses(), ...buildRealties(), ...buildPlaces(), ...buildTerms()],
+    after: [...buildBusinesses(), ...buildRealties(), ...buildTerms()],
   };
   return [
     ...cache.sections,
     ...(await getRuleEntries()),
     ...(await getJobEntries()),
     ...(await getVehicleEntries()),
+    ...(await getPlaceEntries()),
     ...cache.after,
   ];
 }
