@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import Image from "next/image";
+
 import { ChevronLeft, ChevronRight, Funnel, Grid2X2, List, Search, Sparkles } from "lucide-react";
 
 import { FilterDropdown } from "@/app/(main)/dashboard/_components/filter-dropdown";
@@ -187,25 +189,48 @@ export function ItemsWiki({ initialQuery = "" }: { initialQuery?: string }) {
               const Icon = categoryIcons[selectedItem.category];
               return (
                 <>
-                  <DialogHeader>
-                    <DialogTitle>{selectedItem.name}</DialogTitle>
-                    <DialogDescription>Подробная информация о предмете</DialogDescription>
-                  </DialogHeader>
-                  <div className="flex items-center gap-4 rounded-lg bg-muted/50 p-4">
-                    <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-background text-muted-foreground">
-                      <Icon className="size-7" aria-hidden="true" />
+                  <div className="flex flex-col items-center text-center">
+                    <div className="relative flex aspect-square w-full max-w-56 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-muted/70 to-muted/20">
+                      {selectedItem.imageUrl ? (
+                        <Image
+                          src={selectedItem.imageUrl}
+                          alt={selectedItem.name}
+                          fill
+                          sizes="224px"
+                          unoptimized
+                          className="object-contain p-8"
+                        />
+                      ) : (
+                        <Icon className="size-24 text-muted-foreground/35 stroke-[1]" aria-hidden="true" />
+                      )}
                     </div>
-                    <dl className="grid gap-1 text-sm">
-                      <div className="flex gap-2">
-                        <dt className="text-muted-foreground">Категория:</dt>
-                        <dd>{selectedItem.category}</dd>
-                      </div>
-                      <div className="flex gap-2">
-                        <dt className="text-muted-foreground">ID:</dt>
-                        <dd>{selectedItem.id}</dd>
-                      </div>
-                    </dl>
+                    <DialogHeader className="mt-5 items-center">
+                      <DialogTitle className="text-xl">{selectedItem.name}</DialogTitle>
+                      <DialogDescription>
+                        {selectedItem.name} — предмет категории «{selectedItem.category}».
+                      </DialogDescription>
+                    </DialogHeader>
                   </div>
+
+                  <section className="rounded-xl border bg-muted/30 p-4" aria-labelledby="item-source-title">
+                    <h3 id="item-source-title" className="font-semibold text-sm">
+                      Где можно получить
+                    </h3>
+                    <p className="mt-1 text-muted-foreground text-sm">
+                      Получить предмет можно в разделе «{selectedItem.category}».
+                    </p>
+                  </section>
+
+                  <dl className="grid gap-2 text-sm sm:grid-cols-2">
+                    <div className="flex justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2">
+                      <dt className="text-muted-foreground">Категория</dt>
+                      <dd className="font-medium">{selectedItem.category}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2">
+                      <dt className="text-muted-foreground">ID</dt>
+                      <dd className="font-medium">{selectedItem.id}</dd>
+                    </div>
+                  </dl>
                 </>
               );
             })()}
