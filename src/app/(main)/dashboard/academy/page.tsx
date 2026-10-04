@@ -7,6 +7,7 @@ import { AssignmentStatus } from "./_components/assignment-status";
 import { ClassSchedule } from "./_components/class-schedule";
 import { KpiCards } from "./_components/kpi-cards";
 import { PerformanceHighlights } from "./_components/performance-highlights";
+import { QuizCenter } from "./_components/quiz-center";
 import { UpcomingEvents } from "./_components/upcoming-events";
 
 export const metadata: Metadata = {
@@ -46,6 +47,8 @@ export default function Page() {
       </div>
 
       <KpiCards />
+
+      <QuizCenter />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <div className="xl:col-span-5">
