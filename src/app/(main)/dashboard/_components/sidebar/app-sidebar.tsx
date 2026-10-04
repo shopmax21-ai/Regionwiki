@@ -4,9 +4,9 @@ import { useMemo } from "react";
 
 import Link from "next/link";
 
-import { Command } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 
+import { RegionMark } from "@/app/(main)/auth/_components/region-mark";
 import {
   Sidebar,
   SidebarContent,
@@ -55,7 +55,7 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <Link prefetch={false} href="/dashboard/default">
-                <Command />
+                <RegionMark className="size-5 shrink-0" />
                 <span className="font-semibold text-base">{APP_CONFIG.name}</span>
               </Link>
             </SidebarMenuButton>
