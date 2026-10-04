@@ -5,16 +5,18 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 
 import {
+  CarFront,
   Check,
   ChevronLeft,
   ChevronRight,
   Copy,
   Funnel,
   Grid2X2,
-  IdCard,
   List,
   Search,
   Sparkles,
+  Tag,
+  Weight,
   X,
 } from "lucide-react";
 
@@ -212,7 +214,7 @@ export function ItemsWiki({ initialQuery = "" }: { initialQuery?: string }) {
                           <Icon className="size-24 text-muted-foreground/35 stroke-[1]" aria-hidden="true" />
                         )}
                       </div>
-                      <DialogHeader>
+                      <DialogHeader className="items-center text-center">
                         <DialogTitle className="text-xl">{selectedItem.name}</DialogTitle>
                         <DialogDescription>{selectedItem.functionality}</DialogDescription>
                       </DialogHeader>
@@ -266,24 +268,26 @@ export function ItemsWiki({ initialQuery = "" }: { initialQuery?: string }) {
                       </section>
 
                       <dl className="grid gap-2 text-sm sm:grid-cols-3">
-                        <div className="rounded-lg bg-muted/40 px-3 py-2">
-                          <dt className="text-muted-foreground">Категория</dt>
-                          <dd className="mt-1 font-medium">{selectedItem.category}</dd>
+                        <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-3 py-2" title="Категория">
+                          <Tag className="text-muted-foreground" aria-hidden="true" />
+                          <dt className="sr-only">Категория</dt>
+                          <dd className="font-medium">{selectedItem.category}</dd>
                         </div>
-                        <div className="rounded-lg bg-muted/40 px-3 py-2">
-                          <dt className="text-muted-foreground">Вес</dt>
-                          <dd className="mt-1 font-medium">{selectedItem.weight} кг</dd>
+                        <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-3 py-2" title="Вес">
+                          <Weight className="text-muted-foreground" aria-hidden="true" />
+                          <dt className="sr-only">Вес</dt>
+                          <dd className="font-medium">{selectedItem.weight} кг</dd>
                         </div>
-                        <div className="rounded-lg bg-muted/40 px-3 py-2">
-                          <dt className="text-muted-foreground">ID</dt>
-                          <dd className="mt-1 flex items-center gap-1 font-medium">
-                            <IdCard aria-hidden="true" />
+                        <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-3 py-2" title="ID предмета">
+                          <CarFront className="text-muted-foreground" aria-hidden="true" />
+                          <dt className="sr-only">ID</dt>
+                          <dd className="flex min-w-0 items-center gap-1 font-medium">
                             <span>{selectedItem.id}</span>
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="ml-auto size-7"
+                              className="ml-auto size-7 shrink-0"
                               aria-label={`Скопировать ID ${selectedItem.id}`}
                               onClick={() => navigator.clipboard.writeText(String(selectedItem.id))}
                             >
