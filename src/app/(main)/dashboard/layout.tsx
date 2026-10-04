@@ -7,7 +7,7 @@ import { cn } from "cn";
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { getMyPermissions } from "@/lib/auth/admin";
+import { getViewerAccess } from "@/lib/auth/admin";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { listJobs } from "@/lib/jobs/store";
 import { getPreference } from "@/server/server-actions";
@@ -27,7 +27,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
   ]);
   const jobLinks = jobs.map((job) => ({ slug: job.slug, title: job.title }));
   const authorized = session?.status === "approved";
-  const permissions = authorized ? await getMyPermissions() : [];
+  const { isAdmin, permissions } = authorized ? await getViewerAccess() : { isAdmin: false, permissions: [] };
   const user = session ? { id: session.id, name: session.name, username: session.username, role: session.role } : null;
 
   return (
@@ -44,6 +44,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         collapsible={collapsible}
         user={user}
         authorized={authorized}
+        isAdmin={isAdmin}
         permissions={permissions}
         jobs={jobLinks}
       />
@@ -71,7 +72,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
                 orientation="vertical"
                 className="mx-2 data-[orientation=vertical]:h-4 data-[orientation=vertical]:self-center"
               />
-              <SearchDialog authorized={authorized} permissions={permissions} jobs={jobLinks} />
+              <SearchDialog authorized={authorized} isAdmin={isAdmin} permissions={permissions} jobs={jobLinks} />
             </div>
             <div className="flex items-center gap-2">
               <LayoutControls />

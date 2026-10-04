@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 import { getAuthConfig } from "./config";
 import { getCurrentUser } from "./current-user";
 import { getGroupPermissions, getUser, getUserOverrides } from "./db";
@@ -66,4 +68,23 @@ export async function getMyPermissions(): Promise<Permission[]> {
 
 export async function hasPermission(permission: Permission): Promise<boolean> {
   return (await getMyPermissions()).includes(permission);
+}
+
+/** Принадлежность к администрации и права посетителя за один запрос к базе: для меню и поиска. */
+export async function getViewerAccess(): Promise<{ isAdmin: boolean; permissions: Permission[] }> {
+  const session = await getCurrentUser();
+  if (session?.status !== "approved") return { isAdmin: false, permissions: [] };
+  const context = await getAdminContext();
+  return { isAdmin: context !== null, permissions: context?.permissions ?? [] };
+}
+
+/**
+ * Для страниц и layout разделов только для администрации: пускает любого администратора (хелпер и выше),
+ * остальных отправляет на страницу «нет доступа». Без настроенной авторизации раздел закрыт для всех.
+ */
+export async function requireAdmin(): Promise<AdminContext> {
+  if (!getAuthConfig()) redirect("/dashboard");
+  const admin = await getAdminContext();
+  if (!admin) redirect("/unauthorized");
+  return admin;
 }

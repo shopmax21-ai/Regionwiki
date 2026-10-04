@@ -4,9 +4,9 @@ import { useMemo } from "react";
 
 import Link from "next/link";
 
+import { Command } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 
-import { RegionMark } from "@/app/(main)/auth/_components/region-mark";
 import {
   Sidebar,
   SidebarContent,
@@ -27,16 +27,21 @@ import { SupportCard } from "./support-card";
 export function AppSidebar({
   user,
   authorized,
+  isAdmin,
   permissions,
   jobs,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   user: SidebarUser | null;
   authorized: boolean;
+  isAdmin: boolean;
   permissions: string[];
   jobs: JobNavLink[];
 }) {
-  const items = useMemo(() => visibleSidebarItems({ authorized, permissions }, jobs), [authorized, permissions, jobs]);
+  const items = useMemo(
+    () => visibleSidebarItems({ authorized, isAdmin, permissions }, jobs),
+    [authorized, isAdmin, permissions, jobs],
+  );
   const { sidebarVariant, sidebarCollapsible, isSynced } = usePreferencesStore(
     useShallow((s) => ({
       sidebarVariant: s.values.sidebar_variant,
@@ -55,7 +60,7 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <Link prefetch={false} href="/dashboard/default">
-                <RegionMark className="size-5 shrink-0" />
+                <Command />
                 <span className="font-semibold text-base">{APP_CONFIG.name}</span>
               </Link>
             </SidebarMenuButton>

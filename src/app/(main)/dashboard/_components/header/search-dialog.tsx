@@ -82,16 +82,18 @@ function groupNav(items: NavEntry[]) {
 
 export function SearchDialog({
   authorized = false,
+  isAdmin = false,
   permissions = [],
   jobs = [],
 }: {
   authorized?: boolean;
+  isAdmin?: boolean;
   permissions?: string[];
   jobs?: JobNavLink[];
 }) {
   const recommendations = React.useMemo(
-    () => buildNavEntries(visibleSidebarItems({ authorized, permissions }, jobs)).filter(isRecommended),
-    [authorized, permissions, jobs],
+    () => buildNavEntries(visibleSidebarItems({ authorized, isAdmin, permissions }, jobs)).filter(isRecommended),
+    [authorized, isAdmin, permissions, jobs],
   );
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");

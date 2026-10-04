@@ -303,7 +303,11 @@ function makeSnippet(body: string, terms: string[]): string | undefined {
 export async function searchSite(
   query: string,
   perGroup = 6,
-  { authorized = false, permissions = [] }: { authorized?: boolean; permissions?: readonly string[] } = {},
+  {
+    authorized = false,
+    isAdmin = false,
+    permissions = [],
+  }: { authorized?: boolean; isAdmin?: boolean; permissions?: readonly string[] } = {},
 ): Promise<{ total: number; groups: SearchGroup[] }> {
   const phrase = normalize(query.trim().replace(/\s+/g, " "));
   const terms = toSearchTerms(query);
@@ -312,7 +316,7 @@ export async function searchSite(
   const found = new Map<SearchKind, { item: IndexEntry; score: number }[]>();
 
   for (const item of await getIndex()) {
-    if (!item.external && !isPathVisible(item.href, { authorized, permissions })) continue;
+    if (!item.external && !isPathVisible(item.href, { authorized, isAdmin, permissions })) continue;
     const haystack = `${item.titleKey} ${item.bodyKey}`;
     if (!terms.every((term) => haystack.includes(term))) continue;
     const list = found.get(item.kind) ?? [];
