@@ -37,6 +37,23 @@ const blockSchema = z.discriminatedUnion("type", [
       .optional()
       .transform((value) => (value ? value : undefined)),
   }),
+  z.object({
+    type: z.literal("slider"),
+    slides: z
+      .array(
+        z.object({
+          src: imageSrc,
+          caption: z
+            .string()
+            .trim()
+            .max(JOB_LIMITS.caption, "Подпись к слайду слишком длинная")
+            .optional()
+            .transform((value) => (value ? value : undefined)),
+        }),
+      )
+      .min(1, "В слайдере должен быть хотя бы один слайд")
+      .max(JOB_LIMITS.sliderSlides, `Не больше ${JOB_LIMITS.sliderSlides} слайдов в одном слайдере`),
+  }),
 ]);
 
 const optionalText = (max: number, message: string) =>

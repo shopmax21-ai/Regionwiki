@@ -103,6 +103,17 @@ function toBlocks(value: unknown): GuideBlock[] | undefined {
         return typeof block.src === "string" && block.src
           ? [{ type: "image", src: block.src, caption: optionalString(block.caption) }]
           : [];
+      case "slider": {
+        const rawSlides = Array.isArray(block.slides) ? block.slides : [];
+        const slides = rawSlides.flatMap((rawSlide) => {
+          if (!rawSlide || typeof rawSlide !== "object") return [];
+          const slide = rawSlide as Record<string, unknown>;
+          const src = typeof slide.src === "string" ? slide.src : "";
+          if (!src) return [];
+          return [{ src, caption: optionalString(slide.caption) }];
+        });
+        return slides.length > 0 ? [{ type: "slider", slides }] : [];
+      }
       default:
         return [];
     }

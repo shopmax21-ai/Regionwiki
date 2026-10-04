@@ -66,7 +66,8 @@ export type GuideBlock =
   | { type: "text"; text: string }
   | { type: "list"; ordered: boolean; items: string[] }
   | { type: "callout"; variant: CalloutVariant; text: string }
-  | { type: "image"; src: string; caption?: string };
+  | { type: "image"; src: string; caption?: string }
+  | { type: "slider"; slides: { src: string; caption?: string }[] };
 
 export type GuideBlockType = GuideBlock["type"];
 
@@ -89,6 +90,7 @@ export const JOB_LIMITS = {
   blockText: 4000,
   caption: 200,
   listItems: 50,
+  sliderSlides: 20,
 } as const;
 
 /**
@@ -692,6 +694,8 @@ export function blocksText(blocks: readonly GuideBlock[]): string {
           return block.items;
         case "image":
           return block.caption ? [block.caption] : [];
+        case "slider":
+          return block.slides.flatMap((slide) => (slide.caption ? [slide.caption] : []));
       }
     })
     .join(" ")
