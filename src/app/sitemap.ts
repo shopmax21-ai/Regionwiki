@@ -7,7 +7,6 @@ const PUBLIC_ROUTES = [
   "/dashboard/default",
   "/dashboard/crm",
   "/dashboard/academy",
-  "/dashboard/logistics",
   "/dashboard/transport",
   "/dashboard/real-estate",
   "/dashboard/business",
