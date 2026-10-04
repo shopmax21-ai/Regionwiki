@@ -54,7 +54,7 @@ const quizzes = [
   },
   {
     id: "english",
-    title: "English Grammar",
+    title: "Грамматика английского языка",
     description: "Времена, условные предложения и устойчивые выражения.",
     category: "Английский язык",
     questions: 15,
@@ -63,17 +63,17 @@ const quizzes = [
     color: "bg-chart-3",
     items: [
       {
-        question: "Choose the correct form: She ___ to school every day.",
+        question: "Выберите правильную форму: She ___ to school every day.",
         answers: ["go", "goes", "going", "gone"],
         correct: 1,
       },
       {
-        question: "Which tense describes an action happening now?",
-        answers: ["Present Simple", "Past Simple", "Present Continuous", "Future Simple"],
+        question: "Какое время описывает действие, происходящее сейчас?",
+        answers: ["Настоящее простое", "Прошедшее простое", "Настоящее длительное", "Будущее простое"],
         correct: 2,
       },
       {
-        question: "Complete: If I had time, I ___ more.",
+        question: "Дополните: If I had time, I ___ more.",
         answers: ["travel", "will travel", "would travel", "travelled"],
         correct: 2,
       },
