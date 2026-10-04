@@ -48,10 +48,7 @@ function CategoryChips({
           key={chip.id}
           variant={value === chip.id ? "default" : "outline"}
           aria-pressed={value === chip.id}
-          className={cn(
-            "h-11 shrink-0 px-4 shadow-sm md:h-9",
-            value !== chip.id && "bg-card/90 backdrop-blur",
-          )}
+          className={cn("h-11 shrink-0 px-4 shadow-sm md:h-9", value !== chip.id && "bg-card/90 backdrop-blur")}
           onClick={() => onChange(chip.id)}
         >
           {chip.label}
@@ -89,7 +86,15 @@ export function MapSection() {
     >
       <h1 className="sr-only">Карта штата Region</h1>
 
-      <GameMap places={places} selectedId={selected?.id ?? null} onSelect={setSelectedId} />
+      <GameMap
+        places={places}
+        selectedId={selected?.id ?? null}
+        onSelect={setSelectedId}
+        category={category}
+        onCategoryChange={setCategory}
+        placeCount={places.length}
+        onOpenList={() => setListOpen(true)}
+      />
 
       {/* Десктоп: боковая панель */}
       <aside className="absolute top-4 bottom-4 left-4 z-10 hidden w-80 flex-col gap-3 rounded-xl bg-card/95 py-4 shadow-sm ring-1 ring-foreground/10 backdrop-blur md:flex">

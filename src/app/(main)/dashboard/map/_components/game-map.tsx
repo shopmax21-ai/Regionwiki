@@ -1,192 +1,220 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef, useState } from "react";
 
-import L from "leaflet";
-import { Maximize, Minus, Plus } from "lucide-react";
+import { cn } from "cn";
+import { List, Maximize2, Minus, Plus } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ButtonGroup } from "@/components/ui/button-group";
 
-import { getCategory, MAP_TRANSFORMATION, MAP_WORLD, MAP_ZOOM, type MapPlace } from "./map-data";
+import { MAP_WORLD, type MapPlace } from "./map-data";
 
-import "leaflet/dist/leaflet.css";
-import "./game-map.css";
+const mapImageUrl = "/map.png";
 
 interface GameMapProps {
-  places: MapPlace[];
-  selectedId: string | null;
-  onSelect: (id: string | null) => void;
+  places?: MapPlace[];
+  selectedId?: string | null;
+  onSelect?: (id: string | null) => void;
+  category: "all" | "job";
+  onCategoryChange: (category: "all" | "job") => void;
+  placeCount: number;
+  onOpenList: () => void;
 }
 
-const worldBounds = L.latLngBounds([MAP_WORLD.minY, MAP_WORLD.minX], [MAP_WORLD.maxY, MAP_WORLD.maxX]);
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 6;
 
-// Область нажатия 44px — минимальный комфортный размер для пальца.
-function createIcon(place: MapPlace, selected: boolean) {
-  const category = getCategory(place.category);
-  const dot = selected ? `size-5 ring-4 ${category.ringClass}` : "size-3.5";
-  return L.divIcon({
-    className: "",
-    iconSize: [44, 44],
-    iconAnchor: [22, 22],
-    html: `<div class="flex size-11 items-center justify-center"><span class="${dot} ${category.dotClass} rounded-full border-2 border-background shadow-md transition-all"></span></div>`,
-  });
-}
+export default function GameMap({
+  places = [],
+  selectedId,
+  onSelect,
+  category,
+  onCategoryChange,
+  placeCount,
+  onOpenList,
+}: GameMapProps) {
+  const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const offsetStart = useRef({ x: 0, y: 0 });
 
-export default function GameMap({ places, selectedId, onSelect }: GameMapProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const markersRef = useRef(new Map<string, L.Marker>());
-  const onSelectRef = useRef(onSelect);
+  const clampOffset = (value: number, viewportSize: number, scaledSize: number) => {
+    const limit = Math.max(0, (scaledSize - viewportSize) / 2);
+    return Math.min(limit, Math.max(-limit, value));
+  };
 
-  useEffect(() => {
-    onSelectRef.current = onSelect;
-  }, [onSelect]);
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragStart.current = { x: event.clientX, y: event.clientY };
+    offsetStart.current = offset;
+    setDragging(true);
+  };
 
-  // Создание карты
-  useEffect(() => {
-    const element = containerRef.current;
-    if (!element || mapRef.current) return;
-
-    const crs = L.extend({}, L.CRS.Simple, { transformation: new L.Transformation(...MAP_TRANSFORMATION) });
-
-    const map = L.map(element, {
-      crs,
-      zoomControl: false,
-      attributionControl: false,
-      minZoom: MAP_ZOOM.min,
-      maxZoom: MAP_ZOOM.max,
-      zoomSnap: 1,
-      zoomDelta: 1,
-      wheelPxPerZoomLevel: 90,
-      bounceAtZoomLimits: false,
-      maxBounds: worldBounds.pad(0.05),
-      maxBoundsViscosity: 1,
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging) return;
+    const viewport = event.currentTarget.getBoundingClientRect();
+    const scaledSize = Math.max(viewport.width, viewport.height) * zoom;
+    setOffset({
+      x: clampOffset(offsetStart.current.x + event.clientX - dragStart.current.x, viewport.width, scaledSize),
+      y: clampOffset(offsetStart.current.y + event.clientY - dragStart.current.y, viewport.height, scaledSize),
     });
+  };
 
-    // SVG вставляем в DOM (а не как <img>), чтобы он наследовал CSS-переменные темы:
-    // --map-land, --map-buildings, --map-roads задаются в game-map.css.
-    let disposed = false;
-    let mapImage: L.SVGOverlay | null = null;
-    fetch("/images/map-vector-with-land.svg")
-      .then((response) => response.text())
-      .then((text) => {
-        if (disposed) return;
-        const svg = new DOMParser().parseFromString(text, "image/svg+xml").documentElement;
-        svg.querySelector("metadata")?.remove();
-        mapImage = L.svgOverlay(svg as unknown as SVGElement, worldBounds, { interactive: false }).addTo(map);
-      })
-      .catch(() => {
-        // Без картинки остаётся фон темы — метки продолжают работать.
-      });
+  const updateZoom = (nextZoom: number) => {
+    const viewport = mapRef.current?.getBoundingClientRect();
+    if (!viewport) return;
 
-    map.fitBounds(worldBounds, { animate: false });
-    map.setMinZoom(map.getZoom());
-    map.on("click", () => onSelectRef.current(null));
-    mapRef.current = map;
+    const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, nextZoom));
+    const scaledSize = Math.max(viewport.width, viewport.height) * next;
+    setZoom(next);
+    setOffset((currentOffset) => ({
+      x: clampOffset(currentOffset.x, viewport.width, scaledSize),
+      y: clampOffset(currentOffset.y, viewport.height, scaledSize),
+    }));
+  };
 
-    // Сайдбар и поворот экрана меняют размер контейнера — пересчитываем карту.
-    const observer = new ResizeObserver(() => {
-      map.invalidateSize({ pan: false });
-      map.setMinZoom(map.getBoundsZoom(worldBounds));
-    });
-    observer.observe(element);
+  const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    updateZoom(zoom * (event.deltaY > 0 ? 0.9 : 1.1));
+  };
 
-    const markers = markersRef.current;
-    return () => {
-      disposed = true;
-      observer.disconnect();
-      markers.clear();
-      mapImage?.remove();
-      map.remove();
-      mapRef.current = null;
-    };
-  }, []);
-
-  // Метки
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    const group = L.layerGroup().addTo(map);
-    const markers = markersRef.current;
-    const canHover = window.matchMedia("(hover: hover)").matches;
-    markers.clear();
-
-    for (const place of places) {
-      const marker = L.marker([place.y, place.x], { icon: createIcon(place, false), title: place.name });
-      marker.on("click", (event) => {
-        L.DomEvent.stopPropagation(event);
-        onSelectRef.current(place.id);
-      });
-      if (canHover) marker.bindTooltip(place.name, { direction: "top", offset: [0, -16] });
-      marker.addTo(group);
-      markers.set(place.id, marker);
+  const toggleFullscreen = async () => {
+    if (!mapRef.current) return;
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+    } else {
+      await mapRef.current.requestFullscreen();
     }
-
-    return () => {
-      group.remove();
-      markers.clear();
-    };
-  }, [places]);
-
-  // Подсветка выбранной метки
-  useEffect(() => {
-    for (const place of places) {
-      const marker = markersRef.current.get(place.id);
-      if (!marker) continue;
-      const selected = place.id === selectedId;
-      marker.setIcon(createIcon(place, selected));
-      marker.setZIndexOffset(selected ? 1000 : 0);
-    }
-  }, [places, selectedId]);
-
-  // Перелёт к выбранной метке (на телефоне смещаем вверх, чтобы карточка её не перекрывала)
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !selectedId) return;
-    const marker = markersRef.current.get(selectedId);
-    if (!marker) return;
-
-    const zoom = Math.max(map.getZoom(), 2.5);
-    const point = map.project(marker.getLatLng(), zoom);
-    if (window.innerWidth < 768) point.y += map.getSize().y * 0.15;
-    map.flyTo(map.unproject(point, zoom), zoom, { duration: 0.6 });
-  }, [selectedId]);
+    setIsFullscreen(Boolean(document.fullscreenElement));
+  };
 
   return (
-    <div className="relative size-full">
-      <div ref={containerRef} className="region-map isolate size-full overscroll-none" />
-      <ButtonGroup
-        orientation="vertical"
-        aria-label="Масштаб карты"
-        className="absolute top-1/2 right-3 z-10 -translate-y-1/2 shadow-sm"
+    <div
+      ref={mapRef}
+      className={cn(
+        "relative size-full overflow-hidden bg-[#1d3033]",
+        dragging ? "cursor-grabbing" : "cursor-grab",
+        isFullscreen && "bg-background",
+      )}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={() => setDragging(false)}
+      onPointerCancel={() => setDragging(false)}
+      onWheel={handleWheel}
+      onDoubleClick={() => {
+        setZoom(1);
+        setOffset({ x: 0, y: 0 });
+      }}
+      role="application"
+      aria-label="Интерактивная карта штата"
+    >
+      <div
+        className={cn(
+          "absolute inset-x-3 top-3 z-10 items-center gap-2 md:inset-x-auto md:left-1/2 md:-translate-x-1/2",
+          isFullscreen ? "flex" : "hidden",
+        )}
+        onPointerDown={(event) => event.stopPropagation()}
       >
         <Button
           variant="outline"
-          className="size-11"
-          aria-label="Приблизить"
-          onClick={() => mapRef.current?.zoomIn(1)}
+          className="h-11 shrink-0 gap-2 bg-card/90 px-4 shadow-sm backdrop-blur"
+          onClick={onOpenList}
         >
-          <Plus className="size-5" />
+          <List data-icon="inline-start" />
+          Места
+          <Badge variant="secondary">{placeCount}</Badge>
         </Button>
-        <Button
-          variant="outline"
-          className="size-11"
-          aria-label="Отдалить"
-          onClick={() => mapRef.current?.zoomOut(1)}
+        <div className="flex min-w-0 gap-2 overflow-x-auto [scrollbar-width:none]">
+          {[
+            { id: "all" as const, label: "Все" },
+            { id: "job" as const, label: "Работы" },
+          ].map((chip) => (
+            <Button
+              key={chip.id}
+              variant={category === chip.id ? "default" : "outline"}
+              aria-pressed={category === chip.id}
+              className={cn("h-11 shrink-0 px-4 shadow-sm", category !== chip.id && "bg-card/90 backdrop-blur")}
+              onClick={() => onCategoryChange(chip.id)}
+            >
+              {chip.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <div
+        className="absolute right-4 top-20 z-10 flex flex-col overflow-hidden rounded-lg border border-border/60 bg-background/90 shadow-lg backdrop-blur-sm md:top-4"
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          className="flex size-10 items-center justify-center border-b border-border/60 text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={() => updateZoom(zoom + 1)}
+          disabled={zoom >= MAX_ZOOM}
+          aria-label="Увеличить масштаб"
+          title="Увеличить масштаб"
         >
-          <Minus className="size-5" />
-        </Button>
-        <Button
-          variant="outline"
-          className="size-11"
-          aria-label="Показать всю карту"
-          onClick={() => mapRef.current?.fitBounds(worldBounds)}
+          <Plus aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          className="flex size-10 items-center justify-center border-b border-border/60 text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={() => updateZoom(zoom - 1)}
+          disabled={zoom <= MIN_ZOOM}
+          aria-label="Уменьшить масштаб"
+          title="Уменьшить масштаб"
         >
-          <Maximize className="size-5" />
-        </Button>
-      </ButtonGroup>
+          <Minus aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          className="flex size-10 items-center justify-center text-foreground transition-colors hover:bg-muted"
+          onClick={toggleFullscreen}
+          aria-label="Развернуть карту на весь экран"
+          title="На весь экран"
+        >
+          <Maximize2 aria-hidden="true" />
+        </button>
+      </div>
+      <div
+        className="absolute left-1/2 top-1/2 aspect-square w-[max(100%,100vh)] select-none"
+        style={{ transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px)) scale(${zoom})` }}
+      >
+        <img
+          src={mapImageUrl}
+          alt="Карта штата Region"
+          className="pointer-events-none size-full object-contain"
+          draggable={false}
+        />
+        {places.map((place) => {
+          const left = ((place.x - MAP_WORLD.minX) / (MAP_WORLD.maxX - MAP_WORLD.minX)) * 100;
+          const top = ((MAP_WORLD.maxY - place.y) / (MAP_WORLD.maxY - MAP_WORLD.minY)) * 100;
+          const selected = selectedId === place.id;
+          return (
+            <button
+              key={place.id}
+              type="button"
+              aria-label={place.name}
+              aria-pressed={selected}
+              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full p-2"
+              style={{ left: `${left}%`, top: `${top}%` }}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => onSelect?.(selected ? null : place.id)}
+            >
+              <span
+                className={cn(
+                  "block size-3 rounded-full bg-primary ring-4 ring-primary/30 transition-transform",
+                  selected && "scale-150",
+                )}
+              />
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
