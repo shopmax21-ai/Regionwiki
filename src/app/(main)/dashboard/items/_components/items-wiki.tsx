@@ -190,7 +190,7 @@ export function ItemsWiki({ initialQuery = "" }: { initialQuery?: string }) {
       </p>
 
       <Dialog open={selectedItem !== null} onOpenChange={(open) => !open && setSelectedItem(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-4xl overflow-y-auto sm:max-h-[calc(100dvh-3rem)]">
           {selectedItem &&
             (() => {
               const Icon = categoryIcons[selectedItem.category];
