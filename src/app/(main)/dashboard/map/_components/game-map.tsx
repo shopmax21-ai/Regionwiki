@@ -1,9 +1,12 @@
 "use client";
 
-import { Maximize2, Minus, Plus } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { cn } from "cn";
+import { List, Maximize2, Minus, Plus } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 import { MAP_WORLD, type MapPlace } from "./map-data";
 
@@ -13,12 +16,24 @@ interface GameMapProps {
   places?: MapPlace[];
   selectedId?: string | null;
   onSelect?: (id: string | null) => void;
+  category: "all" | "job";
+  onCategoryChange: (category: "all" | "job") => void;
+  placeCount: number;
+  onOpenList: () => void;
 }
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 6;
 
-export default function GameMap({ places = [], selectedId, onSelect }: GameMapProps) {
+export default function GameMap({
+  places = [],
+  selectedId,
+  onSelect,
+  category,
+  onCategoryChange,
+  placeCount,
+  onOpenList,
+}: GameMapProps) {
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -81,8 +96,11 @@ export default function GameMap({ places = [], selectedId, onSelect }: GameMapPr
   return (
     <div
       ref={mapRef}
-      className={cn("relative size-full overflow-hidden bg-[#1d3033]", dragging ? "cursor-grabbing" : "cursor-grab", isFullscreen && "bg-background")}
-      className={cn("relative size-full overflow-hidden bg-[#1d3033]", dragging ? "cursor-grabbing" : "cursor-grab")}
+      className={cn(
+        "relative size-full overflow-hidden bg-[#1d3033]",
+        dragging ? "cursor-grabbing" : "cursor-grab",
+        isFullscreen && "bg-background",
+      )}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={() => setDragging(false)}
@@ -96,7 +114,40 @@ export default function GameMap({ places = [], selectedId, onSelect }: GameMapPr
       aria-label="Интерактивная карта штата"
     >
       <div
-        className="absolute right-4 top-4 z-10 flex flex-col overflow-hidden rounded-lg border border-border/60 bg-background/90 shadow-lg backdrop-blur-sm"
+        className={cn(
+          "absolute inset-x-3 top-3 z-10 items-center gap-2 md:inset-x-auto md:left-1/2 md:-translate-x-1/2",
+          isFullscreen ? "flex" : "hidden",
+        )}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <Button
+          variant="outline"
+          className="h-11 shrink-0 gap-2 bg-card/90 px-4 shadow-sm backdrop-blur"
+          onClick={onOpenList}
+        >
+          <List data-icon="inline-start" />
+          Места
+          <Badge variant="secondary">{placeCount}</Badge>
+        </Button>
+        <div className="flex min-w-0 gap-2 overflow-x-auto [scrollbar-width:none]">
+          {[
+            { id: "all" as const, label: "Все" },
+            { id: "job" as const, label: "Работы" },
+          ].map((chip) => (
+            <Button
+              key={chip.id}
+              variant={category === chip.id ? "default" : "outline"}
+              aria-pressed={category === chip.id}
+              className={cn("h-11 shrink-0 px-4 shadow-sm", category !== chip.id && "bg-card/90 backdrop-blur")}
+              onClick={() => onCategoryChange(chip.id)}
+            >
+              {chip.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <div
+        className="absolute right-4 top-20 z-10 flex flex-col overflow-hidden rounded-lg border border-border/60 bg-background/90 shadow-lg backdrop-blur-sm md:top-4"
         onPointerDown={(event) => event.stopPropagation()}
       >
         <button
