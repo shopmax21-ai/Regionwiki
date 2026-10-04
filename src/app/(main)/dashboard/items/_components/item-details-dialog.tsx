@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { cn } from "cn";
 import { Check, Copy, Pencil, Tag, Trash2, Weight, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -34,8 +35,10 @@ function FlagRow({ label, value }: { label: string; value: boolean }) {
   );
 }
 
-function Tile({ children }: { children: React.ReactNode }) {
-  return <div className="flex min-w-0 items-center gap-3 rounded-xl bg-muted/50 px-4 py-3">{children}</div>;
+function Tile({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={cn("flex min-w-0 items-center gap-3 rounded-xl bg-muted/50 px-4 py-3", className)}>{children}</div>
+  );
 }
 
 function CopyId({ id }: { id: number }) {
@@ -52,7 +55,7 @@ function CopyId({ id }: { id: number }) {
   };
 
   return (
-    <Button type="button" variant="ghost" size="icon-xs" onClick={copy} aria-label="Скопировать ID">
+    <Button type="button" variant="ghost" size="icon-xs" className="-mr-1.5 shrink-0" onClick={copy} aria-label="Скопировать ID">
       {copied ? <Check className="text-green-500" /> : <Copy />}
     </Button>
   );
@@ -113,7 +116,7 @@ export function ItemDetailsDialog({ item, canEdit, onOpenChange, onEdit, onDelet
                       {item.weight === undefined ? "—" : `${item.weight.toLocaleString("ru-RU")} кг`}
                     </span>
                   </Tile>
-                  <Tile>
+                  <Tile className="justify-between">
                     <ItemId id={item.id} className="font-medium" />
                     <CopyId id={item.id} />
                   </Tile>

@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 
 import Link from "next/link";
 
-import { Command } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 
+import { RegionMarkOutline } from "@/app/(main)/auth/_components/region-mark-outline";
 import {
   Sidebar,
   SidebarContent,
@@ -38,6 +38,7 @@ export function AppSidebar({
   permissions: string[];
   jobs: JobNavLink[];
 }) {
+  const markId = `rmo-sidebar-${useId().replace(/:/g, "")}`;
   const items = useMemo(
     () => visibleSidebarItems({ authorized, isAdmin, permissions }, jobs),
     [authorized, isAdmin, permissions, jobs],
@@ -60,7 +61,7 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <Link prefetch={false} href="/dashboard/default">
-                <Command />
+                <RegionMarkOutline id={markId} strokeWidth={1.5} className="size-5! group-data-[collapsible=icon]:size-4!" />
                 <span className="font-semibold text-base">{APP_CONFIG.name}</span>
               </Link>
             </SidebarMenuButton>

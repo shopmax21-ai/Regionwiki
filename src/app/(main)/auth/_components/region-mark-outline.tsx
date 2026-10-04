@@ -18,7 +18,15 @@ const CSS = `
 `;
 
 /** Буква R контуром: внутри красная «жидкость» с бегущими волнами. */
-export function RegionMarkOutline({ className, id = "rmo" }: { className?: string; id?: string }) {
+export function RegionMarkOutline({
+  className,
+  id = "rmo",
+  strokeWidth = 2,
+}: {
+  className?: string;
+  id?: string;
+  strokeWidth?: number;
+}) {
   return (
     <svg viewBox="-2 -2 47 46" fill="none" aria-hidden="true" className={cn("overflow-visible", className)}>
       <style>{CSS}</style>
@@ -45,7 +53,7 @@ export function RegionMarkOutline({ className, id = "rmo" }: { className?: strin
 
       <path
         d={R_PATH}
-        strokeWidth="2"
+        strokeWidth={strokeWidth}
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
         className="stroke-foreground/80"
