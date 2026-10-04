@@ -6,10 +6,10 @@ import { validateVehicle } from "@/lib/vehicles/validate";
 
 export const dynamic = "force-dynamic";
 
-/** Добавить транспорт. Только для администраторов. */
+/** Добавить транспорт. Нужно право «Редактирование транспорта». */
 export async function POST(request: NextRequest) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Нужны права администратора" }, { status: 403 });
+  const admin = await getAdmin("transport.edit");
+  if (!admin) return NextResponse.json({ error: "Недостаточно прав для редактирования транспорта" }, { status: 403 });
 
   // Только JSON: форма с другого сайта не сможет отправить такой запрос без CORS-проверки.
   if (!request.headers.get("content-type")?.includes("application/json")) {

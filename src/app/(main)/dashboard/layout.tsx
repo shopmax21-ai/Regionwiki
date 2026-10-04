@@ -5,9 +5,10 @@ import { cookies } from "next/headers";
 import { cn } from "cn";
 
 import { AppSidebar } from "@/app/(main)/dashboard/_components/sidebar/app-sidebar";
-import { getCurrentUser } from "@/lib/auth/current-user";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { getMyPermissions } from "@/lib/auth/admin";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { getPreference } from "@/server/server-actions";
 
 import { LayoutControls } from "./_components/header/layout-controls";
@@ -23,7 +24,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
     getCurrentUser(),
   ]);
   const authorized = session?.status === "approved";
-  const admin = authorized && session?.role === "admin";
+  const permissions = authorized ? await getMyPermissions() : [];
   const user = session ? { id: session.id, name: session.name, username: session.username, role: session.role } : null;
 
   return (
@@ -35,7 +36,13 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant={variant} collapsible={collapsible} user={user} authorized={authorized} admin={admin} />
+      <AppSidebar
+        variant={variant}
+        collapsible={collapsible}
+        user={user}
+        authorized={authorized}
+        permissions={permissions}
+      />
       <SidebarInset
         className={cn(
           "[html[data-content-layout=centered]_&>*]:mx-auto",
@@ -60,7 +67,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
                 orientation="vertical"
                 className="mx-2 data-[orientation=vertical]:h-4 data-[orientation=vertical]:self-center"
               />
-              <SearchDialog authorized={authorized} admin={admin} />
+              <SearchDialog authorized={authorized} permissions={permissions} />
             </div>
             <div className="flex items-center gap-2">
               <LayoutControls />

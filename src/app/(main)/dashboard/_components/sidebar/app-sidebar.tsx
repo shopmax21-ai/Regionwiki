@@ -27,10 +27,10 @@ import { SupportCard } from "./support-card";
 export function AppSidebar({
   user,
   authorized,
-  admin,
+  permissions,
   ...props
-}: React.ComponentProps<typeof Sidebar> & { user: SidebarUser | null; authorized: boolean; admin: boolean }) {
-  const items = useMemo(() => visibleSidebarItems({ authorized, admin }), [authorized, admin]);
+}: React.ComponentProps<typeof Sidebar> & { user: SidebarUser | null; authorized: boolean; permissions: string[] }) {
+  const items = useMemo(() => visibleSidebarItems({ authorized, permissions }), [authorized, permissions]);
   const { sidebarVariant, sidebarCollapsible, isSynced } = usePreferencesStore(
     useShallow((s) => ({
       sidebarVariant: s.values.sidebar_variant,
@@ -61,7 +61,7 @@ export function AppSidebar({
       </SidebarContent>
       <SidebarFooter>
         <SupportCard />
-        <NavUser user={user} />
+        <NavUser user={user} permissions={permissions} />
       </SidebarFooter>
     </Sidebar>
   );

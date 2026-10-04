@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import type { Metadata } from "next";
 
-import { isAdminSession } from "@/lib/auth/admin";
+import { hasPermission } from "@/lib/auth/admin";
 import { getVehicleByCode } from "@/lib/vehicles/store";
 
 import { VehicleDetails } from "../_components/vehicle-details";
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ code: str
 
 export default async function Page({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
-  const [{ vehicle, editable }, admin] = await Promise.all([getVehicleByCode(code), isAdminSession()]);
+  const [{ vehicle, editable }, admin] = await Promise.all([getVehicleByCode(code), hasPermission("transport.edit")]);
 
   if (!vehicle) notFound();
 

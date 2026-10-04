@@ -2,9 +2,9 @@ import { redirect } from "next/navigation";
 
 import type { Metadata } from "next";
 
+import { getAdminContext } from "@/lib/auth/admin";
 import { getAuthConfig } from "@/lib/auth/config";
-import { getCurrentUser } from "@/lib/auth/current-user";
-import { getUser, listUsers } from "@/lib/auth/db";
+import { checkDatabase, listUsers } from "@/lib/auth/db";
 
 import { type UserItem, UsersManager } from "./_components/users-manager";
 
@@ -23,30 +23,44 @@ export default async function Page() {
   const config = getAuthConfig();
   if (!config) redirect("/dashboard");
 
-  const session = await getCurrentUser();
-  if (!session) redirect("/auth/v2/login");
+  const admin = await getAdminContext();
+  if (!admin?.permissions.includes("users.view")) {
+    // Если проблема в базе, а не в правах, говорим об этом честно
+    try {
+      await checkDatabase();
+    } catch {
+      return <Notice>База данных недоступна. Список пользователей появится, когда подключение восстановится.</Notice>;
+    }
+    redirect("/unauthorized");
+  }
 
   let users: UserItem[];
   try {
-    const admin = await getUser(session.id);
-    if (!admin || admin.role !== "admin" || admin.status !== "approved") redirect("/unauthorized");
-
     users = (await listUsers()).map((user) => ({
       telegramId: user.telegramId,
       name: user.name,
       username: user.username,
       status: user.status,
-      role: user.role,
+      adminGroup: user.adminGroup,
       createdAt: user.createdAt.toISOString(),
       lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
       loginCount: user.loginCount,
     }));
   } catch (error) {
-    // redirect() работает через исключение, его пропускаем дальше
-    if (error instanceof Error && "digest" in error) throw error;
     console.error("[users] Не удалось загрузить список", error);
     return <Notice>База данных недоступна. Список пользователей появится, когда подключение восстановится.</Notice>;
   }
 
-  return <UsersManager users={users} currentId={session.id} lockedAdminIds={config.adminIds} />;
+  return (
+    <UsersManager
+      users={users}
+      me={{
+        id: admin.id,
+        level: admin.level,
+        canDecide: admin.permissions.includes("access.decide"),
+        canAssign: admin.permissions.includes("groups.assign"),
+      }}
+      lockedAdminIds={config.adminIds}
+    />
+  );
 }

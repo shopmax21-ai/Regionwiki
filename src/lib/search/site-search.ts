@@ -229,11 +229,10 @@ function buildPlaces(): IndexEntry[] {
 }
 
 let cache: { sections: IndexEntry[]; jobs: IndexEntry[]; after: IndexEntry[] } | null = null;
+let rulesCache: { version: string; entries: IndexEntry[] } | null = null;
 let vehicleCache: { version: number; at: number; entries: IndexEntry[] } | null = null;
-let rulesCache: { version: string; at: number; entries: IndexEntry[] } | null = null;
 
 const VEHICLE_CACHE_MS = 60_000;
-const RULES_CACHE_MS = 60_000;
 
 // Транспорт лежит в базе и меняется администратором, поэтому его записи обновляются отдельно от остального индекса.
 async function getVehicleEntries(): Promise<IndexEntry[]> {
@@ -246,15 +245,11 @@ async function getVehicleEntries(): Promise<IndexEntry[]> {
   return vehicleCache.entries;
 }
 
-// Тексты правил обновляются автосинхронизацией с форума, поэтому индекс пересобирается, когда меняется их версия.
+// Правила обновляются с форума и лежат в базе: индекс пересобирается, когда меняется версия набора правил.
 async function getRuleEntries(): Promise<IndexEntry[]> {
-  if (rulesCache && Date.now() - rulesCache.at < RULES_CACHE_MS) return rulesCache.entries;
-  const version = await getRulesVersion();
-  if (rulesCache && rulesCache.version === version) {
-    rulesCache.at = Date.now();
-    return rulesCache.entries;
-  }
-  rulesCache = { version, at: Date.now(), entries: await buildRules() };
+  const version = await getRulesVersion().catch(() => "");
+  if (rulesCache && rulesCache.version === version) return rulesCache.entries;
+  rulesCache = { version, entries: await buildRules() };
   return rulesCache.entries;
 }
 
@@ -311,7 +306,7 @@ function makeSnippet(body: string, terms: string[]): string | undefined {
 export async function searchSite(
   query: string,
   perGroup = 6,
-  { authorized = false, admin = false }: { authorized?: boolean; admin?: boolean } = {},
+  { authorized = false, permissions = [] }: { authorized?: boolean; permissions?: readonly string[] } = {},
 ): Promise<{ total: number; groups: SearchGroup[] }> {
   const phrase = normalize(query.trim().replace(/\s+/g, " "));
   const terms = toSearchTerms(query);
@@ -320,7 +315,7 @@ export async function searchSite(
   const found = new Map<SearchKind, { item: IndexEntry; score: number }[]>();
 
   for (const item of await getIndex()) {
-    if (!item.external && !isPathVisible(item.href, { authorized, admin })) continue;
+    if (!item.external && !isPathVisible(item.href, { authorized, permissions })) continue;
     const haystack = `${item.titleKey} ${item.bodyKey}`;
     if (!terms.every((term) => haystack.includes(term))) continue;
     const list = found.get(item.kind) ?? [];

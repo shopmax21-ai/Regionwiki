@@ -1,7 +1,6 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
-
 import { type AuthConfig, CODE_LENGTH, CODE_TTL_SECONDS, TELEGRAM_API_URL } from "./config";
-import type { DbUser } from "./db";
+import { type DbUser, getGroupPermissions, listAdmins } from "./db";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 type InlineButton = { text: string; callback_data: string };
 
@@ -53,11 +52,35 @@ export function codeMessage(code: string): string {
 export const userLabel = (user: Pick<DbUser, "name" | "username" | "telegramId">) =>
   `${escapeHtml(user.name)}${user.username ? ` (@${escapeHtml(user.username)})` : ""} · ID ${user.telegramId}`;
 
-/** Новая заявка уходит каждому администратору с кнопками «Одобрить» и «Отклонить». */
+/**
+ * Кому слать уведомление о новой заявке: администраторам с правом «Одобрение доступа», которые не выключили
+ * уведомления в профиле. Администраторы из TELEGRAM_ADMIN_IDS, ещё не входившие на сайт, получают их по умолчанию.
+ */
+export async function requestRecipients(config: AuthConfig): Promise<string[]> {
+  const recipients = new Set<string>();
+  const known = new Set<string>();
+
+  try {
+    const permissions = await getGroupPermissions();
+    for (const admin of await listAdmins()) {
+      known.add(admin.telegramId);
+      const group = config.adminIds.includes(admin.telegramId) ? "chief" : admin.adminGroup;
+      if (group && admin.notifyRequests && permissions[group].includes("access.decide"))
+        recipients.add(admin.telegramId);
+    }
+  } catch (error) {
+    console.error("[auth] Не удалось определить получателей уведомлений, шлём администраторам из настроек", error);
+  }
+
+  for (const id of config.adminIds) if (!known.has(id)) recipients.add(id);
+  return [...recipients];
+}
+
+/** Новая заявка уходит администраторам с кнопками «Одобрить» и «Отклонить». */
 export async function notifyAdminsAboutRequest(config: AuthConfig, user: DbUser) {
   const text = `🆕 <b>Новая заявка на доступ</b>\n\n${userLabel(user)}`;
   await Promise.allSettled(
-    config.adminIds.map((adminId) =>
+    (await requestRecipients(config)).map((adminId) =>
       sendMessage(config, adminId, text, [
         { text: "✅ Одобрить", callback_data: `ap:${user.telegramId}` },
         { text: "⛔ Отклонить", callback_data: `rj:${user.telegramId}` },

@@ -1,10 +1,12 @@
 import { CalendarClock, Fingerprint, LogIn, Monitor } from "lucide-react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DbUser, LoginEvent } from "@/lib/auth/db";
-import { getInitials } from "@/lib/utils";
+
+import { NotificationsCard } from "./notifications-card";
+import { ProfileAvatar } from "./profile-avatar";
+import { SecurityCard } from "./security-card";
 
 const dateFormat = new Intl.DateTimeFormat("ru-RU", { dateStyle: "long", timeStyle: "short" });
 
@@ -38,7 +40,15 @@ function deviceName(userAgent: string | null): string {
   return `${browser} · ${os}`;
 }
 
-export function ProfileView({ user, events }: { user: DbUser; events: LoginEvent[] }) {
+export function ProfileView({
+  user,
+  events,
+  canReceiveRequests,
+}: {
+  user: DbUser;
+  events: LoginEvent[];
+  canReceiveRequests: boolean;
+}) {
   const stats = [
     { icon: Fingerprint, label: "Telegram ID", value: user.telegramId },
     { icon: CalendarClock, label: "Первый вход", value: dateFormat.format(user.createdAt) },
@@ -49,13 +59,12 @@ export function ProfileView({ user, events }: { user: DbUser; events: LoginEvent
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 md:gap-6">
       <Card>
         <CardContent className="flex flex-wrap items-center gap-4">
-          <Avatar className="size-16 rounded-xl">
-            <AvatarImage src="/api/auth/avatar" alt={user.name} />
-            <AvatarFallback className="rounded-xl text-lg">{getInitials(user.name)}</AvatarFallback>
-          </Avatar>
+          <ProfileAvatar name={user.name} />
           <div className="min-w-0 flex-1">
             <h1 className="truncate font-semibold text-xl">{user.name}</h1>
-            <p className="truncate text-muted-foreground text-sm">{user.username ? `@${user.username}` : "Без username"}</p>
+            <p className="truncate text-muted-foreground text-sm">
+              {user.username ? `@${user.username}` : "Без username"}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Badge variant={user.role === "admin" ? "default" : "secondary"}>
@@ -79,6 +88,10 @@ export function ProfileView({ user, events }: { user: DbUser; events: LoginEvent
           </Card>
         ))}
       </div>
+
+      {canReceiveRequests && <NotificationsCard initialEnabled={user.notifyRequests} />}
+
+      <SecurityCard />
 
       <Card>
         <CardHeader>

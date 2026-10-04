@@ -1,11 +1,10 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import type { Metadata } from "next";
 
-import { getAuthConfig, SESSION_COOKIE } from "@/lib/auth/config";
-import { getUser, listUsers } from "@/lib/auth/db";
-import { readSessionToken } from "@/lib/auth/session";
+import { getAdmin } from "@/lib/auth/admin";
+import { getAuthConfig } from "@/lib/auth/config";
+import { listUsers } from "@/lib/auth/db";
 
 import { AccessList } from "./_components/access-list";
 
@@ -17,13 +16,10 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  const config = getAuthConfig();
-  if (!config) redirect("/dashboard");
+  if (!getAuthConfig()) redirect("/dashboard");
 
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
-  const session = token ? await readSessionToken(token, config.secret) : null;
-  const admin = session ? await getUser(session.id) : null;
-  if (!admin || admin.role !== "admin" || admin.status !== "approved") redirect("/unauthorized");
+  const admin = await getAdmin("access.decide");
+  if (!admin) redirect("/unauthorized");
 
   return <AccessList users={await listUsers()} />;
 }

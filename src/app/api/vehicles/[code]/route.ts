@@ -6,10 +6,10 @@ import { validateVehicle } from "@/lib/vehicles/validate";
 
 export const dynamic = "force-dynamic";
 
-/** Изменить транспорт. Код (адрес страницы) не меняется. Только для администраторов. */
+/** Изменить транспорт. Код (адрес страницы) не меняется. Нужно право «Редактирование транспорта». */
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Нужны права администратора" }, { status: 403 });
+  const admin = await getAdmin("transport.edit");
+  if (!admin) return NextResponse.json({ error: "Недостаточно прав для редактирования транспорта" }, { status: 403 });
 
   if (!request.headers.get("content-type")?.includes("application/json")) {
     return NextResponse.json({ error: "Ожидается JSON" }, { status: 415 });

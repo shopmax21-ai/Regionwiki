@@ -75,10 +75,16 @@ function groupNav(items: NavEntry[]) {
   return groups.map((group) => ({ group, items: items.filter((item) => item.group === group) }));
 }
 
-export function SearchDialog({ authorized = false, admin = false }: { authorized?: boolean; admin?: boolean }) {
+export function SearchDialog({
+  authorized = false,
+  permissions = [],
+}: {
+  authorized?: boolean;
+  permissions?: string[];
+}) {
   const recommendations = React.useMemo(
-    () => buildNavEntries(visibleSidebarItems({ authorized, admin })).filter(isRecommended),
-    [authorized, admin],
+    () => buildNavEntries(visibleSidebarItems({ authorized, permissions })).filter(isRecommended),
+    [authorized, permissions],
   );
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");

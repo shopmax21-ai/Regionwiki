@@ -11,6 +11,7 @@ import {
   SESSION_RECHECK_SECONDS,
 } from "@/lib/auth/config";
 import { getUser } from "@/lib/auth/db";
+import { isSessionRevoked } from "@/lib/auth/revocation";
 import { createSessionToken, readSessionToken } from "@/lib/auth/session";
 
 const redirectTo = (request: NextRequest, pathname: string, withNext = false) => {
@@ -34,6 +35,11 @@ export async function proxy(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   const session = token ? await readSessionToken(token, auth.secret) : null;
   if (!session) return redirectTo(request, LOGIN_PATH, true);
+  if (await isSessionRevoked(session)) {
+    const response = redirectTo(request, LOGIN_PATH, true);
+    response.cookies.delete(SESSION_COOKIE);
+    return response;
+  }
   if (session.status !== "approved") return redirectTo(request, PENDING_PATH);
 
   if (Date.now() / 1000 - session.issuedAt < SESSION_RECHECK_SECONDS) return NextResponse.next();
@@ -42,7 +48,13 @@ export async function proxy(request: NextRequest) {
   if (!user) return redirectTo(request, LOGIN_PATH, true);
 
   const refreshed = await createSessionToken(
-    { id: user.telegramId, name: user.name, username: user.username ?? undefined, status: user.status, role: user.role },
+    {
+      id: user.telegramId,
+      name: user.name,
+      username: user.username ?? undefined,
+      status: user.status,
+      role: user.role,
+    },
     auth.secret,
   );
   const response = user.status === "approved" ? NextResponse.next() : redirectTo(request, PENDING_PATH);

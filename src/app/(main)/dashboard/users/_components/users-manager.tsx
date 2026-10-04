@@ -27,23 +27,26 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { type AdminGroup, adminGroups, groupInfo, groupLevel } from "@/lib/auth/groups";
 import { getInitials } from "@/lib/utils";
 
-import { changeUserRole, changeUserStatus } from "../_actions";
+import { changeUserGroup, changeUserStatus } from "../_actions";
 
 export type UserItem = {
   telegramId: string;
   name: string;
   username: string | null;
   status: "pending" | "approved" | "rejected";
-  role: "user" | "admin";
+  adminGroup: AdminGroup | null;
   createdAt: string;
   lastLoginAt: string | null;
   loginCount: number;
 };
 
 type Filter = "all" | "pending" | "approved" | "rejected" | "admin";
-type Action = "approve" | "reject" | "makeAdmin" | "removeAdmin";
+type Action = { type: "approve" } | { type: "reject" } | { type: "group"; group: AdminGroup | "none" };
+
+type Me = { id: string; level: number; canDecide: boolean; canAssign: boolean };
 
 const filters: { id: Filter; label: string }[] = [
   { id: "all", label: "Все" },
@@ -59,30 +62,36 @@ const statusVariant = { pending: "secondary", approved: "default", rejected: "de
 const dateFormat = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
 
 const matchesFilter = (user: UserItem, filter: Filter) =>
-  filter === "all" ? true : filter === "admin" ? user.role === "admin" : user.status === filter;
+  filter === "all" ? true : filter === "admin" ? user.adminGroup !== null : user.status === filter;
 
-const confirmTexts: Record<Action, { title: (name: string) => string; text: string; button: string }> = {
-  approve: {
-    title: (name) => `Одобрить доступ: ${name}?`,
-    text: "Пользователь получит доступ к закрытым разделам, а в Telegram придёт уведомление.",
-    button: "Одобрить",
-  },
-  reject: {
-    title: (name) => `Отклонить доступ: ${name}?`,
-    text: "Пользователь потеряет доступ к закрытым разделам (сессия обновится в течение нескольких минут), а в Telegram придёт уведомление.",
-    button: "Отклонить",
-  },
-  makeAdmin: {
-    title: (name) => `Сделать администратором: ${name}?`,
-    text: "Администратор может одобрять заявки, менять роли и редактировать транспорт. Доступ ему будет одобрен автоматически.",
-    button: "Назначить",
-  },
-  removeAdmin: {
-    title: (name) => `Снять роль администратора: ${name}?`,
-    text: "Пользователь останется участником с одобренным доступом, но потеряет права администратора.",
-    button: "Снять роль",
-  },
-};
+function confirmTexts(action: Action, name: string): { title: string; text: string; button: string } {
+  switch (action.type) {
+    case "approve":
+      return {
+        title: `Одобрить доступ: ${name}?`,
+        text: "Пользователь получит доступ к закрытым разделам, а в Telegram придёт уведомление.",
+        button: "Одобрить",
+      };
+    case "reject":
+      return {
+        title: `Отклонить доступ: ${name}?`,
+        text: "Пользователь потеряет доступ к закрытым разделам (сессия обновится в течение нескольких минут), а в Telegram придёт уведомление.",
+        button: "Отклонить",
+      };
+    case "group":
+      return action.group === "none"
+        ? {
+            title: `Снять группу администратора: ${name}?`,
+            text: "Пользователь останется участником с одобренным доступом, но потеряет все административные права.",
+            button: "Снять группу",
+          }
+        : {
+            title: `Назначить группу «${groupInfo[action.group].label}»: ${name}?`,
+            text: `${groupInfo[action.group].description} Доступ пользователю будет одобрен автоматически.`,
+            button: "Назначить",
+          };
+  }
+}
 
 function UserIdentity({ user }: { user: UserItem }) {
   return (
@@ -100,15 +109,7 @@ function UserIdentity({ user }: { user: UserItem }) {
   );
 }
 
-export function UsersManager({
-  users,
-  currentId,
-  lockedAdminIds,
-}: {
-  users: UserItem[];
-  currentId: string;
-  lockedAdminIds: string[];
-}) {
+export function UsersManager({ users, me, lockedAdminIds }: { users: UserItem[]; me: Me; lockedAdminIds: string[] }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [pendingAction, setPendingAction] = useState<{ user: UserItem; action: Action } | null>(null);
@@ -137,11 +138,9 @@ export function UsersManager({
 
     startTransition(async () => {
       const result =
-        action === "approve"
-          ? await changeUserStatus(user.telegramId, "approved")
-          : action === "reject"
-            ? await changeUserStatus(user.telegramId, "rejected")
-            : await changeUserRole(user.telegramId, action === "makeAdmin" ? "admin" : "user");
+        action.type === "group"
+          ? await changeUserGroup(user.telegramId, action.group)
+          : await changeUserStatus(user.telegramId, action.type === "approve" ? "approved" : "rejected");
 
       if (result.ok) toast.success("Готово");
       else toast.error(result.error);
@@ -150,20 +149,32 @@ export function UsersManager({
   };
 
   const actionsFor = (user: UserItem): { action: Action; label: string; icon: typeof Check }[] => {
-    if (user.telegramId === currentId) return [];
+    if (user.telegramId === me.id || lockedAdminIds.includes(user.telegramId)) return [];
     const list: { action: Action; label: string; icon: typeof Check }[] = [];
+    const targetLevel = groupLevel(user.adminGroup);
 
-    if (user.role !== "admin") {
-      if (user.status !== "approved") list.push({ action: "approve", label: "Одобрить доступ", icon: Check });
-      if (user.status !== "rejected") list.push({ action: "reject", label: "Отклонить доступ", icon: X });
-      list.push({ action: "makeAdmin", label: "Сделать администратором", icon: ShieldCheck });
-    } else if (!lockedAdminIds.includes(user.telegramId)) {
-      list.push({ action: "removeAdmin", label: "Снять роль администратора", icon: ShieldOff });
+    if (me.canDecide && user.adminGroup === null) {
+      if (user.status !== "approved") list.push({ action: { type: "approve" }, label: "Одобрить доступ", icon: Check });
+      if (user.status !== "rejected") list.push({ action: { type: "reject" }, label: "Отклонить доступ", icon: X });
+    }
+
+    // Гл.Администратор меняет любые группы, остальные только ниже своей
+    if (me.canAssign && (me.level >= 4 || targetLevel < me.level)) {
+      for (const group of adminGroups) {
+        if (group === user.adminGroup || (me.level < 4 && groupLevel(group) >= me.level)) continue;
+        list.push({
+          action: { type: "group", group },
+          label: `Назначить: ${groupInfo[group].label}`,
+          icon: ShieldCheck,
+        });
+      }
+      if (user.adminGroup)
+        list.push({ action: { type: "group", group: "none" }, label: "Снять группу администратора", icon: ShieldOff });
     }
     return list;
   };
 
-  const texts = pendingAction ? confirmTexts[pendingAction.action] : null;
+  const texts = pendingAction ? confirmTexts(pendingAction.action, pendingAction.user.name) : null;
 
   return (
     <div className="flex flex-col gap-4 md:gap-6">
@@ -214,7 +225,7 @@ export function UsersManager({
             <TableRow>
               <TableHead className="pl-4">Пользователь</TableHead>
               <TableHead>Статус</TableHead>
-              <TableHead>Роль</TableHead>
+              <TableHead>Группа</TableHead>
               <TableHead className="hidden md:table-cell">Регистрация</TableHead>
               <TableHead className="hidden sm:table-cell">Последний вход</TableHead>
               <TableHead className="hidden lg:table-cell text-right">Входов</TableHead>
@@ -242,8 +253,8 @@ export function UsersManager({
                     <Badge variant={statusVariant[user.status]}>{statusLabel[user.status]}</Badge>
                   </TableCell>
                   <TableCell>
-                    {user.role === "admin" ? (
-                      <Badge variant="secondary">Администратор</Badge>
+                    {user.adminGroup ? (
+                      <Badge variant="secondary">{groupInfo[user.adminGroup].label}</Badge>
                     ) : (
                       <span className="text-muted-foreground text-sm">Участник</span>
                     )}
@@ -267,7 +278,7 @@ export function UsersManager({
                     {user.loginCount}
                   </TableCell>
                   <TableCell className="pr-4 text-right">
-                    {user.telegramId === currentId ? (
+                    {user.telegramId === me.id ? (
                       <span className="text-muted-foreground text-xs">Это вы</span>
                     ) : actions.length > 0 ? (
                       <DropdownMenu>
@@ -278,7 +289,7 @@ export function UsersManager({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           {actions.map(({ action, label, icon: Icon }) => (
-                            <DropdownMenuItem key={action} onSelect={() => setPendingAction({ user, action })}>
+                            <DropdownMenuItem key={label} onSelect={() => setPendingAction({ user, action })}>
                               <Icon /> {label}
                             </DropdownMenuItem>
                           ))}
@@ -300,7 +311,7 @@ export function UsersManager({
       <AlertDialog open={pendingAction !== null} onOpenChange={(open) => !open && !isPending && setPendingAction(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{texts && pendingAction ? texts.title(pendingAction.user.name) : ""}</AlertDialogTitle>
+            <AlertDialogTitle>{texts?.title}</AlertDialogTitle>
             <AlertDialogDescription>{texts?.text}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

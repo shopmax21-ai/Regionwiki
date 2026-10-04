@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import type { Metadata } from "next";
 
+import { getAdminContext } from "@/lib/auth/admin";
 import { LOGIN_PATH } from "@/lib/auth/config";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getLoginEvents, getUser } from "@/lib/auth/db";
@@ -22,5 +23,11 @@ export default async function Page() {
   const user = await getUser(session.id);
   if (!user) redirect(LOGIN_PATH);
 
-  return <ProfileView user={user} events={await getLoginEvents(user.telegramId)} />;
+  // Переключатель уведомлений нужен только тем, кто может рассматривать заявки
+  const admin = await getAdminContext();
+  const canReceiveRequests = admin?.permissions.includes("access.decide") ?? false;
+
+  return (
+    <ProfileView user={user} events={await getLoginEvents(user.telegramId)} canReceiveRequests={canReceiveRequests} />
+  );
 }

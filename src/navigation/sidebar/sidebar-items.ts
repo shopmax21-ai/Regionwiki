@@ -224,7 +224,7 @@ export const sidebarItems: NavGroup[] = [
       },
       {
         id: "roles",
-        title: "Роли",
+        title: "Роли и права",
         url: "/dashboard/roles",
         icon: Lock,
       },
@@ -278,7 +278,6 @@ export const sidebarItems: NavGroup[] = [
 
 /** Пункты меню для текущего посетителя: закрытые разделы видят только вошедшие, а некоторые только администраторы. */
 export function visibleSidebarItems(viewer: Viewer): NavGroup[] {
-  if (viewer.admin) return sidebarItems;
   return sidebarItems
     .map((group) => ({
       ...group,

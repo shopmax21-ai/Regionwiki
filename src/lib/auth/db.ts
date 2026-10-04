@@ -1,6 +1,18 @@
 import { getPool } from "@/lib/db/pool";
 
 import { AuthDependencyError } from "./errors";
+import {
+  type AdminGroup,
+  allPermissions,
+  defaultPermissions,
+  type EditableGroup,
+  editableGroups,
+  isAdminGroup,
+  isEditableGroup,
+  isToggleablePermission,
+  type Permission,
+  permissionDefs,
+} from "./groups";
 import type { AccessRole, AccessStatus } from "./session";
 
 /** Любая ошибка запроса оборачивается, чтобы API мог отличить проблемы с базой от остальных. */
@@ -65,6 +77,26 @@ function ensureSchema(): Promise<void> {
       created_at  timestamptz NOT NULL DEFAULT now(),
       expires_at  timestamptz NOT NULL
     )`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_group text`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS notify_requests boolean NOT NULL DEFAULT true`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS sessions_valid_after timestamptz`;
+    // Администраторы, назначенные до появления групп, становятся Гл.Администраторами
+    await sql`UPDATE users SET admin_group = 'chief' WHERE role = 'admin' AND admin_group IS NULL`;
+    await sql`CREATE TABLE IF NOT EXISTS group_permissions (
+      grp        text NOT NULL,
+      permission text NOT NULL,
+      enabled    boolean NOT NULL,
+      PRIMARY KEY (grp, permission)
+    )`;
+    // Недостающие права добавляются со значениями по умолчанию, уже настроенные не трогаются
+    for (const group of editableGroups) {
+      for (const def of permissionDefs) {
+        if (def.locked) continue;
+        await sql`INSERT INTO group_permissions (grp, permission, enabled)
+          VALUES (${group}, ${def.key}, ${defaultPermissions[group].includes(def.key)})
+          ON CONFLICT (grp, permission) DO NOTHING`;
+      }
+    }
   })().catch((error) => {
     ready = null;
     throw error;
@@ -78,6 +110,10 @@ export type DbUser = {
   username: string | null;
   status: AccessStatus;
   role: AccessRole;
+  /** Группа администратора. У обычных участников null. */
+  adminGroup: AdminGroup | null;
+  /** Присылать ли в Telegram уведомления о новых заявках на доступ (для тех, кто может их рассматривать) */
+  notifyRequests: boolean;
   createdAt: Date;
   decidedAt: Date | null;
   lastLoginAt: Date | null;
@@ -90,6 +126,8 @@ type UserRow = {
   username: string | null;
   status: AccessStatus;
   role: AccessRole;
+  admin_group: string | null;
+  notify_requests: boolean;
   created_at: string;
   decided_at: string | null;
   last_login_at: string | null;
@@ -102,6 +140,8 @@ const toUser = (row: UserRow): DbUser => ({
   username: row.username,
   status: row.status,
   role: row.role,
+  adminGroup: isAdminGroup(row.admin_group) ? row.admin_group : row.role === "admin" ? "chief" : null,
+  notifyRequests: row.notify_requests !== false,
   createdAt: new Date(row.created_at),
   decidedAt: row.decided_at ? new Date(row.decided_at) : null,
   lastLoginAt: row.last_login_at ? new Date(row.last_login_at) : null,
@@ -204,14 +244,16 @@ export async function recordLogin(input: {
   const status: AccessStatus = input.isAdmin ? "approved" : "pending";
   const role: AccessRole = input.isAdmin ? "admin" : "user";
 
-  const rows = await sql`INSERT INTO users (telegram_id, name, username, status, role, last_login_at, login_count)
-    VALUES (${input.telegramId}, ${input.name}, ${input.username}, ${status}, ${role}, now(), 1)
+  const rows =
+    await sql`INSERT INTO users (telegram_id, name, username, status, role, admin_group, last_login_at, login_count)
+    VALUES (${input.telegramId}, ${input.name}, ${input.username}, ${status}, ${role}, ${input.isAdmin ? "chief" : null}, now(), 1)
     ON CONFLICT (telegram_id) DO UPDATE SET
       name = EXCLUDED.name,
       username = EXCLUDED.username,
       last_login_at = now(),
       login_count = users.login_count + 1,
       role = CASE WHEN ${input.isAdmin} THEN 'admin' ELSE users.role END,
+      admin_group = CASE WHEN ${input.isAdmin} THEN 'chief' ELSE users.admin_group END,
       status = CASE WHEN ${input.isAdmin} THEN 'approved' ELSE users.status END
     RETURNING *, (xmax = 0) AS created`;
 
@@ -246,16 +288,67 @@ export async function decideUser(
   return rows[0] ? toUser(rows[0] as UserRow) : null;
 }
 
-/** Назначить или снять роль администратора. Новый администратор сразу получает одобренный доступ. */
-export async function setUserRole(telegramId: string, role: AccessRole, changedBy: string): Promise<DbUser | null> {
+/** Назначить группу администратора (null снимает её). Новый администратор сразу получает одобренный доступ. */
+export async function setUserGroup(
+  telegramId: string,
+  group: AdminGroup | null,
+  changedBy: string,
+): Promise<DbUser | null> {
   await ensureSchema();
-  const rows =
-    role === "admin"
-      ? await sql`UPDATE users SET role = 'admin', status = 'approved', decided_at = now(), decided_by = ${changedBy}
-          WHERE telegram_id = ${telegramId} RETURNING *`
-      : await sql`UPDATE users SET role = 'user', decided_at = now(), decided_by = ${changedBy}
-          WHERE telegram_id = ${telegramId} AND role = 'admin' RETURNING *`;
+  const rows = group
+    ? await sql`UPDATE users SET role = 'admin', admin_group = ${group}, status = 'approved',
+        decided_at = now(), decided_by = ${changedBy}
+        WHERE telegram_id = ${telegramId} RETURNING *`
+    : await sql`UPDATE users SET role = 'user', admin_group = NULL, decided_at = now(), decided_by = ${changedBy}
+        WHERE telegram_id = ${telegramId} RETURNING *`;
   return rows[0] ? toUser(rows[0] as UserRow) : null;
+}
+
+/** Права всех групп. У Гл.Администратора всегда все права, остальные берутся из таблицы. */
+export async function getGroupPermissions(): Promise<Record<AdminGroup, Permission[]>> {
+  await ensureSchema();
+  const rows = await sql`SELECT grp, permission FROM group_permissions WHERE enabled`;
+  const result: Record<AdminGroup, Permission[]> = { helper: [], junior: [], admin: [], chief: [...allPermissions] };
+  for (const row of rows as { grp: string; permission: string }[]) {
+    if (isEditableGroup(row.grp) && isToggleablePermission(row.permission)) result[row.grp].push(row.permission);
+  }
+  return result;
+}
+
+export async function setGroupPermission(
+  group: EditableGroup,
+  permission: Permission,
+  enabled: boolean,
+): Promise<void> {
+  await ensureSchema();
+  await sql`INSERT INTO group_permissions (grp, permission, enabled) VALUES (${group}, ${permission}, ${enabled})
+    ON CONFLICT (grp, permission) DO UPDATE SET enabled = EXCLUDED.enabled`;
+}
+
+export async function setNotifyRequests(telegramId: string, enabled: boolean): Promise<void> {
+  await ensureSchema();
+  await sql`UPDATE users SET notify_requests = ${enabled} WHERE telegram_id = ${telegramId}`;
+}
+
+/** Все одобренные администраторы: им могут уходить уведомления о заявках. */
+export async function listAdmins(): Promise<DbUser[]> {
+  await ensureSchema();
+  const rows = await sql`SELECT * FROM users WHERE role = 'admin' AND status = 'approved'`;
+  return (rows as UserRow[]).map(toUser);
+}
+
+/** «Выйти на всех устройствах»: все сессии, выданные до этого момента, перестают действовать. */
+export async function revokeSessions(telegramId: string): Promise<void> {
+  await ensureSchema();
+  await sql`UPDATE users SET sessions_valid_after = now() WHERE telegram_id = ${telegramId}`;
+}
+
+/** Время (секунды Unix), раньше которого выданные сессии недействительны. 0, если выход со всех устройств не делали. */
+export async function getSessionsValidAfter(telegramId: string): Promise<number> {
+  await ensureSchema();
+  const rows = await sql`SELECT extract(epoch FROM sessions_valid_after)::float8 AS t FROM users
+    WHERE telegram_id = ${telegramId}`;
+  return Number((rows[0] as { t: number | null } | undefined)?.t ?? 0);
 }
 
 export type LoginEvent = { createdAt: Date; ip: string | null; userAgent: string | null };

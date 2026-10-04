@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { canUserDecideAccess } from "@/lib/auth/admin";
 import { generateCode, hashCode, hashToken, isAttemptToken } from "@/lib/auth/attempt";
 import { getAuthConfig } from "@/lib/auth/config";
 import { bindAttempt, decideUser } from "@/lib/auth/db";
@@ -91,7 +92,7 @@ async function handleUpdate(request: NextRequest) {
     const [action, targetId] = callback.data.split(":");
     const adminId = String(callback.from.id);
 
-    if (!config.adminIds.includes(adminId)) {
+    if (!(await canUserDecideAccess(adminId))) {
       await answerCallback(config, callback.id, "Только для администраторов");
       return NextResponse.json({ ok: true });
     }
@@ -107,7 +108,12 @@ async function handleUpdate(request: NextRequest) {
     await answerCallback(config, callback.id, approved ? "Доступ одобрен" : "Заявка отклонена");
     if (callback.message) {
       const verdict = approved ? "✅ Одобрено" : "⛔ Отклонено";
-      await editMessage(config, callback.message.chat.id, callback.message.message_id, `${verdict}\n\n${userLabel(user)}`);
+      await editMessage(
+        config,
+        callback.message.chat.id,
+        callback.message.message_id,
+        `${verdict}\n\n${userLabel(user)}`,
+      );
     }
     await notifyUserDecision(config, user.telegramId, approved);
   }
@@ -116,4 +122,3 @@ async function handleUpdate(request: NextRequest) {
 }
 
 export const dynamic = "force-dynamic";
-

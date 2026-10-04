@@ -3,11 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { EllipsisVertical, LogOut, ShieldCheck, UserRound } from "lucide-react";
-import { siTelegram } from "simple-icons";
+import { Copy, EllipsisVertical, LogIn, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
-import { SimpleIcon } from "@/components/simple-icon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -38,7 +36,13 @@ function UserAvatar({ user, className }: { user: SidebarUser; className?: string
   );
 }
 
-export function NavUser({ user }: { readonly user: SidebarUser | null }) {
+export function NavUser({
+  user,
+  permissions = [],
+}: {
+  readonly user: SidebarUser | null;
+  readonly permissions?: readonly string[];
+}) {
   const { isMobile } = useSidebar();
   const pathname = usePathname();
 
@@ -51,10 +55,11 @@ export function NavUser({ user }: { readonly user: SidebarUser | null }) {
             asChild
             size="lg"
             tooltip="Войти через Telegram"
-            className="justify-center bg-primary font-extrabold text-primary-foreground uppercase tracking-wide hover:bg-primary/90 hover:text-primary-foreground"
+            className="justify-center bg-foreground/[0.08] font-extrabold text-foreground uppercase tracking-wide transition hover:bg-primary hover:text-primary-foreground active:bg-primary active:text-primary-foreground"
           >
             <Link prefetch={false} href={`/auth/v2/login${next}`}>
-              <SimpleIcon icon={siTelegram} className="size-4" />
+              {/* Иконка видна только в свёрнутом сайдбаре, иначе кнопка была бы пустой */}
+              <LogIn className="hidden size-4 group-data-[collapsible=icon]:block" />
               <span>Войти</span>
             </Link>
           </SidebarMenuButton>
@@ -108,7 +113,7 @@ export function NavUser({ user }: { readonly user: SidebarUser | null }) {
                   Профиль
                 </Link>
               </DropdownMenuItem>
-              {user.role === "admin" && (
+              {permissions.includes("access.decide") && (
                 <DropdownMenuItem asChild>
                   <Link prefetch={false} href="/dashboard/access">
                     <ShieldCheck />
@@ -124,7 +129,7 @@ export function NavUser({ user }: { readonly user: SidebarUser | null }) {
                     .catch(() => toast.error("Не удалось скопировать ID"));
                 }}
               >
-                <SimpleIcon icon={siTelegram} className="size-4" />
+                <Copy />
                 Скопировать Telegram ID
               </DropdownMenuItem>
             </DropdownMenuGroup>
