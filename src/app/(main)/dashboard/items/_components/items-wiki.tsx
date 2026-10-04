@@ -190,106 +190,110 @@ export function ItemsWiki({ initialQuery = "" }: { initialQuery?: string }) {
       </p>
 
       <Dialog open={selectedItem !== null} onOpenChange={(open) => !open && setSelectedItem(null)}>
-        <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-4xl overflow-y-auto sm:max-h-[calc(100dvh-3rem)]">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-4xl overflow-y-auto sm:max-h-[calc(100dvh-3rem)] sm:max-w-4xl">
           {selectedItem &&
             (() => {
               const Icon = categoryIcons[selectedItem.category];
               return (
                 <>
-                  <div className="flex flex-col items-center text-center">
-                    <div className="relative flex aspect-square w-full max-w-56 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-muted/70 to-muted/20">
-                      {selectedItem.imageUrl ? (
-                        <Image
-                          src={selectedItem.imageUrl}
-                          alt={selectedItem.name}
-                          fill
-                          sizes="224px"
-                          unoptimized
-                          className="object-contain p-8"
-                        />
-                      ) : (
-                        <Icon className="size-24 text-muted-foreground/35 stroke-[1]" aria-hidden="true" />
-                      )}
+                  <div className="grid gap-6 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+                    <div className="flex flex-col gap-5">
+                      <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-muted/70 to-muted/20">
+                        {selectedItem.imageUrl ? (
+                          <Image
+                            src={selectedItem.imageUrl}
+                            alt={selectedItem.name}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 320px"
+                            unoptimized
+                            className="object-contain p-8"
+                          />
+                        ) : (
+                          <Icon className="size-24 text-muted-foreground/35 stroke-[1]" aria-hidden="true" />
+                        )}
+                      </div>
+                      <DialogHeader>
+                        <DialogTitle className="text-xl">{selectedItem.name}</DialogTitle>
+                        <DialogDescription>{selectedItem.functionality}</DialogDescription>
+                      </DialogHeader>
+                      <section className="rounded-xl border bg-muted/30 p-4" aria-labelledby="item-source-title">
+                        <h3 id="item-source-title" className="font-semibold text-sm">
+                          Где можно получить
+                        </h3>
+                        <p className="mt-1 text-muted-foreground text-sm">
+                          Получить предмет можно в разделе «{selectedItem.category}».
+                        </p>
+                      </section>
                     </div>
-                    <DialogHeader className="mt-5 items-center">
-                      <DialogTitle className="text-xl">{selectedItem.name}</DialogTitle>
-                      <DialogDescription>
-                        {selectedItem.name} — предмет категории «{selectedItem.category}».
-                      </DialogDescription>
-                    </DialogHeader>
-                  </div>
 
-                  <section className="rounded-xl border bg-muted/30 p-4" aria-labelledby="item-source-title">
-                    <h3 id="item-source-title" className="font-semibold text-sm">
-                      Где можно получить
-                    </h3>
-                    <p className="mt-1 text-muted-foreground text-sm">
-                      Получить предмет можно в разделе «{selectedItem.category}».
-                    </p>
-                  </section>
-
-                  <section className="overflow-hidden rounded-xl border" aria-labelledby="item-properties-title">
-                    <h3
-                      id="item-properties-title"
-                      className="border-b bg-muted/30 px-4 py-3 font-semibold text-sm uppercase tracking-wide"
-                    >
-                      Свойства
-                    </h3>
-                    <dl className="divide-y text-sm">
-                      {[
-                        ["Можно использовать в инвентаре", selectedItem.properties.usableInInventory],
-                        ["Возможно достать предмет", selectedItem.properties.obtainable],
-                        ["Выпадает из инвентаря при смерти", selectedItem.properties.dropsOnDeath],
-                        ["Выпадает из инвентаря при выходе из игры", selectedItem.properties.dropsOnExit],
-                        ["Можно перемещать куда-то кроме инвентаря", selectedItem.properties.movableOutsideInventory],
-                        ["Может быть изъято гос. органами", selectedItem.properties.confiscatable],
-                        ["Можно положить в багажник не матовозки", selectedItem.properties.stashableInTrunk],
-                      ].map(([label, value]) => {
-                        const isEnabled = Boolean(value);
-                        const StatusIcon = isEnabled ? Check : X;
-                        return (
-                          <div key={String(label)} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                            <dt className="border-r px-4 py-3 text-muted-foreground">{label}</dt>
-                            <dd className="flex items-center gap-2 px-4 py-3 font-medium">
-                              <StatusIcon
-                                className={isEnabled ? "text-green-500" : "text-red-500"}
-                                aria-hidden="true"
-                              />
-                              {isEnabled ? "Да" : "Нет"}
-                            </dd>
-                          </div>
-                        );
-                      })}
-                    </dl>
-                  </section>
-
-                  <dl className="grid gap-2 text-sm sm:grid-cols-3">
-                    <div className="rounded-lg bg-muted/40 px-3 py-2">
-                      <dt className="text-muted-foreground">Категория</dt>
-                      <dd className="mt-1 font-medium">{selectedItem.category}</dd>
-                    </div>
-                    <div className="rounded-lg bg-muted/40 px-3 py-2">
-                      <dt className="text-muted-foreground">Вес</dt>
-                      <dd className="mt-1 font-medium">{selectedItem.weight} кг</dd>
-                    </div>
-                    <div className="rounded-lg bg-muted/40 px-3 py-2">
-                      <dt className="text-muted-foreground">ID</dt>
-                      <dd className="mt-1 flex items-center gap-1 font-medium">
-                        <IdCard aria-hidden="true" />
-                        <span>{selectedItem.id}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="ml-auto size-7"
-                          aria-label={`Скопировать ID ${selectedItem.id}`}
-                          onClick={() => navigator.clipboard.writeText(String(selectedItem.id))}
+                    <div className="flex min-w-0 flex-col gap-4">
+                      <section className="overflow-hidden rounded-xl border" aria-labelledby="item-properties-title">
+                        <h3
+                          id="item-properties-title"
+                          className="border-b bg-muted/30 px-4 py-3 font-semibold text-sm uppercase tracking-wide"
                         >
-                          <Copy aria-hidden="true" />
-                        </Button>
-                      </dd>
+                          Свойства
+                        </h3>
+                        <dl className="divide-y text-sm">
+                          {[
+                            ["Можно использовать в инвентаре", selectedItem.properties.usableInInventory],
+                            ["Возможно достать предмет", selectedItem.properties.obtainable],
+                            ["Выпадает из инвентаря при смерти", selectedItem.properties.dropsOnDeath],
+                            ["Выпадает из инвентаря при выходе из игры", selectedItem.properties.dropsOnExit],
+                            [
+                              "Можно перемещать куда-то кроме инвентаря",
+                              selectedItem.properties.movableOutsideInventory,
+                            ],
+                            ["Может быть изъято гос. органами", selectedItem.properties.confiscatable],
+                            ["Можно положить в багажник не матовозки", selectedItem.properties.stashableInTrunk],
+                          ].map(([label, value]) => {
+                            const isEnabled = Boolean(value);
+                            const StatusIcon = isEnabled ? Check : X;
+                            return (
+                              <div key={String(label)} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                                <dt className="border-r px-4 py-3 text-muted-foreground">{label}</dt>
+                                <dd className="flex items-center gap-2 px-4 py-3 font-medium">
+                                  <StatusIcon
+                                    className={isEnabled ? "text-green-500" : "text-red-500"}
+                                    aria-hidden="true"
+                                  />
+                                  {isEnabled ? "Да" : "Нет"}
+                                </dd>
+                              </div>
+                            );
+                          })}
+                        </dl>
+                      </section>
+
+                      <dl className="grid gap-2 text-sm sm:grid-cols-3">
+                        <div className="rounded-lg bg-muted/40 px-3 py-2">
+                          <dt className="text-muted-foreground">Категория</dt>
+                          <dd className="mt-1 font-medium">{selectedItem.category}</dd>
+                        </div>
+                        <div className="rounded-lg bg-muted/40 px-3 py-2">
+                          <dt className="text-muted-foreground">Вес</dt>
+                          <dd className="mt-1 font-medium">{selectedItem.weight} кг</dd>
+                        </div>
+                        <div className="rounded-lg bg-muted/40 px-3 py-2">
+                          <dt className="text-muted-foreground">ID</dt>
+                          <dd className="mt-1 flex items-center gap-1 font-medium">
+                            <IdCard aria-hidden="true" />
+                            <span>{selectedItem.id}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="ml-auto size-7"
+                              aria-label={`Скопировать ID ${selectedItem.id}`}
+                              onClick={() => navigator.clipboard.writeText(String(selectedItem.id))}
+                            >
+                              <Copy aria-hidden="true" />
+                            </Button>
+                          </dd>
+                        </div>
+                      </dl>
                     </div>
-                  </dl>
+                  </div>
                 </>
               );
             })()}
