@@ -22,10 +22,10 @@ export default async function Page() {
   const admin = await getAdminContext();
   if (!admin?.permissions.includes("replies.view")) redirect("/unauthorized");
 
-  const { replies, editable } = await listReplies();
+  const { replies, editable, problem } = await listReplies();
   const canEdit = admin.permissions.includes("replies.edit");
   let editor: "on" | "off" | "unavailable" = "off";
   if (canEdit) editor = editable ? "on" : "unavailable";
 
-  return <RepliesBoard replies={replies} editor={editor} />;
+  return <RepliesBoard replies={replies} editor={editor} problem={problem} />;
 }

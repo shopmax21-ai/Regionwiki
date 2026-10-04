@@ -30,7 +30,15 @@ const isLayout = (value: string | null): value is Layout => value === "rows" || 
 /** "on" — можно менять, "off" — только копировать, "unavailable" — права есть, но база не подключена. */
 type EditorState = "on" | "off" | "unavailable";
 
-export function RepliesBoard({ replies, editor }: { replies: QuickReply[]; editor: EditorState }) {
+export function RepliesBoard({
+  replies,
+  editor,
+  problem,
+}: {
+  replies: QuickReply[];
+  editor: EditorState;
+  problem?: string | null;
+}) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState(ALL);
   const [layout, setLayout] = useState<Layout>("columns");
@@ -86,7 +94,15 @@ export function RepliesBoard({ replies, editor }: { replies: QuickReply[]; edito
           className="flex items-start gap-2 rounded-xl border border-dashed p-4 text-muted-foreground text-sm"
         >
           <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          Редактирование временно недоступно: база данных не подключена. Показаны встроенные ответы.
+          <span>
+            Редактирование временно недоступно, показаны встроенные ответы.
+            {problem && (
+              <>
+                {" "}
+                Причина: <code className="break-all text-xs">{problem}</code>
+              </>
+            )}
+          </span>
         </div>
       )}
 

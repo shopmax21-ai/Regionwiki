@@ -39,6 +39,14 @@ async function init(): Promise<void> {
       updated_at timestamptz NOT NULL DEFAULT now(),
       updated_by text
     )`);
+    // Таблица могла быть создана раньше с другим набором колонок: достраиваем недостающие, иначе чтение упадёт.
+    await client.query("ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS position bigserial");
+    await client.query("ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS category text NOT NULL DEFAULT ''");
+    await client.query("ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS title text NOT NULL DEFAULT ''");
+    await client.query("ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS text text NOT NULL DEFAULT ''");
+    await client.query("ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now()");
+    await client.query("ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now()");
+    await client.query("ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS updated_by text");
     const existing = await client.query("SELECT 1 FROM quick_replies LIMIT 1");
     if (existing.rowCount === 0) {
       for (const reply of seedReplies) {
@@ -65,7 +73,8 @@ function ensureReady(): Promise<void> {
   return ready;
 }
 
-export type ReplyList = { replies: QuickReply[]; editable: boolean };
+/** problem — почему редактирование недоступно (null, если всё в порядке). Показывается тем, у кого есть право редактирования. */
+export type ReplyList = { replies: QuickReply[]; editable: boolean; problem: string | null };
 
 type ReplyRow = { id: string; category: string; title: string; text: string };
 
@@ -77,16 +86,19 @@ const toReply = (row: ReplyRow): QuickReply => ({
 });
 
 export async function listReplies(): Promise<ReplyList> {
-  if (!process.env.DATABASE_URL) return { replies: [...seedReplies], editable: false };
+  if (!process.env.DATABASE_URL) {
+    return { replies: [...seedReplies], editable: false, problem: "не задана переменная DATABASE_URL" };
+  }
   try {
     await ensureReady();
     const { rows } = await getPool().query<ReplyRow>(
       "SELECT id, category, title, text FROM quick_replies ORDER BY position ASC",
     );
-    return { replies: rows.map(toReply), editable: true };
+    return { replies: rows.map(toReply), editable: true, problem: null };
   } catch (error) {
     console.error("[replies] База недоступна, показываем встроенные ответы", error);
-    return { replies: [...seedReplies], editable: false };
+    const detail = error instanceof Error ? error.message : String(error);
+    return { replies: [...seedReplies], editable: false, problem: detail.slice(0, 200) };
   }
 }
 
