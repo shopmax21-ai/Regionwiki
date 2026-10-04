@@ -2,16 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import {
-  ChevronLeft,
-  ChevronRight,
-  CircleDollarSign,
-  Funnel,
-  LayoutGrid,
-  Rows2,
-  Search,
-  Sparkles,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, CircleDollarSign, Funnel, LayoutGrid, Rows2, Search, Sparkles } from "lucide-react";
 
 import { FilterDropdown } from "@/app/(main)/dashboard/_components/filter-dropdown";
 import { Badge } from "@/components/ui/badge";
@@ -19,17 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
-import { type Category, categories, vehicles } from "../_data/vehicles";
-import { PriceRangeFilter, type PriceRange } from "./price-range-filter";
+import { type Category, categories, type Vehicle } from "../_data/vehicles";
+import { type PriceRange, PriceRangeFilter } from "./price-range-filter";
 import { VehicleCard } from "./vehicle-card";
+import { VehicleEditor } from "./vehicle-editor";
 import { VehicleRow } from "./vehicle-row";
 
 const PAGE_SIZE = 12;
-
-const priceBounds: PriceRange = [
-  Math.min(...vehicles.map((vehicle) => vehicle.price)),
-  Math.max(...vehicles.map((vehicle) => vehicle.price)),
-];
 
 const sortOptions = [
   { id: "new", label: "Сначала новые" },
@@ -40,25 +27,39 @@ const sortOptions = [
 
 const ALL_SOURCES = "all";
 
-const sourceOptions = [
-  { id: ALL_SOURCES, label: "Все источники" },
-  ...Array.from(new Set(vehicles.flatMap((vehicle) => vehicle.sources))).map((source) => ({
-    id: source,
-    label: source,
-  })),
-];
-
 type SortId = (typeof sortOptions)[number]["id"];
 type ViewMode = "grid" | "list";
 
-export function TransportWiki() {
+export type EditorMode = "off" | "on" | "unavailable";
+
+export function TransportWiki({ vehicles, editor = "off" }: { vehicles: Vehicle[]; editor?: EditorMode }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<Category>("Все");
-  const [priceRange, setPriceRange] = useState<PriceRange>(priceBounds);
+  const [customRange, setPriceRange] = useState<PriceRange | null>(null);
   const [sort, setSort] = useState<SortId>("new");
   const [source, setSource] = useState<string>(ALL_SOURCES);
   const [view, setView] = useState<ViewMode>("grid");
   const [page, setPage] = useState(1);
+
+  const priceBounds = useMemo<PriceRange>(
+    () =>
+      vehicles.length > 0
+        ? [Math.min(...vehicles.map((vehicle) => vehicle.price)), Math.max(...vehicles.map((vehicle) => vehicle.price))]
+        : [0, 0],
+    [vehicles],
+  );
+  const priceRange = customRange ?? priceBounds;
+
+  const sourceOptions = useMemo(
+    () => [
+      { id: ALL_SOURCES, label: "Все источники" },
+      ...Array.from(new Set(vehicles.flatMap((vehicle) => vehicle.sources))).map((source) => ({
+        id: source,
+        label: source,
+      })),
+    ],
+    [vehicles],
+  );
 
   const filteredVehicles = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -77,7 +78,7 @@ export function TransportWiki() {
         if (sort === "speed") return b.speed - a.speed;
         return Number(b.isNew ?? false) - Number(a.isNew ?? false);
       });
-  }, [category, priceRange, query, sort, source]);
+  }, [category, priceRange, query, sort, source, vehicles]);
 
   const pageCount = Math.max(1, Math.ceil(filteredVehicles.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
@@ -93,6 +94,12 @@ export function TransportWiki() {
         <p className="max-w-xl text-sm text-muted-foreground md:text-base">
           Подробные характеристики автомобилей и другой техники
         </p>
+        {editor === "on" && <VehicleEditor mode="create" />}
+        {editor === "unavailable" && (
+          <p role="status" className="max-w-xl rounded-lg border border-dashed px-3 py-2 text-muted-foreground text-xs">
+            База данных недоступна: показаны встроенные данные, добавление и редактирование отключены.
+          </p>
+        )}
       </header>
 
       <section className="flex flex-col gap-3" aria-label="Фильтры транспорта">

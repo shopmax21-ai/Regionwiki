@@ -2,7 +2,7 @@ import { businesses } from "@/app/(main)/dashboard/business/_data/businesses";
 import { jobs } from "@/app/(main)/dashboard/jobs/_data/jobs";
 import { mapPlaces } from "@/app/(main)/dashboard/map/_components/map-data";
 import { realties } from "@/app/(main)/dashboard/real-estate/_data/realties";
-import { vehicles } from "@/app/(main)/dashboard/transport/_data/vehicles";
+import { listVehicles } from "@/lib/vehicles/store";
 
 import { getGroupCards } from "../rules/_components/rules-content";
 import { articleHref, ruleGroups } from "../rules/_components/rules-meta";
@@ -15,7 +15,8 @@ const dateValue = (value: string) => {
 };
 
 /** Серверная обёртка главной: собирает счётчики и свежие правила для клиентского WikiPage. */
-export function WikiHome() {
+export async function WikiHome() {
+  const { vehicles } = await listVehicles();
   const general = getGroupCards("general");
   const government = getGroupCards("government");
 

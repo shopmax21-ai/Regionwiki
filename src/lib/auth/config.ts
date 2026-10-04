@@ -6,15 +6,7 @@ export const SESSION_RECHECK_SECONDS = 5 * 60;
 
 export const LOGIN_PATH = "/auth/v2/login";
 
-/**
- * Разделы, для которых нужен вход и одобрение администратора. Всё остальное открыто без авторизации.
- * Чтобы закрыть новый раздел или страницу, добавьте сюда её путь (действует и на вложенные страницы),
- * например "/dashboard/rules/internal". Сейчас закрыты только личные страницы и заявки.
- */
-export const PROTECTED_PATHS: readonly string[] = ["/dashboard/profile", "/dashboard/access"];
-
-export const isProtectedPath = (pathname: string) =>
-  PROTECTED_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+export { isProtectedPath, PROTECTED_PATHS } from "./protected-paths";
 export const PENDING_PATH = "/auth/v2/pending";
 export const DEFAULT_REDIRECT = "/dashboard";
 

@@ -1,49 +1,7 @@
-import { Pool, type PoolConfig } from "pg";
+import { getPool } from "@/lib/db/pool";
 
 import { AuthDependencyError } from "./errors";
 import type { AccessRole, AccessStatus } from "./session";
-
-/**
- * Обычный Postgres (Railway, Neon, Supabase, свой сервер). Нужна одна переменная DATABASE_URL.
- * Таблицы создаются автоматически при первом обращении.
- *
- * SSL: для хостов *.railway.internal и localhost шифрование выключено, для остальных включено
- * (без проверки цепочки сертификатов — у Railway и многих провайдеров он самоподписанный).
- * Принудительно: DATABASE_SSL=disable — выключить, DATABASE_SSL=require — включить.
- */
-function poolConfig(): PoolConfig {
-  const raw = process.env.DATABASE_URL;
-  if (!raw) throw new Error("DATABASE_URL is not set");
-
-  const url = new URL(raw);
-  // sslmode из строки убираем: драйвер сам трактует require как строгую проверку сертификата.
-  url.searchParams.delete("sslmode");
-
-  const mode = (process.env.DATABASE_SSL ?? "").toLowerCase();
-  const isPrivate = url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname.endsWith(".railway.internal");
-  const useSsl = mode === "require" || (mode !== "disable" && !isPrivate);
-
-  return {
-    connectionString: url.toString(),
-    ssl: useSsl ? { rejectUnauthorized: false } : false,
-    max: 5,
-    connectionTimeoutMillis: 10_000,
-    idleTimeoutMillis: 30_000,
-  };
-}
-
-// Пул живёт в globalThis, чтобы не плодить соединения при горячей перезагрузке в dev.
-const globalForPool = globalThis as unknown as { __regionPool?: Pool };
-
-function getPool(): Pool {
-  if (!globalForPool.__regionPool) {
-    const pool = new Pool(poolConfig());
-    // Без обработчика обрыв соединения в простое роняет весь процесс.
-    pool.on("error", (error) => console.error("[auth] Ошибка неактивного соединения с базой", error));
-    globalForPool.__regionPool = pool;
-  }
-  return globalForPool.__regionPool;
-}
 
 /** Любая ошибка запроса оборачивается, чтобы API мог отличить проблемы с базой от остальных. */
 const sql = async (strings: TemplateStringsArray, ...params: unknown[]): Promise<Record<string, unknown>[]> => {
@@ -154,7 +112,8 @@ const toUser = (row: UserRow): DbUser => ({
 
 export async function countRecentAttempts(ip: string): Promise<number> {
   await ensureSchema();
-  const rows = await sql`SELECT count(*)::int AS n FROM login_attempts WHERE ip = ${ip} AND created_at > now() - interval '1 minute'`;
+  const rows =
+    await sql`SELECT count(*)::int AS n FROM login_attempts WHERE ip = ${ip} AND created_at > now() - interval '1 minute'`;
   return (rows[0] as { n: number }).n;
 }
 
@@ -176,8 +135,12 @@ export async function getAttempt(tokenHash: string): Promise<Attempt | null> {
   await ensureSchema();
   const rows = await sql`SELECT telegram_id, consumed, attempts, expires_at < now() AS expired
     FROM login_attempts WHERE token_hash = ${tokenHash}`;
-  const row = rows[0] as { telegram_id: string | null; consumed: boolean; attempts: number; expired: boolean } | undefined;
-  return row ? { telegramId: row.telegram_id, consumed: row.consumed, expired: row.expired, attempts: row.attempts } : null;
+  const row = rows[0] as
+    | { telegram_id: string | null; consumed: boolean; attempts: number; expired: boolean }
+    | undefined;
+  return row
+    ? { telegramId: row.telegram_id, consumed: row.consumed, expired: row.expired, attempts: row.attempts }
+    : null;
 }
 
 /**
@@ -280,6 +243,18 @@ export async function decideUser(
   await ensureSchema();
   const rows = await sql`UPDATE users SET status = ${status}, decided_at = now(), decided_by = ${decidedBy}
     WHERE telegram_id = ${telegramId} AND role <> 'admin' RETURNING *`;
+  return rows[0] ? toUser(rows[0] as UserRow) : null;
+}
+
+/** Назначить или снять роль администратора. Новый администратор сразу получает одобренный доступ. */
+export async function setUserRole(telegramId: string, role: AccessRole, changedBy: string): Promise<DbUser | null> {
+  await ensureSchema();
+  const rows =
+    role === "admin"
+      ? await sql`UPDATE users SET role = 'admin', status = 'approved', decided_at = now(), decided_by = ${changedBy}
+          WHERE telegram_id = ${telegramId} RETURNING *`
+      : await sql`UPDATE users SET role = 'user', decided_at = now(), decided_by = ${changedBy}
+          WHERE telegram_id = ${telegramId} AND role = 'admin' RETURNING *`;
   return rows[0] ? toUser(rows[0] as UserRow) : null;
 }
 

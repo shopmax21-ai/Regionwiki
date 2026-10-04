@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+
 import Link from "next/link";
 
 import { Command } from "lucide-react";
@@ -15,7 +17,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { APP_CONFIG } from "@/config/app-config";
-import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
+import { visibleSidebarItems } from "@/navigation/sidebar/sidebar-items";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
 import { NavMain } from "./nav-main";
@@ -24,8 +26,11 @@ import { SupportCard } from "./support-card";
 
 export function AppSidebar({
   user,
+  authorized,
+  admin,
   ...props
-}: React.ComponentProps<typeof Sidebar> & { user: SidebarUser | null }) {
+}: React.ComponentProps<typeof Sidebar> & { user: SidebarUser | null; authorized: boolean; admin: boolean }) {
+  const items = useMemo(() => visibleSidebarItems({ authorized, admin }), [authorized, admin]);
   const { sidebarVariant, sidebarCollapsible, isSynced } = usePreferencesStore(
     useShallow((s) => ({
       sidebarVariant: s.values.sidebar_variant,
@@ -52,7 +57,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={sidebarItems} />
+        <NavMain items={items} />
       </SidebarContent>
       <SidebarFooter>
         <SupportCard />

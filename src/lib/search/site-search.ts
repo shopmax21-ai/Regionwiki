@@ -10,13 +10,16 @@ import {
   realties,
   realtyTitle,
 } from "@/app/(main)/dashboard/real-estate/_data/realties";
+import { terms } from "@/app/(main)/dashboard/rp-terms/_data/terms";
 import { getSearchIndex } from "@/app/(main)/dashboard/rules/_components/rules-content";
 import { articleHref, formatRuleRef, ruleGroups } from "@/app/(main)/dashboard/rules/_components/rules-meta";
 import {
   formatPrice as formatVehiclePrice,
-  vehicles,
+  type Vehicle,
   vehicleTitle,
 } from "@/app/(main)/dashboard/transport/_data/vehicles";
+import { isPathVisible } from "@/lib/auth/protected-paths";
+import { getVehiclesVersion, listVehicles } from "@/lib/vehicles/store";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 
 import { normalizeText as normalize, toSearchTerms } from "./terms";
@@ -148,7 +151,7 @@ function buildJobs(): IndexEntry[] {
   );
 }
 
-function buildVehicles(): IndexEntry[] {
+function buildVehicles(vehicles: Vehicle[]): IndexEntry[] {
   return vehicles.map((vehicle) =>
     entry(
       {
@@ -200,6 +203,21 @@ function buildRealties(): IndexEntry[] {
   });
 }
 
+function buildTerms(): IndexEntry[] {
+  return terms.map((item) =>
+    entry(
+      {
+        id: `term-${item.id}`,
+        kind: "term",
+        title: item.term,
+        subtitle: item.title,
+        href: `/dashboard/rp-terms?q=${encodeURIComponent(item.term)}`,
+      },
+      { body: `${item.description} ${item.example ?? ""}`, weight: 10 },
+    ),
+  );
+}
+
 function buildPlaces(): IndexEntry[] {
   return mapPlaces.map((place) =>
     entry(
@@ -209,19 +227,28 @@ function buildPlaces(): IndexEntry[] {
   );
 }
 
-let cache: IndexEntry[] | null = null;
+let cache: { before: IndexEntry[]; after: IndexEntry[] } | null = null;
+let vehicleCache: { version: number; at: number; entries: IndexEntry[] } | null = null;
 
-function getIndex(): IndexEntry[] {
-  cache ??= [
-    ...buildSections(),
-    ...buildRules(),
-    ...buildJobs(),
-    ...buildVehicles(),
-    ...buildBusinesses(),
-    ...buildRealties(),
-    ...buildPlaces(),
-  ];
-  return cache;
+const VEHICLE_CACHE_MS = 60_000;
+
+// Транспорт лежит в базе и меняется администратором, поэтому его записи обновляются отдельно от остального индекса.
+async function getVehicleEntries(): Promise<IndexEntry[]> {
+  const version = getVehiclesVersion();
+  if (vehicleCache && vehicleCache.version === version && Date.now() - vehicleCache.at < VEHICLE_CACHE_MS) {
+    return vehicleCache.entries;
+  }
+  const { vehicles } = await listVehicles();
+  vehicleCache = { version, at: Date.now(), entries: buildVehicles(vehicles) };
+  return vehicleCache.entries;
+}
+
+async function getIndex(): Promise<IndexEntry[]> {
+  cache ??= {
+    before: [...buildSections(), ...buildRules(), ...buildJobs()],
+    after: [...buildBusinesses(), ...buildRealties(), ...buildPlaces(), ...buildTerms()],
+  };
+  return [...cache.before, ...(await getVehicleEntries()), ...cache.after];
 }
 
 function score(item: IndexEntry, terms: string[], phrase: string): number {
@@ -259,14 +286,19 @@ function makeSnippet(body: string, terms: string[]): string | undefined {
   return `${start > 0 ? "…" : ""}${text}${end < body.length ? "…" : ""}`;
 }
 
-export function searchSite(query: string, perGroup = 6): { total: number; groups: SearchGroup[] } {
+export async function searchSite(
+  query: string,
+  perGroup = 6,
+  { authorized = false, admin = false }: { authorized?: boolean; admin?: boolean } = {},
+): Promise<{ total: number; groups: SearchGroup[] }> {
   const phrase = normalize(query.trim().replace(/\s+/g, " "));
   const terms = toSearchTerms(query);
   if (terms.length === 0) return { total: 0, groups: [] };
 
   const found = new Map<SearchKind, { item: IndexEntry; score: number }[]>();
 
-  for (const item of getIndex()) {
+  for (const item of await getIndex()) {
+    if (!item.external && !isPathVisible(item.href, { authorized, admin })) continue;
     const haystack = `${item.titleKey} ${item.bodyKey}`;
     if (!terms.every((term) => haystack.includes(term))) continue;
     const list = found.get(item.kind) ?? [];

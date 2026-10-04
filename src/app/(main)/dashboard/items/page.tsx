@@ -1,22 +1,18 @@
 import type { Metadata } from "next";
 
-import { CatalogPage } from "../_components/catalog/catalog-page";
-import { itemsConfig } from "../_components/catalog/items-config";
+import { ItemsWiki } from "@/app/(main)/dashboard/items/_components/items-wiki";
 
 export const metadata: Metadata = {
-  title: itemsConfig.metaTitle,
-  description: itemsConfig.metaDescription,
-  alternates: {
-    canonical: itemsConfig.basePath,
-  },
+  title: "Предметы | Region WIKI",
+  description: "Таблица предметов проекта: продукты, инструменты, материалы, одежда, медицина и другие категории.",
+  alternates: { canonical: "/dashboard/items" },
 };
 
 interface PageProps {
-  searchParams: Promise<{ view?: string | string[] }>;
+  searchParams: Promise<{ q?: string | string[] }>;
 }
 
 export default async function Page({ searchParams }: PageProps) {
-  const { view } = await searchParams;
-
-  return <CatalogPage config={itemsConfig} view={view === "list" ? "list" : "grid"} />;
+  const { q } = await searchParams;
+  return <ItemsWiki initialQuery={typeof q === "string" ? q.slice(0, 100) : ""} />;
 }

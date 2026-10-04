@@ -1,12 +1,12 @@
 import {
   Banknote,
   BookOpen,
+  BookText,
   BriefcaseBusiness,
   Calendar,
   CarFront,
   ChartBar,
   CheckSquare,
-  Fingerprint,
   FolderOpen,
   Forklift,
   Gauge,
@@ -18,18 +18,19 @@ import {
   ListTodo,
   Lock,
   type LucideIcon,
-  Mail,
   Map as MapIcon,
   MessageSquare,
+  Package,
   Server,
-  ShoppingBag,
   ShieldCheck,
+  ShoppingBag,
   SquareArrowUpRight,
   UserRound,
   Users,
 } from "lucide-react";
 
 import { jobs } from "@/app/(main)/dashboard/jobs/_data/jobs";
+import { isPathVisible, type Viewer } from "@/lib/auth/protected-paths";
 
 export type NavBadge = "new" | "soon";
 
@@ -141,6 +142,12 @@ export const sidebarItems: NavGroup[] = [
         icon: CarFront,
       },
       {
+        id: "items",
+        title: "Предметы",
+        url: "/dashboard/items",
+        icon: Package,
+      },
+      {
         id: "map",
         title: "Карта",
         url: "/dashboard/map",
@@ -173,12 +180,6 @@ export const sidebarItems: NavGroup[] = [
     id: 2,
     label: "Страницы",
     items: [
-      {
-        id: "email",
-        title: "Почта",
-        url: "/dashboard/mail",
-        icon: Mail,
-      },
       {
         id: "chat",
         title: "Чат",
@@ -227,14 +228,6 @@ export const sidebarItems: NavGroup[] = [
         url: "/dashboard/roles",
         icon: Lock,
       },
-      {
-        id: "authentication",
-        title: "Авторизация",
-        icon: Fingerprint,
-        subItems: [
-          { id: "auth-login-v2", title: "Вход", url: "/auth/v2/login", newTab: true },
-        ],
-      },
     ],
   },
   {
@@ -252,6 +245,12 @@ export const sidebarItems: NavGroup[] = [
         title: "Государственных структур",
         url: "/dashboard/rules/government",
         icon: BookOpen,
+      },
+      {
+        id: "rp-terms",
+        title: "RP термины",
+        url: "/dashboard/rp-terms",
+        icon: BookText,
       },
       {
         id: "rules-changelog",
@@ -276,3 +275,14 @@ export const sidebarItems: NavGroup[] = [
     ],
   },
 ];
+
+/** Пункты меню для текущего посетителя: закрытые разделы видят только вошедшие, а некоторые только администраторы. */
+export function visibleSidebarItems(viewer: Viewer): NavGroup[] {
+  if (viewer.admin) return sidebarItems;
+  return sidebarItems
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !("url" in item && item.url) || isPathVisible(item.url, viewer)),
+    }))
+    .filter((group) => group.items.length > 0);
+}

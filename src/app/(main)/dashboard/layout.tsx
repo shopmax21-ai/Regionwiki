@@ -22,6 +22,8 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
     getPreference("sidebar_collapsible"),
     getCurrentUser(),
   ]);
+  const authorized = session?.status === "approved";
+  const admin = authorized && session?.role === "admin";
   const user = session ? { id: session.id, name: session.name, username: session.username, role: session.role } : null;
 
   return (
@@ -33,7 +35,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant={variant} collapsible={collapsible} user={user} />
+      <AppSidebar variant={variant} collapsible={collapsible} user={user} authorized={authorized} admin={admin} />
       <SidebarInset
         className={cn(
           "[html[data-content-layout=centered]_&>*]:mx-auto",
@@ -58,7 +60,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
                 orientation="vertical"
                 className="mx-2 data-[orientation=vertical]:h-4 data-[orientation=vertical]:self-center"
               />
-              <SearchDialog />
+              <SearchDialog authorized={authorized} admin={admin} />
             </div>
             <div className="flex items-center gap-2">
               <LayoutControls />

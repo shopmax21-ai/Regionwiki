@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { formatPrice, formatTrunk, getScrapPrice, type Vehicle, vehicleTitle } from "../_data/vehicles";
+import { VehicleEditor } from "./vehicle-editor";
 import { VehicleImage } from "./vehicle-image";
 import { VehiclePaint } from "./vehicle-paint";
 import { VehicleTuning } from "./vehicle-tuning";
@@ -65,7 +66,7 @@ function SpecTile({ label, value, icon: Icon }: { label: string; value: ReactNod
   );
 }
 
-export function VehicleDetails({ vehicle }: { vehicle: Vehicle }) {
+export function VehicleDetails({ vehicle, canEdit = false }: { vehicle: Vehicle; canEdit?: boolean }) {
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 pb-10">
       <div className="flex flex-col gap-4">
@@ -75,7 +76,10 @@ export function VehicleDetails({ vehicle }: { vehicle: Vehicle }) {
         >
           <ArrowLeft className="size-4" aria-hidden="true" /> Вернуться к списку
         </Link>
-        <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{vehicleTitle(vehicle)}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{vehicleTitle(vehicle)}</h1>
+          {canEdit && <VehicleEditor mode="edit" vehicle={vehicle} />}
+        </div>
       </div>
 
       <Card className="gap-0 py-0">

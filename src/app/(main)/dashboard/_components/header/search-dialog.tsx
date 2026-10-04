@@ -21,7 +21,7 @@ import {
 import { useSiteSearch } from "@/hooks/use-site-search";
 import type { SearchHit } from "@/lib/search/types";
 import type { NavMainItem } from "@/navigation/sidebar/sidebar-items";
-import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
+import { type NavGroup, sidebarItems, visibleSidebarItems } from "@/navigation/sidebar/sidebar-items";
 
 type NavEntry = {
   id: string;
@@ -39,41 +39,47 @@ function getSubItemGroup(groupLabel: string | undefined, itemTitle: string) {
   return sidebarGroupLabels.has(itemTitle) ? (groupLabel ?? "Другое") : itemTitle;
 }
 
-const navEntries: NavEntry[] = sidebarItems.flatMap((group) =>
-  group.items.flatMap((item) => {
-    if (item.subItems) {
-      return item.subItems.map((sub) => ({
-        id: sub.id,
-        group: getSubItemGroup(group.label, item.title),
-        label: sub.title,
-        url: sub.url,
-        icon: item.icon,
-        disabled: sub.disabled,
-        newTab: sub.newTab,
-      }));
-    }
-    return [
-      {
-        id: item.id,
-        group: group.label ?? "Другое",
-        label: item.title,
-        url: item.url,
-        icon: item.icon,
-        disabled: item.disabled,
-        newTab: item.newTab,
-      },
-    ];
-  }),
-);
+function buildNavEntries(groups: NavGroup[]): NavEntry[] {
+  return groups.flatMap((group) =>
+    group.items.flatMap((item) => {
+      if (item.subItems) {
+        return item.subItems.map((sub) => ({
+          id: sub.id,
+          group: getSubItemGroup(group.label, item.title),
+          label: sub.title,
+          url: sub.url,
+          icon: item.icon,
+          disabled: sub.disabled,
+          newTab: sub.newTab,
+        }));
+      }
+      return [
+        {
+          id: item.id,
+          group: group.label ?? "Другое",
+          label: item.title,
+          url: item.url,
+          icon: item.icon,
+          disabled: item.disabled,
+          newTab: item.newTab,
+        },
+      ];
+    }),
+  );
+}
 
-const recommendations = navEntries.filter((item) => !item.disabled && !item.url.includes("coming-soon"));
+const isRecommended = (item: NavEntry) => !item.disabled && !item.url.includes("coming-soon");
 
 function groupNav(items: NavEntry[]) {
   const groups = [...new Set(items.map((item) => item.group))];
   return groups.map((group) => ({ group, items: items.filter((item) => item.group === group) }));
 }
 
-export function SearchDialog() {
+export function SearchDialog({ authorized = false, admin = false }: { authorized?: boolean; admin?: boolean }) {
+  const recommendations = React.useMemo(
+    () => buildNavEntries(visibleSidebarItems({ authorized, admin })).filter(isRecommended),
+    [authorized, admin],
+  );
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const router = useRouter();
@@ -110,7 +116,7 @@ export function SearchDialog() {
     if (!trimmed) return recommendations;
     const needle = trimmed.toLowerCase();
     return recommendations.filter((item) => item.label.toLowerCase().includes(needle));
-  }, [trimmed]);
+  }, [trimmed, recommendations]);
 
   const showRemote = search.active;
 

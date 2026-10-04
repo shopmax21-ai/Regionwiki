@@ -1,5 +1,4 @@
-export const categories = [
-  "Все",
+export const vehicleCategories = [
   "Легковые",
   "Грузовые",
   "Мототехника",
@@ -9,9 +8,12 @@ export const categories = [
   "Водный транспорт",
 ] as const;
 
+export const categories = ["Все", ...vehicleCategories] as const;
+
 export type Category = (typeof categories)[number];
 export type VehicleCategory = Exclude<Category, "Все">;
-export type FuelType = "АИ-92" | "АИ-95" | "АИ-98" | "АИ-100" | "ДТ" | "Электро" | "Нет";
+export const fuelTypes = ["АИ-92", "АИ-95", "АИ-98", "АИ-100", "ДТ", "Электро", "Нет"] as const;
+export type FuelType = (typeof fuelTypes)[number];
 
 export type PlateDesign = {
   name: string;
@@ -142,7 +144,7 @@ export const vehicles: Vehicle[] = [
     category: "Легковые",
     speed: 280,
     tunedSpeed: 302,
-    price:  	1780000,
+    price: 1780000,
     sources: ["Samurai Motors"],
     fuel: "АИ-95",
     trunkKg: 55,
@@ -154,12 +156,21 @@ export const vehicles: Vehicle[] = [
       {
         name: "Двигатель",
         description: "Увеличивает максимальную скорость и ускорение",
-        levels: [{ price: 382800, bonus: "+5 км/ч" }, { price: 574200, bonus: "+10 км/ч" }, { price: 765600, bonus: "+15 км/ч" }, { price: 957000, bonus: "+20 км/ч" }],
+        levels: [
+          { price: 382800, bonus: "+5 км/ч" },
+          { price: 574200, bonus: "+10 км/ч" },
+          { price: 765600, bonus: "+15 км/ч" },
+          { price: 957000, bonus: "+20 км/ч" },
+        ],
       },
       {
         name: "Коробка",
         description: "Улучшает переключение передач и разгон",
-        levels: [{ price: 191400, bonus: "+4 км/ч" }, { price: 287100, bonus: "+8 км/ч" }, { price: 382800, bonus: "+12 км/ч" }],
+        levels: [
+          { price: 191400, bonus: "+4 км/ч" },
+          { price: 287100, bonus: "+8 км/ч" },
+          { price: 382800, bonus: "+12 км/ч" },
+        ],
       },
       {
         name: "Турбо",
@@ -180,7 +191,7 @@ export const vehicles: Vehicle[] = [
     category: "Легковые",
     speed: 210,
     tunedSpeed: 302,
-    price:  	1780000,
+    price: 1780000,
     sources: ["Samurai Motors"],
     fuel: "АИ-95",
     trunkKg: 90,
@@ -192,12 +203,21 @@ export const vehicles: Vehicle[] = [
       {
         name: "Двигатель",
         description: "Увеличивает максимальную скорость и ускорение",
-        levels: [{ price: 382800, bonus: "+5 км/ч" }, { price: 574200, bonus: "+10 км/ч" }, { price: 765600, bonus: "+15 км/ч" }, { price: 957000, bonus: "+20 км/ч" }],
+        levels: [
+          { price: 382800, bonus: "+5 км/ч" },
+          { price: 574200, bonus: "+10 км/ч" },
+          { price: 765600, bonus: "+15 км/ч" },
+          { price: 957000, bonus: "+20 км/ч" },
+        ],
       },
       {
         name: "Коробка",
         description: "Улучшает переключение передач и разгон",
-        levels: [{ price: 191400, bonus: "+4 км/ч" }, { price: 287100, bonus: "+8 км/ч" }, { price: 382800, bonus: "+12 км/ч" }],
+        levels: [
+          { price: 191400, bonus: "+4 км/ч" },
+          { price: 287100, bonus: "+8 км/ч" },
+          { price: 382800, bonus: "+12 км/ч" },
+        ],
       },
       {
         name: "Турбо",

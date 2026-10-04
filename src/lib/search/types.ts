@@ -1,6 +1,6 @@
 /** Типы поиска, общие для сервера (индекс) и клиента (интерфейс). Без серверных зависимостей. */
 
-export type SearchKind = "section" | "rule" | "job" | "vehicle" | "business" | "realty" | "place";
+export type SearchKind = "section" | "rule" | "job" | "vehicle" | "business" | "realty" | "place" | "term";
 
 export const searchKindLabels: Record<SearchKind, string> = {
   section: "Разделы",
@@ -10,10 +10,20 @@ export const searchKindLabels: Record<SearchKind, string> = {
   business: "Бизнесы",
   realty: "Недвижимость",
   place: "Карта",
+  term: "RP термины",
 };
 
 /** Порядок групп в выдаче */
-export const searchKindOrder: SearchKind[] = ["section", "rule", "job", "vehicle", "business", "realty", "place"];
+export const searchKindOrder: SearchKind[] = [
+  "section",
+  "rule",
+  "job",
+  "vehicle",
+  "business",
+  "realty",
+  "place",
+  "term",
+];
 
 export type SearchHit = {
   id: string;

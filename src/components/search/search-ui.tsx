@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 
 import {
   ArrowUpRight,
+  BookText,
   BriefcaseBusiness,
   CarFront,
   FileText,
@@ -25,6 +26,7 @@ export const searchKindIcons: Record<SearchKind, ComponentType<{ className?: str
   business: BriefcaseBusiness,
   realty: House,
   place: MapIcon,
+  term: BookText,
 };
 
 export const SearchFallbackIcon = FileText;
