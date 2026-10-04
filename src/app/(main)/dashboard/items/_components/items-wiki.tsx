@@ -4,7 +4,19 @@ import { useMemo, useState } from "react";
 
 import Image from "next/image";
 
-import { ChevronLeft, ChevronRight, Funnel, Grid2X2, List, Search, Sparkles } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Funnel,
+  Grid2X2,
+  IdCard,
+  List,
+  Search,
+  Sparkles,
+  X,
+} from "lucide-react";
 
 import { FilterDropdown } from "@/app/(main)/dashboard/_components/filter-dropdown";
 import { Badge } from "@/components/ui/badge";
@@ -221,14 +233,66 @@ export function ItemsWiki({ initialQuery = "" }: { initialQuery?: string }) {
                     </p>
                   </section>
 
-                  <dl className="grid gap-2 text-sm sm:grid-cols-2">
-                    <div className="flex justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2">
+                  <section className="overflow-hidden rounded-xl border" aria-labelledby="item-properties-title">
+                    <h3
+                      id="item-properties-title"
+                      className="border-b bg-muted/30 px-4 py-3 font-semibold text-sm uppercase tracking-wide"
+                    >
+                      Свойства
+                    </h3>
+                    <dl className="divide-y text-sm">
+                      {[
+                        ["Можно использовать в инвентаре", selectedItem.properties.usableInInventory],
+                        ["Возможно достать предмет", selectedItem.properties.obtainable],
+                        ["Выпадает из инвентаря при смерти", selectedItem.properties.dropsOnDeath],
+                        ["Выпадает из инвентаря при выходе из игры", selectedItem.properties.dropsOnExit],
+                        ["Можно перемещать куда-то кроме инвентаря", selectedItem.properties.movableOutsideInventory],
+                        ["Может быть изъято гос. органами", selectedItem.properties.confiscatable],
+                        ["Можно положить в багажник не матовозки", selectedItem.properties.stashableInTrunk],
+                      ].map(([label, value]) => {
+                        const isEnabled = Boolean(value);
+                        const StatusIcon = isEnabled ? Check : X;
+                        return (
+                          <div key={String(label)} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                            <dt className="border-r px-4 py-3 text-muted-foreground">{label}</dt>
+                            <dd className="flex items-center gap-2 px-4 py-3 font-medium">
+                              <StatusIcon
+                                className={isEnabled ? "text-green-500" : "text-red-500"}
+                                aria-hidden="true"
+                              />
+                              {isEnabled ? "Да" : "Нет"}
+                            </dd>
+                          </div>
+                        );
+                      })}
+                    </dl>
+                  </section>
+
+                  <dl className="grid gap-2 text-sm sm:grid-cols-3">
+                    <div className="rounded-lg bg-muted/40 px-3 py-2">
                       <dt className="text-muted-foreground">Категория</dt>
-                      <dd className="font-medium">{selectedItem.category}</dd>
+                      <dd className="mt-1 font-medium">{selectedItem.category}</dd>
                     </div>
-                    <div className="flex justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2">
+                    <div className="rounded-lg bg-muted/40 px-3 py-2">
+                      <dt className="text-muted-foreground">Вес</dt>
+                      <dd className="mt-1 font-medium">{selectedItem.weight} кг</dd>
+                    </div>
+                    <div className="rounded-lg bg-muted/40 px-3 py-2">
                       <dt className="text-muted-foreground">ID</dt>
-                      <dd className="font-medium">{selectedItem.id}</dd>
+                      <dd className="mt-1 flex items-center gap-1 font-medium">
+                        <IdCard aria-hidden="true" />
+                        <span>{selectedItem.id}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="ml-auto size-7"
+                          aria-label={`Скопировать ID ${selectedItem.id}`}
+                          onClick={() => navigator.clipboard.writeText(String(selectedItem.id))}
+                        >
+                          <Copy aria-hidden="true" />
+                        </Button>
+                      </dd>
                     </div>
                   </dl>
                 </>
