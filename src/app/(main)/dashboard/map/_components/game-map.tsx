@@ -49,16 +49,15 @@ export default function GameMap({ places = [], selectedId, onSelect }: GameMapPr
 
   const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
     event.preventDefault();
-    setZoom((current) => {
-      const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, current * (event.deltaY > 0 ? 0.9 : 1.1)));
-      const viewport = event.currentTarget.getBoundingClientRect();
-      const scaledSize = Math.max(viewport.width, viewport.height) * next;
-      setOffset((currentOffset) => ({
-        x: clampOffset(currentOffset.x, viewport.width, scaledSize),
-        y: clampOffset(currentOffset.y, viewport.height, scaledSize),
-      }));
-      return next;
-    });
+    const viewport = event.currentTarget.getBoundingClientRect();
+    const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * (event.deltaY > 0 ? 0.9 : 1.1)));
+    const scaledSize = Math.max(viewport.width, viewport.height) * next;
+
+    setZoom(next);
+    setOffset((currentOffset) => ({
+      x: clampOffset(currentOffset.x, viewport.width, scaledSize),
+      y: clampOffset(currentOffset.y, viewport.height, scaledSize),
+    }));
   };
 
   return (
