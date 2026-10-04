@@ -15,7 +15,7 @@ interface GameMapProps {
 }
 
 const MIN_ZOOM = 1;
-const MAX_ZOOM = 4;
+const MAX_ZOOM = 6;
 
 export default function GameMap({ places = [], selectedId, onSelect }: GameMapProps) {
   const [zoom, setZoom] = useState(1);
