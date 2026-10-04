@@ -1,10 +1,43 @@
 import { z } from "zod";
 
-import { JOB_LIMITS } from "@/app/(main)/dashboard/jobs/_data/jobs";
+import { JOB_LIMITS, RESERVED_JOB_SLUGS } from "@/app/(main)/dashboard/jobs/_data/jobs";
 import { SLUG_PATTERN } from "@/app/(main)/dashboard/jobs/_data/slug";
 
 const line = z.string().trim().min(1).max(JOB_LIMITS.item, "Один из пунктов слишком длинный");
 const lines = z.array(line).max(JOB_LIMITS.items, `Не больше ${JOB_LIMITS.items} пунктов в списке`);
+
+const imageSrc = z
+  .string()
+  .trim()
+  .min(1, "У картинки нет адреса")
+  .max(JOB_LIMITS.image, "Ссылка на картинку слишком длинная")
+  .regex(/^(\/(?!\/)|https:\/\/)/, "Картинка: путь вида /api/jobs/images/... или ссылка https://");
+
+const blockText = z.string().trim().min(1, "Один из блоков пустой").max(JOB_LIMITS.blockText, "Текст блока слишком длинный");
+
+const blockSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("heading"), text: blockText.max(JOB_LIMITS.sectionTitle, "Заголовок слишком длинный") }),
+  z.object({ type: z.literal("text"), text: blockText }),
+  z.object({
+    type: z.literal("list"),
+    ordered: z.boolean(),
+    items: z
+      .array(line)
+      .min(1, "В списке нет ни одного пункта")
+      .max(JOB_LIMITS.listItems, `Не больше ${JOB_LIMITS.listItems} пунктов в списке`),
+  }),
+  z.object({ type: z.literal("callout"), variant: z.enum(["tip", "info", "warning"]), text: blockText }),
+  z.object({
+    type: z.literal("image"),
+    src: imageSrc,
+    caption: z
+      .string()
+      .trim()
+      .max(JOB_LIMITS.caption, "Подпись к картинке слишком длинная")
+      .optional()
+      .transform((value) => (value ? value : undefined)),
+  }),
+]);
 
 const optionalText = (max: number, message: string) =>
   z
@@ -20,7 +53,8 @@ export const jobSchema = z.object({
     .trim()
     .min(1, "Укажите адрес гайда")
     .max(60, "Адрес слишком длинный")
-    .regex(SLUG_PATTERN, "Адрес: латинские буквы, цифры и дефис, например voditel-avtobusa"),
+    .regex(SLUG_PATTERN, "Адрес: латинские буквы, цифры и дефис, например voditel-avtobusa")
+    .refine((value) => !RESERVED_JOB_SLUGS.includes(value), "Этот адрес занят, выберите другой"),
   title: z.string().trim().min(1, "Укажите название").max(JOB_LIMITS.title, "Название слишком длинное"),
   kind: z.enum(["legal", "illegal"], { message: "Выберите тип работы" }),
   level: z.coerce
@@ -39,7 +73,7 @@ export const jobSchema = z.object({
   navigator: optionalText(JOB_LIMITS.navigator, "Подсказка навигатора слишком длинная"),
   image: optionalText(JOB_LIMITS.image, "Ссылка на картинку слишком длинная").refine(
     (value) => value === undefined || /^(\/(?!\/)|https:\/\/)/.test(value),
-    "Картинка: путь вида /images/jobs/name.webp или ссылка https://",
+    "Картинка: путь вида /api/jobs/images/... или ссылка https://",
   ),
   sections: z
     .array(
@@ -54,6 +88,8 @@ export const jobSchema = z.object({
     )
     .max(JOB_LIMITS.sections, `Не больше ${JOB_LIMITS.sections} дополнительных разделов`)
     .default([]),
+  /** Содержимое гайда из блочного редактора. Если передано, старые поля списков игнорируются при показе. */
+  blocks: z.array(blockSchema).max(JOB_LIMITS.blocks, `Не больше ${JOB_LIMITS.blocks} блоков в гайде`).optional(),
 });
 
 export type JobInput = z.infer<typeof jobSchema>;

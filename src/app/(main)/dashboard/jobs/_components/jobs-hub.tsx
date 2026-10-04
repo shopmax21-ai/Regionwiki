@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 
 import Link from "next/link";
 
-import { ArrowRight, BriefcaseBusiness, CloudSun, Info, Search, TriangleAlert, Users, X } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, CloudSun, Info, Plus, Search, TriangleAlert, Users, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input";
 
 import { type Job, type JobEditorState, type JobKind, jobKinds, levelLabel, pluralJobs } from "../_data/jobs";
 import { KindBadge } from "./job-badges";
-import { JobEditor } from "./job-editor";
 import { JobImage } from "./job-image";
 
 type Filter = "all" | JobKind;
@@ -87,7 +86,11 @@ export function JobsHub({ jobs, editor, problem }: JobsHubProps) {
           </p>
           {editor === "on" && (
             <div className="mt-6">
-              <JobEditor mode="create" allJobs={jobs} />
+              <Button asChild size="sm">
+                <Link href="/dashboard/jobs/new" prefetch={false}>
+                  <Plus data-icon="inline-start" /> Добавить работу
+                </Link>
+              </Button>
             </div>
           )}
           <div className="relative mt-8 max-w-xl">

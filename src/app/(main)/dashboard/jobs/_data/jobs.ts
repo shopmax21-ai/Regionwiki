@@ -40,12 +40,38 @@ export type Job = {
   navigator?: string;
   /** Картинка 16:9: путь вида /images/... или ссылка https://. Если не задана, берётся из job-images.ts или заглушка. */
   image?: string;
-  /** Дополнительные разделы гайда, которые редакторы добавляют сами */
+  /** Дополнительные разделы гайда, которые редакторы добавляют сами (старый формат, см. blocks) */
   sections?: GuideSection[];
+  /**
+   * Содержимое гайда из блочного редактора. Если поле задано, оно полностью заменяет conditions, income, process,
+   * tips, teamwork, navigator и sections. У встроенных работ его нет: они переводятся в блоки на лету (jobBlocks).
+   */
+  blocks?: GuideBlock[];
 };
 
 /** Свободный раздел гайда: заголовок и список пунктов. */
 export type GuideSection = { title: string; items: string[] };
+
+export type CalloutVariant = "tip" | "info" | "warning";
+
+export const calloutVariants: Record<CalloutVariant, string> = {
+  tip: "Совет",
+  info: "Заметка",
+  warning: "Важно",
+};
+
+/** Блок гайда: из них редактор собирает страницу работы. Заголовки блоков попадают в содержание страницы. */
+export type GuideBlock =
+  | { type: "heading"; text: string }
+  | { type: "text"; text: string }
+  | { type: "list"; ordered: boolean; items: string[] }
+  | { type: "callout"; variant: CalloutVariant; text: string }
+  | { type: "image"; src: string; caption?: string };
+
+export type GuideBlockType = GuideBlock["type"];
+
+/** Адреса, которые нельзя занимать под гайд: они ведут на служебные страницы. */
+export const RESERVED_JOB_SLUGS: readonly string[] = ["new"];
 
 export const JOB_LIMITS = {
   title: 80,
@@ -59,6 +85,10 @@ export const JOB_LIMITS = {
   sectionTitle: 80,
   sections: 12,
   level: 100,
+  blocks: 200,
+  blockText: 4000,
+  caption: 200,
+  listItems: 50,
 } as const;
 
 /**
@@ -617,19 +647,65 @@ export function previousStages(job: Job, all: readonly Job[]) {
   return (job.altRanks ?? []).map((slug) => bySlug.get(slug)).filter((item): item is Job => Boolean(item));
 }
 
+/** Содержимое гайда в виде блоков: из редактора или, для старых записей, собранное из прежних полей. */
+export function jobBlocks(job: Job): GuideBlock[] {
+  if (job.blocks) return job.blocks;
+
+  const blocks: GuideBlock[] = [];
+  const bullets = (items: string[]): GuideBlock => ({ type: "list", ordered: false, items });
+
+  if (job.conditions.length > 0) {
+    blocks.push({ type: "heading", text: "Экипировка и условия" }, bullets(job.conditions));
+  }
+  if (job.income.length > 0 || job.navigator) {
+    blocks.push({ type: "heading", text: "Как зарабатывать" });
+    if (job.income.length > 0) blocks.push(bullets(job.income));
+    if (job.navigator) blocks.push({ type: "callout", variant: "info", text: `**Навигатор:** ${job.navigator}` });
+  }
+  if (job.process.length > 0) {
+    blocks.push({ type: "heading", text: "Процесс работы" }, { type: "list", ordered: true, items: job.process });
+  }
+  if (job.tips.length > 0) {
+    blocks.push({ type: "heading", text: "Советы" });
+    for (const tip of job.tips) blocks.push({ type: "callout", variant: "tip", text: tip });
+  }
+  if (job.teamwork) {
+    blocks.push({ type: "heading", text: "Совместная работа" }, { type: "text", text: job.teamwork });
+  }
+  for (const section of job.sections ?? []) {
+    blocks.push({ type: "heading", text: section.title });
+    if (section.items.length > 0) blocks.push(bullets(section.items));
+  }
+  return blocks;
+}
+
+/** Текст блоков без разметки: для времени чтения и поиска */
+export function blocksText(blocks: readonly GuideBlock[]): string {
+  return blocks
+    .flatMap((block) => {
+      switch (block.type) {
+        case "heading":
+        case "text":
+        case "callout":
+          return [block.text];
+        case "list":
+          return block.items;
+        case "image":
+          return block.caption ? [block.caption] : [];
+      }
+    })
+    .join(" ")
+    .replace(/\*\*/g, "");
+}
+
+/** Весь текст гайда для поиска */
+export function jobText(job: Job): string {
+  return [job.intro, blocksText(jobBlocks(job))].filter(Boolean).join(" ");
+}
+
 /** Примерное время чтения в минутах */
 export function readMinutes(job: Job) {
-  const extra = (job.sections ?? []).flatMap((section) => [section.title, ...section.items]);
-  const text = [
-    job.intro,
-    ...job.conditions,
-    ...job.income,
-    ...job.process,
-    ...job.tips,
-    job.teamwork ?? "",
-    ...extra,
-  ].join(" ");
-  const words = text.split(/\s+/).filter(Boolean).length;
+  const words = jobText(job).split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 120));
 }
 

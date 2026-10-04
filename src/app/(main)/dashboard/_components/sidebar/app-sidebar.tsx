@@ -17,7 +17,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { APP_CONFIG } from "@/config/app-config";
-import { visibleSidebarItems } from "@/navigation/sidebar/sidebar-items";
+import { type JobNavLink, visibleSidebarItems } from "@/navigation/sidebar/sidebar-items";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
 import { NavMain } from "./nav-main";
@@ -28,9 +28,15 @@ export function AppSidebar({
   user,
   authorized,
   permissions,
+  jobs,
   ...props
-}: React.ComponentProps<typeof Sidebar> & { user: SidebarUser | null; authorized: boolean; permissions: string[] }) {
-  const items = useMemo(() => visibleSidebarItems({ authorized, permissions }), [authorized, permissions]);
+}: React.ComponentProps<typeof Sidebar> & {
+  user: SidebarUser | null;
+  authorized: boolean;
+  permissions: string[];
+  jobs: JobNavLink[];
+}) {
+  const items = useMemo(() => visibleSidebarItems({ authorized, permissions }, jobs), [authorized, permissions, jobs]);
   const { sidebarVariant, sidebarCollapsible, isSynced } = usePreferencesStore(
     useShallow((s) => ({
       sidebarVariant: s.values.sidebar_variant,

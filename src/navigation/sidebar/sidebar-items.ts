@@ -30,7 +30,6 @@ import {
   Users,
 } from "lucide-react";
 
-import { jobs } from "@/app/(main)/dashboard/jobs/_data/jobs";
 import { isPathVisible, type Viewer } from "@/lib/auth/protected-paths";
 
 export type NavBadge = "new" | "soon";
@@ -71,7 +70,11 @@ export interface NavGroup {
   items: NavMainItem[];
 }
 
-export const sidebarItems: NavGroup[] = [
+/** Работа в меню: берётся из базы, поэтому добавленные и удалённые работы появляются и исчезают сами. */
+export type JobNavLink = { slug: string; title: string };
+
+function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
+  return [
   {
     id: 1,
     label: "Дашборды",
@@ -172,7 +175,7 @@ export const sidebarItems: NavGroup[] = [
         icon: HardHat,
         subItems: [
           { id: "jobs-all", title: "Всё о работах", url: "/dashboard/jobs" },
-          ...jobs.map((job) => ({ id: `job-${job.slug}`, title: job.title, url: `/dashboard/jobs/${job.slug}` })),
+          ...jobLinks.map((job) => ({ id: `job-${job.slug}`, title: job.title, url: `/dashboard/jobs/${job.slug}` })),
         ],
       },
     ],
@@ -282,10 +285,14 @@ export const sidebarItems: NavGroup[] = [
     ],
   },
 ];
+}
+
+/** Базовое меню без работ: нужно там, где важны только разделы (например, названия групп). */
+export const sidebarItems: NavGroup[] = buildSidebarItems([]);
 
 /** Пункты меню для текущего посетителя: закрытые разделы видят только вошедшие, а некоторые только администраторы. */
-export function visibleSidebarItems(viewer: Viewer): NavGroup[] {
-  return sidebarItems
+export function visibleSidebarItems(viewer: Viewer, jobLinks: readonly JobNavLink[] = []): NavGroup[] {
+  return buildSidebarItems(jobLinks)
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => !("url" in item && item.url) || isPathVisible(item.url, viewer)),

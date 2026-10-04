@@ -21,7 +21,12 @@ import {
 import { useSiteSearch } from "@/hooks/use-site-search";
 import type { SearchHit } from "@/lib/search/types";
 import type { NavMainItem } from "@/navigation/sidebar/sidebar-items";
-import { type NavGroup, sidebarItems, visibleSidebarItems } from "@/navigation/sidebar/sidebar-items";
+import {
+  type JobNavLink,
+  type NavGroup,
+  sidebarItems,
+  visibleSidebarItems,
+} from "@/navigation/sidebar/sidebar-items";
 
 type NavEntry = {
   id: string;
@@ -78,13 +83,15 @@ function groupNav(items: NavEntry[]) {
 export function SearchDialog({
   authorized = false,
   permissions = [],
+  jobs = [],
 }: {
   authorized?: boolean;
   permissions?: string[];
+  jobs?: JobNavLink[];
 }) {
   const recommendations = React.useMemo(
-    () => buildNavEntries(visibleSidebarItems({ authorized, permissions })).filter(isRecommended),
-    [authorized, permissions],
+    () => buildNavEntries(visibleSidebarItems({ authorized, permissions }, jobs)).filter(isRecommended),
+    [authorized, permissions, jobs],
   );
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");

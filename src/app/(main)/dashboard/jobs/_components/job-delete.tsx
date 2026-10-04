@@ -38,6 +38,7 @@ export function JobDelete({ slug, title }: { slug: string; title: string }) {
         toast.success("Работа удалена");
         setOpen(false);
         router.push("/dashboard/jobs");
+        router.refresh();
       } catch {
         toast.error("Нет связи с сервером, попробуйте ещё раз");
       }

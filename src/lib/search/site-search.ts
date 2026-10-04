@@ -3,7 +3,7 @@ import {
   businessTitle,
   formatPrice as formatBusinessPrice,
 } from "@/app/(main)/dashboard/business/_data/businesses";
-import { jobKinds, jobs } from "@/app/(main)/dashboard/jobs/_data/jobs";
+import { type Job, jobKinds, jobText } from "@/app/(main)/dashboard/jobs/_data/jobs";
 import { mapPlaces } from "@/app/(main)/dashboard/map/_components/map-data";
 import {
   formatPrice as formatRealtyPrice,
@@ -19,6 +19,7 @@ import {
   vehicleTitle,
 } from "@/app/(main)/dashboard/transport/_data/vehicles";
 import { isPathVisible } from "@/lib/auth/protected-paths";
+import { getJobsVersion, listJobs } from "@/lib/jobs/store";
 import { getRulesVersion } from "@/lib/rules/store";
 import { getVehiclesVersion, listVehicles } from "@/lib/vehicles/store";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
@@ -124,7 +125,7 @@ async function buildRules(): Promise<IndexEntry[]> {
   return result;
 }
 
-function buildJobs(): IndexEntry[] {
+function buildJobs(jobs: Job[]): IndexEntry[] {
   return jobs.map((job) =>
     entry(
       {
@@ -134,20 +135,7 @@ function buildJobs(): IndexEntry[] {
         subtitle: `${jobKinds[job.kind].title} · ${job.tagline}`,
         href: `/dashboard/jobs/${job.slug}`,
       },
-      {
-        body: [
-          job.intro,
-          ...job.conditions,
-          ...job.income,
-          ...job.process,
-          ...job.tips,
-          job.teamwork ?? "",
-          job.navigator ?? "",
-        ]
-          .filter(Boolean)
-          .join(" "),
-        weight: 20,
-      },
+      { body: jobText(job), weight: 20 },
     ),
   );
 }
@@ -228,11 +216,21 @@ function buildPlaces(): IndexEntry[] {
   );
 }
 
-let cache: { sections: IndexEntry[]; jobs: IndexEntry[]; after: IndexEntry[] } | null = null;
+let cache: { sections: IndexEntry[]; after: IndexEntry[] } | null = null;
+let jobCache: { version: number; at: number; entries: IndexEntry[] } | null = null;
 let rulesCache: { version: string; entries: IndexEntry[] } | null = null;
 let vehicleCache: { version: number; at: number; entries: IndexEntry[] } | null = null;
 
 const VEHICLE_CACHE_MS = 60_000;
+
+// Работы тоже лежат в базе и меняются администратором: индекс обновляется после любой записи и раз в минуту.
+async function getJobEntries(): Promise<IndexEntry[]> {
+  const version = getJobsVersion();
+  if (jobCache && jobCache.version === version && Date.now() - jobCache.at < VEHICLE_CACHE_MS) return jobCache.entries;
+  const { jobs } = await listJobs();
+  jobCache = { version, at: Date.now(), entries: buildJobs(jobs) };
+  return jobCache.entries;
+}
 
 // Транспорт лежит в базе и меняется администратором, поэтому его записи обновляются отдельно от остального индекса.
 async function getVehicleEntries(): Promise<IndexEntry[]> {
@@ -256,13 +254,12 @@ async function getRuleEntries(): Promise<IndexEntry[]> {
 async function getIndex(): Promise<IndexEntry[]> {
   cache ??= {
     sections: buildSections(),
-    jobs: buildJobs(),
     after: [...buildBusinesses(), ...buildRealties(), ...buildPlaces(), ...buildTerms()],
   };
   return [
     ...cache.sections,
     ...(await getRuleEntries()),
-    ...cache.jobs,
+    ...(await getJobEntries()),
     ...(await getVehicleEntries()),
     ...cache.after,
   ];

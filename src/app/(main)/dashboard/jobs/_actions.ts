@@ -19,7 +19,9 @@ function failure(error: unknown): JobActionResult {
   return { ok: false, error: "База данных недоступна, попробуйте позже" };
 }
 
-const refresh = () => revalidatePath("/dashboard/jobs", "layout");
+// Сайдбар живёт в общем layout дашборда, поэтому сбрасываем кеш от него, а не только от /dashboard/jobs:
+// иначе добавленная или удалённая работа не появится и не исчезнет в меню до перезагрузки страницы.
+const refresh = () => revalidatePath("/dashboard", "layout");
 
 const badSlug = (slug: unknown) => typeof slug !== "string" || slug.length === 0 || slug.length > 64;
 

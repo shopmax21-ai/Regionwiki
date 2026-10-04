@@ -1,13 +1,22 @@
 import Link from "next/link";
 
-import { ArrowLeft, ArrowRight, ChevronRight, Clock3, Compass, Lightbulb, Lock, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronRight, Clock3, Lock, Pencil } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
-import { type Job, type JobEditorState, levelLabel, previousStages, readMinutes, unlockedBy } from "../_data/jobs";
+import {
+  type Job,
+  type JobEditorState,
+  jobBlocks,
+  levelLabel,
+  previousStages,
+  readMinutes,
+  unlockedBy,
+} from "../_data/jobs";
+import { GuideSections, groupGuideSections } from "./guide-blocks";
 import { KindBadge } from "./job-badges";
 import { JobDelete } from "./job-delete";
-import { JobEditor } from "./job-editor";
 import { fallbackJobIcon, jobIcons } from "./job-icons";
 import { JobImage } from "./job-image";
 
@@ -21,17 +30,6 @@ function Block({ id, title, children }: { id: string; title: string; children: R
         {children}
       </div>
     </section>
-  );
-}
-
-function Bullets({ items }: { items: string[] }) {
-  return (
-    <ul className="flex list-disc flex-col gap-1.5 pl-5 marker:text-muted-foreground">
-      {items.map((item, index) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: пункты могут повторяться, порядок не меняется
-        <li key={`${index}-${item}`}>{item}</li>
-      ))}
-    </ul>
   );
 }
 
@@ -55,29 +53,35 @@ function JobLink({ job }: { job: Job }) {
   );
 }
 
-type JobArticleProps = { job: Job; jobs: Job[]; editor: JobEditorState };
+type JobArticleViewProps = {
+  job: Job;
+  jobs: Job[];
+  /** Кнопки редактирования в шапке (только для тех, у кого есть право) */
+  actions?: React.ReactNode;
+  /** Предпросмотр в редакторе: ссылки и кнопки отключены, чтобы случайный клик не унёс с несохранённой страницы */
+  preview?: boolean;
+};
 
-export function JobArticle({ job, jobs, editor }: JobArticleProps) {
+/** Страница гайда целиком. Не зависит от сервера, поэтому её же показывает предпросмотр в редакторе. */
+export function JobArticleView({ job, jobs, actions, preview }: JobArticleViewProps) {
   const previous = previousStages(job, jobs);
   const next = unlockedBy(job, jobs);
-  const extra = (job.sections ?? []).map((section, i) => ({ ...section, id: `razdel-${i + 1}` }));
+  const guide = groupGuideSections(jobBlocks(job));
   const index = jobs.findIndex((item) => item.slug === job.slug);
-  const prevJob = jobs[index - 1];
-  const nextJob = jobs[index + 1];
+  const prevJob = index > 0 ? jobs[index - 1] : undefined;
+  const nextJob = index >= 0 ? jobs[index + 1] : undefined;
 
   const sections: Section[] = [
     { id: "dostup", title: "Условия доступа" },
-    ...(job.conditions.length > 0 ? [{ id: "usloviya", title: "Экипировка и условия" }] : []),
-    ...(job.income.length > 0 || job.navigator ? [{ id: "dohod", title: "Как зарабатывать" }] : []),
-    ...(job.process.length > 0 ? [{ id: "protsess", title: "Процесс работы" }] : []),
-    ...(job.tips.length > 0 ? [{ id: "sovety", title: "Советы" }] : []),
-    ...(job.teamwork ? [{ id: "komanda", title: "Совместная работа" }] : []),
-    ...extra.map((section) => ({ id: section.id, title: section.title })),
+    ...guide.flatMap((section) => (section.title ? [{ id: section.id, title: section.title }] : [])),
     ...(next.length > 0 ? [{ id: "dalshe", title: "Что открывается дальше" }] : []),
   ];
 
   return (
-    <main className="mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-6 pb-10">
+    <main
+      inert={preview}
+      className="@container mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-6 pb-10"
+    >
       <section className="rounded-3xl border bg-card px-4 py-6 shadow-sm sm:px-6 sm:py-7 md:px-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link
@@ -86,12 +90,7 @@ export function JobArticle({ job, jobs, editor }: JobArticleProps) {
           >
             <ArrowLeft className="size-4" /> Все работы
           </Link>
-          {editor === "on" && (
-            <div className="flex items-center gap-2">
-              <JobEditor mode="edit" job={job} allJobs={jobs} />
-              <JobDelete slug={job.slug} title={job.title} />
-            </div>
-          )}
+          {actions}
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <KindBadge kind={job.kind} />
@@ -103,26 +102,26 @@ export function JobArticle({ job, jobs, editor }: JobArticleProps) {
           </Badge>
         </div>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight">{job.title}</h1>
-        <p className="mt-3 max-w-2xl text-muted-foreground">{job.intro}</p>
+        <p className="mt-3 max-w-2xl whitespace-pre-line text-muted-foreground">{job.intro}</p>
         <JobImage
           job={job}
-          priority
+          priority={!preview}
           sizes="(max-width: 1152px) 100vw, 1152px"
           className="mt-6 max-h-[420px] w-full rounded-2xl border"
         />
       </section>
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-        <nav aria-label="Содержание" className="min-w-0 lg:sticky lg:top-20 lg:self-start">
-          <p className="mb-2 hidden text-xs font-medium tracking-wide text-muted-foreground uppercase lg:block">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 @3xl:grid-cols-[240px_minmax(0,1fr)]">
+        <nav aria-label="Содержание" className="min-w-0 @3xl:sticky @3xl:top-20 @3xl:self-start">
+          <p className="mb-2 hidden text-xs font-medium tracking-wide text-muted-foreground uppercase @3xl:block">
             Содержание
           </p>
-          <ul className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0">
+          <ul className="flex gap-2 overflow-x-auto pb-1 @3xl:flex-col @3xl:gap-1 @3xl:overflow-visible @3xl:pb-0">
             {sections.map((section) => (
               <li key={section.id} className="shrink-0">
                 <a
                   href={`#${section.id}`}
-                  className="flex rounded-lg border px-3 py-2 text-sm transition-colors hover:border-primary/50 hover:bg-muted/40 lg:border-transparent"
+                  className="flex rounded-lg border px-3 py-2 text-sm transition-colors hover:border-primary/50 hover:bg-muted/40 @3xl:border-transparent"
                 >
                   {section.title}
                 </a>
@@ -153,78 +152,7 @@ export function JobArticle({ job, jobs, editor }: JobArticleProps) {
             </div>
           </Block>
 
-          {job.conditions.length > 0 && (
-            <Block id="usloviya" title="Экипировка и условия">
-              <Bullets items={job.conditions} />
-            </Block>
-          )}
-
-          {(job.income.length > 0 || job.navigator) && (
-            <Block id="dohod" title="Как зарабатывать">
-              <Bullets items={job.income} />
-              {job.navigator && (
-                <p className="mt-4 flex items-start gap-2 rounded-lg border-l-2 border-primary bg-primary/5 px-3 py-2">
-                  <Compass className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                  <span>
-                    <span className="font-semibold">Навигатор:</span> {job.navigator}
-                  </span>
-                </p>
-              )}
-            </Block>
-          )}
-
-          {job.process.length > 0 && (
-            <Block id="protsess" title="Процесс работы">
-              <ol className="flex flex-col gap-3">
-                {job.process.map((step, stepIndex) => (
-                  <li key={step} className="flex items-start gap-3">
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-semibold text-primary">
-                      {stepIndex + 1}
-                    </span>
-                    <span className="pt-0.5">{step}</span>
-                  </li>
-                ))}
-              </ol>
-            </Block>
-          )}
-
-          {job.tips.length > 0 && (
-            <Block id="sovety" title="Советы">
-              <ul className="flex flex-col gap-2">
-                {job.tips.map((tip) => (
-                  <li
-                    key={tip}
-                    className="flex items-start gap-2 rounded-lg border-l-2 border-amber-500/60 bg-amber-500/10 px-3 py-2"
-                  >
-                    <Lightbulb
-                      className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-300"
-                      aria-hidden="true"
-                    />
-                    {tip}
-                  </li>
-                ))}
-              </ul>
-            </Block>
-          )}
-
-          {job.teamwork && (
-            <Block id="komanda" title="Совместная работа">
-              <p className="flex items-start gap-2">
-                <Users className="mt-1 size-4 shrink-0 text-primary" aria-hidden="true" />
-                {job.teamwork}
-              </p>
-            </Block>
-          )}
-
-          {extra.map((section) => (
-            <Block key={section.id} id={section.id} title={section.title}>
-              {section.items.length > 0 ? (
-                <Bullets items={section.items} />
-              ) : (
-                <p className="text-muted-foreground">Раздел пока пуст.</p>
-              )}
-            </Block>
-          ))}
+          <GuideSections sections={guide} />
 
           {next.length > 0 && (
             <Block id="dalshe" title="Что открывается дальше">
@@ -275,4 +203,22 @@ export function JobArticle({ job, jobs, editor }: JobArticleProps) {
       </div>
     </main>
   );
+}
+
+type JobArticleProps = { job: Job; jobs: Job[]; editor: JobEditorState };
+
+export function JobArticle({ job, jobs, editor }: JobArticleProps) {
+  const actions =
+    editor === "on" ? (
+      <div className="flex items-center gap-2">
+        <Button asChild variant="outline" size="sm">
+          <Link href={`/dashboard/jobs/${job.slug}/edit`} prefetch={false}>
+            <Pencil data-icon="inline-start" /> Изменить гайд
+          </Link>
+        </Button>
+        <JobDelete slug={job.slug} title={job.title} />
+      </div>
+    ) : null;
+
+  return <JobArticleView job={job} jobs={jobs} actions={actions} />;
 }

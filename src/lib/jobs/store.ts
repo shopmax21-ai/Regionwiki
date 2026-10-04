@@ -1,4 +1,12 @@
-import { type GuideSection, type Job, jobs as seedJobs } from "@/app/(main)/dashboard/jobs/_data/jobs";
+import { cache } from "react";
+
+import {
+  type CalloutVariant,
+  type GuideBlock,
+  type GuideSection,
+  type Job,
+  jobs as seedJobs,
+} from "@/app/(main)/dashboard/jobs/_data/jobs";
 import { getPool } from "@/lib/db/pool";
 
 import type { JobInput } from "./validate";
@@ -69,6 +77,38 @@ const strings = (value: unknown): string[] =>
 const optionalString = (value: unknown): string | undefined =>
   typeof value === "string" && value.length > 0 ? value : undefined;
 
+const calloutVariantsList: readonly CalloutVariant[] = ["tip", "info", "warning"];
+
+/** Блоки из jsonb: всё, что не похоже на блок, отбрасывается, чтобы испорченная запись не роняла страницу. */
+function toBlocks(value: unknown): GuideBlock[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value.flatMap((raw): GuideBlock[] => {
+    if (!raw || typeof raw !== "object") return [];
+    const block = raw as Record<string, unknown>;
+    const text = typeof block.text === "string" ? block.text : "";
+    switch (block.type) {
+      case "heading":
+        return text ? [{ type: "heading", text }] : [];
+      case "text":
+        return text ? [{ type: "text", text }] : [];
+      case "list": {
+        const items = strings(block.items);
+        return items.length > 0 ? [{ type: "list", ordered: block.ordered === true, items }] : [];
+      }
+      case "callout": {
+        const variant = calloutVariantsList.find((item) => item === block.variant) ?? "tip";
+        return text ? [{ type: "callout", variant, text }] : [];
+      }
+      case "image":
+        return typeof block.src === "string" && block.src
+          ? [{ type: "image", src: block.src, caption: optionalString(block.caption) }]
+          : [];
+      default:
+        return [];
+    }
+  });
+}
+
 /** Собирает работу из jsonb, не доверяя форме данных: старые или испорченные записи не должны ронять страницу. */
 function toJob(slug: string, raw: unknown): Job {
   const data = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
@@ -96,6 +136,7 @@ function toJob(slug: string, raw: unknown): Job {
     navigator: optionalString(data.navigator),
     image: optionalString(data.image),
     sections,
+    blocks: toBlocks(data.blocks),
   };
 }
 
@@ -117,21 +158,35 @@ function toData(input: JobInput): Omit<Job, "slug"> & { slug: string } {
     navigator: input.navigator,
     image: input.image,
     sections: input.sections.length > 0 ? input.sections : undefined,
+    blocks: input.blocks,
   };
 }
+
+// Версия растёт при каждой записи: по ней поиск понимает, что индекс работ устарел.
+let version = 0;
+export const getJobsVersion = () => version;
 
 /** problem — почему редактирование недоступно (null, если всё в порядке). Показывается только тем, у кого есть право. */
 export type JobList = { jobs: Job[]; editable: boolean; problem: string | null };
 
-export async function listJobs(): Promise<JobList> {
+// После сбоя базы недолго не обращаемся к ней: список работ нужен общему layout, и без паузы каждая страница
+// ждала бы таймаут подключения.
+const RETRY_AFTER_MS = 15_000;
+let failure: { at: number; problem: string } | null = null;
+
+async function loadJobs(): Promise<JobList> {
   if (!process.env.DATABASE_URL) {
     return { jobs: [...seedJobs], editable: false, problem: "не задана переменная DATABASE_URL" };
+  }
+  if (failure && Date.now() - failure.at < RETRY_AFTER_MS) {
+    return { jobs: [...seedJobs], editable: false, problem: failure.problem };
   }
   try {
     await ensureReady();
     const { rows } = await getPool().query<{ slug: string; data: unknown }>(
       "SELECT slug, data FROM wiki_jobs ORDER BY position ASC",
     );
+    failure = null;
     const all = rows.map((row) => toJob(row.slug, row.data));
     // Ссылки на удалённые работы убираем, чтобы форма и страницы не показывали «пустые» пути
     const known = new Set(all.map((job) => job.slug));
@@ -140,14 +195,20 @@ export async function listJobs(): Promise<JobList> {
   } catch (error) {
     console.error("[jobs] База недоступна, показываем встроенные работы", error);
     const detail = error instanceof Error ? error.message : String(error);
-    return { jobs: [...seedJobs], editable: false, problem: detail.slice(0, 200) };
+    failure = { at: Date.now(), problem: detail.slice(0, 200) };
+    return { jobs: [...seedJobs], editable: false, problem: failure.problem };
   }
 }
+
+/** Работы из базы. В пределах одного запроса к сайту (layout и страница) база опрашивается один раз. */
+export const listJobs = cache(loadJobs);
 
 async function run<T>(task: () => Promise<T>): Promise<T> {
   try {
     await ensureReady();
-    return await task();
+    const result = await task();
+    version += 1;
+    return result;
   } catch (error) {
     if (error instanceof JobStoreError) throw error;
     throw new JobStoreError("database", error);
