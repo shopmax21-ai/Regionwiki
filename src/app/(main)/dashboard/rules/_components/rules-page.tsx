@@ -19,7 +19,9 @@ import {
   type RuleGroup,
   type RuleSearchEntry,
   ruleGroups,
+  type SyncStatus,
   syncInfo,
+  type ChangelogEntry,
 } from "./rules-meta";
 
 const MAX_RESULTS = 60;
@@ -28,10 +30,12 @@ export function RulesPage({
   group,
   cards,
   searchIndex,
+  sync,
 }: {
   group: RuleGroup;
   cards: RuleArticleCard[];
   searchIndex: RuleSearchEntry[];
+  sync: SyncStatus;
 }) {
   const data = ruleGroups[group];
   const [query, setQuery] = useState("");
@@ -172,7 +176,8 @@ export function RulesPage({
             <Clock3 className="size-4" /> Следующая проверка по расписанию
           </span>
           <span className="flex items-center gap-2">
-            <FileText className="size-4" /> Последняя: {syncInfo.lastChecked}
+            <FileText className="size-4" /> Последняя: {sync.lastChecked ?? "ещё не проверялось"}
+            {sync.lastChecked && !sync.ok ? " (были ошибки)" : ""}
           </span>
         </CardContent>
       </Card>
@@ -180,7 +185,7 @@ export function RulesPage({
   );
 }
 
-export function ChangelogPage() {
+export function ChangelogPage({ entries, sync }: { entries: ChangelogEntry[]; sync: SyncStatus }) {
   return (
     <main className="mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-6 pb-10">
       <section>
@@ -189,11 +194,12 @@ export function ChangelogPage() {
         </Badge>
         <h1 className="text-3xl font-semibold tracking-tight">История изменений</h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
-          Лента изменений правил проекта Region: что добавили, изменили или убрали. Проверка источников выполняется
-          каждые 3 часа.
+          Лента изменений правил проекта Region: что добавили, изменили или убрали. Проверка форума выполняется{" "}
+          {syncInfo.interval.toLowerCase()}. Последняя: {sync.lastChecked ?? "ещё не проверялось"}
+          {sync.lastChecked && !sync.ok ? " (были ошибки)" : ""}.
         </p>
       </section>
-      <ChangelogFeed />
+      <ChangelogFeed entries={entries} />
     </main>
   );
 }

@@ -17,8 +17,7 @@ const dateValue = (value: string) => {
 /** Серверная обёртка главной: собирает счётчики и свежие правила для клиентского WikiPage. */
 export async function WikiHome() {
   const { vehicles } = await listVehicles();
-  const general = getGroupCards("general");
-  const government = getGroupCards("government");
+  const [general, government] = await Promise.all([getGroupCards("general"), getGroupCards("government")]);
 
   const recent: RecentArticle[] = [...general, ...government]
     .sort((a, b) => dateValue(b.updatedAt) - dateValue(a.updatedAt))

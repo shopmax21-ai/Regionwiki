@@ -19,6 +19,7 @@ import {
   vehicleTitle,
 } from "@/app/(main)/dashboard/transport/_data/vehicles";
 import { isPathVisible } from "@/lib/auth/protected-paths";
+import { getRulesVersion } from "@/lib/rules/store";
 import { getVehiclesVersion, listVehicles } from "@/lib/vehicles/store";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 
@@ -83,7 +84,7 @@ function buildSections(): IndexEntry[] {
   return result;
 }
 
-function buildRules(): IndexEntry[] {
+async function buildRules(): Promise<IndexEntry[]> {
   const result: IndexEntry[] = [];
 
   for (const group of ["general", "government"] as const) {
@@ -102,7 +103,7 @@ function buildRules(): IndexEntry[] {
       );
     }
 
-    for (const rule of getSearchIndex(group)) {
+    for (const rule of await getSearchIndex(group)) {
       const body = [rule.text, rule.extra, rule.punishments.join(" ")].filter(Boolean).join(" ");
       const ref = formatRuleRef(rule.tag, rule.number);
       result.push(
@@ -227,10 +228,12 @@ function buildPlaces(): IndexEntry[] {
   );
 }
 
-let cache: { before: IndexEntry[]; after: IndexEntry[] } | null = null;
+let cache: { sections: IndexEntry[]; jobs: IndexEntry[]; after: IndexEntry[] } | null = null;
 let vehicleCache: { version: number; at: number; entries: IndexEntry[] } | null = null;
+let rulesCache: { version: string; at: number; entries: IndexEntry[] } | null = null;
 
 const VEHICLE_CACHE_MS = 60_000;
+const RULES_CACHE_MS = 60_000;
 
 // Транспорт лежит в базе и меняется администратором, поэтому его записи обновляются отдельно от остального индекса.
 async function getVehicleEntries(): Promise<IndexEntry[]> {
@@ -243,12 +246,31 @@ async function getVehicleEntries(): Promise<IndexEntry[]> {
   return vehicleCache.entries;
 }
 
+// Тексты правил обновляются автосинхронизацией с форума, поэтому индекс пересобирается, когда меняется их версия.
+async function getRuleEntries(): Promise<IndexEntry[]> {
+  if (rulesCache && Date.now() - rulesCache.at < RULES_CACHE_MS) return rulesCache.entries;
+  const version = await getRulesVersion();
+  if (rulesCache && rulesCache.version === version) {
+    rulesCache.at = Date.now();
+    return rulesCache.entries;
+  }
+  rulesCache = { version, at: Date.now(), entries: await buildRules() };
+  return rulesCache.entries;
+}
+
 async function getIndex(): Promise<IndexEntry[]> {
   cache ??= {
-    before: [...buildSections(), ...buildRules(), ...buildJobs()],
+    sections: buildSections(),
+    jobs: buildJobs(),
     after: [...buildBusinesses(), ...buildRealties(), ...buildPlaces(), ...buildTerms()],
   };
-  return [...cache.before, ...(await getVehicleEntries()), ...cache.after];
+  return [
+    ...cache.sections,
+    ...(await getRuleEntries()),
+    ...cache.jobs,
+    ...(await getVehicleEntries()),
+    ...cache.after,
+  ];
 }
 
 function score(item: IndexEntry, terms: string[], phrase: string): number {

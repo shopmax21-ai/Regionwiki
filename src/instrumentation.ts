@@ -5,6 +5,12 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
+  // Для автообновления правил нужна только база, вход через Telegram не требуется.
+  if (process.env.DATABASE_URL && process.env.RULES_SYNC !== "off") {
+    const { startRulesScheduler } = await import("@/lib/rules/sync");
+    startRulesScheduler();
+  }
+
   const { getAuthConfig } = await import("@/lib/auth/config");
   const { checkDatabase, databaseHost } = await import("@/lib/auth/db");
   const { logAuthError } = await import("@/lib/auth/errors");

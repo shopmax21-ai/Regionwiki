@@ -15,7 +15,6 @@ import { type DiffPart, diffWords } from "./diff-words";
 import {
   articleHref,
   type ChangelogEntry,
-  changelog,
   formatRuleRef,
   type RuleChange,
   type RuleChangeType,
@@ -149,30 +148,30 @@ function ChangeItem({ change, entry }: { change: RuleChange; entry: ChangelogEnt
   );
 }
 
-export function ChangelogFeed() {
+export function ChangelogFeed({ entries }: { entries: ChangelogEntry[] }) {
   const [filter, setFilter] = useState<Filter>("all");
 
   const counts = useMemo(() => {
     const result: Record<Filter, number> = { all: 0, added: 0, changed: 0, removed: 0 };
-    for (const entry of changelog) {
+    for (const entry of entries) {
       for (const change of entry.changes ?? []) {
         result.all += 1;
         result[change.type] += 1;
       }
     }
     return result;
-  }, []);
+  }, [entries]);
 
   const days = useMemo(() => {
     const groups = new Map<string, { entry: ChangelogEntry; changes: RuleChange[] }[]>();
 
-    for (const entry of changelog) {
+    for (const entry of entries) {
       const changes = (entry.changes ?? []).filter((change) => filter === "all" || change.type === filter);
       if (filter !== "all" && changes.length === 0) continue;
       groups.set(entry.date, [...(groups.get(entry.date) ?? []), { entry, changes }]);
     }
     return [...groups.entries()];
-  }, [filter]);
+  }, [entries, filter]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -215,8 +214,8 @@ export function ChangelogFeed() {
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  {items.map(({ entry, changes }) => (
-                    <Card key={`${entry.date}-${entry.slug}`}>
+                  {items.map(({ entry, changes }, entryIndex) => (
+                    <Card key={`${entry.date}-${entry.slug}-${entryIndex}`}>
                       <CardHeader>
                         <CardTitle className="flex flex-wrap items-center gap-x-3 gap-y-1">
                           <Link
@@ -234,8 +233,12 @@ export function ChangelogFeed() {
                       <CardContent>
                         {changes.length > 0 ? (
                           <ul className="flex flex-col gap-5">
-                            {changes.map((change) => (
-                              <ChangeItem key={`${change.type}-${change.number}`} change={change} entry={entry} />
+                            {changes.map((change, changeIndex) => (
+                              <ChangeItem
+                                key={`${change.type}-${change.number}-${changeIndex}`}
+                                change={change}
+                                entry={entry}
+                              />
                             ))}
                           </ul>
                         ) : (

@@ -1,3 +1,5 @@
+import { loadOverrides, type StoredArticle } from "@/lib/rules/store";
+
 import { adminsRules } from "../_content/admins";
 import { airdropRules } from "../_content/airdrop";
 import { barracksRules } from "../_content/barracks";
@@ -41,37 +43,53 @@ const sources: Record<string, string> = {
 
 const cache = new Map<string, RuleArticleView>();
 
-function build(meta: RuleArticleMeta): RuleArticleView {
-  const raw = sources[meta.slug];
-  const sections = parseRules(raw ?? "");
-  return { ...meta, sections, ruleCount: countRules(sections) };
+/** Встроенный текст из _content. Нужен как запасной вариант и как точка отсчёта при первой синхронизации. */
+export function getStaticSource(slug: string): string | undefined {
+  return sources[slug];
+}
+
+function build(meta: RuleArticleMeta, raw: string, updatedAt: string): RuleArticleView {
+  const sections = parseRules(raw);
+  return { ...meta, updatedAt, sections, ruleCount: countRules(sections) };
+}
+
+/**
+ * Текст берётся из базы (его туда кладёт автообновление с форума), а если там статьи нет или база недоступна,
+ * из встроенных файлов _content. Разобранный текст кешируется по хешу, пока он не изменился.
+ */
+function resolve(meta: RuleArticleMeta, override: StoredArticle | undefined): RuleArticleView | undefined {
+  const raw = override?.rawText ?? sources[meta.slug];
+  if (raw === undefined) return undefined;
+
+  const key = `${meta.group}/${meta.slug}:${override?.hash ?? "static"}`;
+  const cached = cache.get(key);
+  if (cached) return cached;
+
+  for (const existing of cache.keys()) if (existing.startsWith(`${meta.group}/${meta.slug}:`)) cache.delete(existing);
+  const article = build(meta, raw, override?.updatedLabel ?? meta.updatedAt);
+  cache.set(key, article);
+  return article;
 }
 
 export function getGroupSlugs(group: RuleGroup): string[] {
   return ruleGroups[group].articles.map((article) => article.slug);
 }
 
-export function getArticle(group: RuleGroup, slug: string): RuleArticleView | undefined {
+export async function getArticle(group: RuleGroup, slug: string): Promise<RuleArticleView | undefined> {
   const meta = ruleGroups[group].articles.find((article) => article.slug === slug);
-  if (!meta || !(slug in sources)) return undefined;
-
-  const key = `${group}/${slug}`;
-  const cached = cache.get(key);
-  if (cached) return cached;
-
-  const article = build(meta);
-  cache.set(key, article);
-  return article;
+  if (!meta) return undefined;
+  return resolve(meta, (await loadOverrides()).get(slug));
 }
 
-export function getGroupArticles(group: RuleGroup): RuleArticleView[] {
+export async function getGroupArticles(group: RuleGroup): Promise<RuleArticleView[]> {
+  const overrides = await loadOverrides();
   return ruleGroups[group].articles
-    .map((meta) => getArticle(group, meta.slug))
+    .map((meta) => resolve(meta, overrides.get(meta.slug)))
     .filter((article): article is RuleArticleView => Boolean(article));
 }
 
-export function getGroupCards(group: RuleGroup): RuleArticleCard[] {
-  return getGroupArticles(group).map(({ sections: _sections, ...card }) => card);
+export async function getGroupCards(group: RuleGroup): Promise<RuleArticleCard[]> {
+  return (await getGroupArticles(group)).map(({ sections: _sections, ...card }) => card);
 }
 
 function toSearchEntry(article: RuleArticleView, sectionTitle: string, rule: RuleItem): RuleSearchEntry {
@@ -96,8 +114,8 @@ function toSearchEntry(article: RuleArticleView, sectionTitle: string, rule: Rul
   };
 }
 
-export function getSearchIndex(group: RuleGroup): RuleSearchEntry[] {
-  return getGroupArticles(group).flatMap((article) =>
+export async function getSearchIndex(group: RuleGroup): Promise<RuleSearchEntry[]> {
+  return (await getGroupArticles(group)).flatMap((article) =>
     article.sections.flatMap((section) =>
       section.entries
         .filter((entry): entry is RuleItem => entry.type === "rule")
