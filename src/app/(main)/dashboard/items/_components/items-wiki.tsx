@@ -24,7 +24,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 import { type Category, categories, compareByCategory, itemKey, items, pluralItems } from "../_data/items";
 import { categoryIcons, ItemCard, type ItemCardView } from "./item-card";
@@ -110,21 +109,17 @@ export function ItemsWiki({ initialQuery = "" }: { initialQuery?: string }) {
               }}
               className="max-lg:flex-1"
             />
-            <ToggleGroup
-              type="single"
-              value={view}
-              onValueChange={(value) => value && setView(value as ItemCardView)}
+            <Button
+              type="button"
               variant="outline"
               size="sm"
-              aria-label="Вид списка предметов"
+              className="gap-2"
+              aria-label={`Переключить вид: сейчас ${view === "grid" ? "плитка" : "список"}`}
+              onClick={() => setView(view === "grid" ? "list" : "grid")}
             >
-              <ToggleGroupItem value="grid" aria-label="Плитка">
-                <Grid2X2 data-icon="inline-start" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="list" aria-label="Список">
-                <List data-icon="inline-start" />
-              </ToggleGroupItem>
-            </ToggleGroup>
+              {view === "grid" ? <Grid2X2 data-icon="inline-start" /> : <List data-icon="inline-start" />}
+              {view === "grid" ? "Плитка" : "Список"}
+            </Button>
           </div>
         </div>
 
@@ -195,7 +190,7 @@ export function ItemsWiki({ initialQuery = "" }: { initialQuery?: string }) {
       </p>
 
       <Dialog open={selectedItem !== null} onOpenChange={(open) => !open && setSelectedItem(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl">
           {selectedItem &&
             (() => {
               const Icon = categoryIcons[selectedItem.category];
