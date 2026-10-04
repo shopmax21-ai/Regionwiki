@@ -1,5 +1,6 @@
 import Image from "next/image";
 
+import { cn } from "cn";
 import {
   Apple,
   Backpack,
@@ -30,14 +31,6 @@ import { Card } from "@/components/ui/card";
 
 import type { Item, ItemCategory } from "../_data/items";
 
-export type ItemCardView = "grid" | "list";
-
-interface ItemCardProps {
-  item: Item;
-  view?: ItemCardView;
-  onSelect?: (item: Item) => void;
-}
-
 export const categoryIcons: Record<ItemCategory, typeof Package> = {
   Продукты: Apple,
   Инструменты: Wrench,
@@ -65,25 +58,29 @@ export const categoryIcons: Record<ItemCategory, typeof Package> = {
 };
 
 /** Картинка предмета. Если её ещё нет, показывается иконка категории. */
-function ItemImage({ item, view }: { item: Item; view: ItemCardView }) {
+export function ItemImage({
+  item,
+  sizes,
+  className,
+  imageClassName,
+}: {
+  item: Item;
+  sizes: string;
+  className?: string;
+  imageClassName?: string;
+}) {
   const Icon = categoryIcons[item.category];
 
   return (
-    <div
-      className={
-        view === "list"
-          ? "relative size-16 shrink-0 overflow-hidden rounded-md bg-gradient-to-b from-muted/70 to-muted/20"
-          : "relative aspect-square overflow-hidden border-b bg-gradient-to-b from-muted/70 to-muted/20"
-      }
-    >
+    <div className={cn("relative aspect-square overflow-hidden bg-gradient-to-b from-muted/70 to-muted/20", className)}>
       {item.imageUrl ? (
         <Image
           src={item.imageUrl}
           alt={item.name}
           fill
-          sizes={view === "list" ? "64px" : "(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"}
+          sizes={sizes}
           unoptimized
-          className="object-contain p-4 transition-transform duration-300 group-hover/item:scale-105"
+          className={cn("object-contain p-4", imageClassName)}
         />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/30">
@@ -94,57 +91,45 @@ function ItemImage({ item, view }: { item: Item; view: ItemCardView }) {
   );
 }
 
-export function ItemCard({ item, view = "grid", onSelect }: ItemCardProps) {
-  const isList = view === "list";
-
+/** Значок «ID» и номер предмета: такой же, как в карточках транспорта, бизнесов и недвижимости. */
+export function ItemId({ id, className }: { id: number; className?: string }) {
   return (
-    <Card
-      className={
-        isList
-          ? "group/item flex cursor-pointer flex-row items-center gap-3 p-3 transition-shadow hover:ring-primary/50"
-          : "group/item h-full cursor-pointer gap-0 py-0 transition-shadow hover:ring-primary/50"
-      }
-      role="button"
-      tabIndex={0}
-      onClick={() => onSelect?.(item)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onSelect?.(item);
-        }
-      }}
-    >
-      <ItemImage item={item} view={view} />
-
-      <div className={isList ? "min-w-0 flex-1" : "flex flex-col gap-0.5 px-3 py-3"}>
-        <h2
-          className={
-            isList
-              ? "truncate font-semibold leading-5 tracking-tight"
-              : "line-clamp-2 min-h-10 font-semibold leading-5 tracking-tight"
-          }
-        >
-          {item.name}
-        </h2>
-        <p className="truncate text-muted-foreground text-xs">{item.category}</p>
-      </div>
-
-      <div
-        className={
-          isList
-            ? "flex shrink-0 items-center gap-1.5 text-muted-foreground text-sm"
-            : "flex items-center gap-1.5 border-t px-3 py-2.5 text-muted-foreground text-sm"
-        }
+    <span className={cn("flex items-center gap-1.5", className)}>
+      <span
+        className="flex h-4 items-center rounded-[3px] bg-muted-foreground/70 px-1 font-bold text-[10px] text-card leading-none"
+        aria-hidden="true"
       >
-        <span
-          className="flex h-4 items-center rounded-[3px] bg-muted-foreground/70 px-1 font-bold text-[10px] text-card leading-none"
-          aria-hidden="true"
-        >
-          ID
-        </span>
-        <span className="sr-only">ID:</span>
-        {item.id}
-      </div>
-    </Card>
+        ID
+      </span>
+      <span className="sr-only">ID:</span>
+      {id}
+    </span>
+  );
+}
+
+export function ItemCard({ item, onOpen }: { item: Item; onOpen: (item: Item) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(item)}
+      aria-label={`${item.name}, ${item.category}. Открыть подробности`}
+      className="group/item block h-full rounded-xl text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+    >
+      <Card className="h-full gap-0 py-0 transition-shadow group-hover/item:ring-primary/50">
+        <ItemImage
+          item={item}
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
+          className="border-b"
+          imageClassName="transition-transform duration-300 group-hover/item:scale-105"
+        />
+
+        <div className="flex flex-col gap-0.5 px-3 py-3">
+          <h2 className="line-clamp-2 min-h-10 font-semibold leading-5 tracking-tight">{item.name}</h2>
+          <p className="truncate text-muted-foreground text-xs">{item.category}</p>
+        </div>
+
+        <ItemId id={item.id} className="border-t px-3 py-2.5 text-muted-foreground text-sm" />
+      </Card>
+    </button>
   );
 }

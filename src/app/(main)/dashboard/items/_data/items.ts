@@ -28,50 +28,27 @@ export const categories = [
 export type Category = (typeof categories)[number];
 export type ItemCategory = Exclude<Category, "Все">;
 
+/** Категории, которые можно назначить предмету (без фильтра «Все») */
+export const itemCategories: readonly ItemCategory[] = categories.filter(
+  (category): category is ItemCategory => category !== "Все",
+);
+
+export const isItemCategory = (value: unknown): value is ItemCategory =>
+  typeof value === "string" && (itemCategories as readonly string[]).includes(value);
+
 export type Item = {
   /** Порядковый номер предмета: чем больше, тем новее */
   id: number;
   name: string;
   category: ItemCategory;
-  /** Коротко описывает назначение предмета */
-  functionality: string;
-  /** Вес предмета в килограммах */
-  weight: number;
   /** Путь к картинке: локальный (/images/items/...) или внешний URL */
   imageUrl?: string;
-  properties: {
-    usableInInventory: boolean;
-    obtainable: boolean;
-    dropsOnDeath: boolean;
-    dropsOnExit: boolean;
-    movableOutsideInventory: boolean;
-    confiscatable: boolean;
-    stashableInTrunk: boolean;
-  };
-};
-
-const defaultProperties: Item["properties"] = {
-  usableInInventory: false,
-  obtainable: true,
-  dropsOnDeath: true,
-  dropsOnExit: true,
-  movableOutsideInventory: true,
-  confiscatable: false,
-  stashableInTrunk: true,
-};
-
-const functionalityByCategory: Partial<Record<ItemCategory, string>> = {
-  Продукты: "Используется для восстановления сытости",
-  Инструменты: "Используется для выполнения работ",
-  Медицина: "Используется для восстановления здоровья",
-  Одежда: "Используется для экипировки персонажа",
-  Броня: "Используется для защиты персонажа",
 };
 
 export const itemKey = (item: Item) => `${item.category}-${item.id}`;
 
 /**
- * TODO: временные данные для оформления. Замените на реальный список предметов.
+ * Стартовые данные: попадают в базу один раз при её создании, дальше предметы правятся на сайте.
  * Порядок в списке задаёт номера: предметы получают id по очереди, новые идут в конец.
  */
 const seed: Record<ItemCategory, string[]> = {
@@ -100,17 +77,10 @@ const seed: Record<ItemCategory, string[]> = {
   Разное: ["Подарочная коробка", "Монета", "Загадочный предмет"],
 };
 
-export const items: Item[] = (() => {
+export const seedItems: Item[] = (() => {
   let id = 0;
   return (Object.keys(seed) as ItemCategory[]).flatMap((category) =>
-    seed[category].map((name) => ({
-      id: ++id,
-      name,
-      category,
-      functionality: functionalityByCategory[category] ?? "Используется по назначению в игровом мире",
-      weight: 1,
-      properties: { ...defaultProperties },
-    })),
+    seed[category].map((name) => ({ id: ++id, name, category })),
   );
 })();
 

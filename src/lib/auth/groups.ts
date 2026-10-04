@@ -46,6 +46,7 @@ export type Permission =
   | "access.decide"
   | "groups.assign"
   | "transport.edit"
+  | "items.edit"
   | "replies.view"
   | "replies.edit"
   | "jobs.edit"
@@ -84,6 +85,12 @@ export const permissionDefs: readonly PermissionDef[] = [
     key: "transport.edit",
     label: "Редактирование транспорта",
     description: "Добавлять транспорт и менять его характеристики.",
+    category: "Контент",
+  },
+  {
+    key: "items.edit",
+    label: "Редактирование предметов",
+    description: "Добавлять, изменять и удалять предметы в разделе «Предметы», загружать их картинки.",
     category: "Контент",
   },
   {
@@ -139,6 +146,7 @@ export const defaultPermissions: Record<EditableGroup, readonly Permission[]> = 
     "access.decide",
     "groups.assign",
     "transport.edit",
+    "items.edit",
     "replies.view",
     "replies.edit",
     "jobs.edit",
