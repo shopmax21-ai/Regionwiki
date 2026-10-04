@@ -18,12 +18,31 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 
 import { createItemAction, updateItemAction } from "../_actions";
-import { type Item, type ItemCategory, itemCategories } from "../_data/items";
+import {
+  defaultItemFlags,
+  type Item,
+  type ItemCategory,
+  type ItemFlagKey,
+  type ItemFlags,
+  itemCategories,
+  itemFlagDefs,
+} from "../_data/items";
 import { ItemImageField } from "./item-image-field";
 
-type FormState = { id: string; name: string; category: ItemCategory; imageUrl: string };
+type FormState = {
+  id: string;
+  name: string;
+  category: ItemCategory;
+  imageUrl: string;
+  description: string;
+  weight: string;
+  obtain: string;
+  flags: ItemFlags;
+};
 
 type ItemEditorProps = {
   /** Предмет для редактирования. Не указан — создаётся новый. */
@@ -42,12 +61,19 @@ export function ItemEditor({ item, defaultCategory, onClose }: ItemEditorProps) 
     name: item?.name ?? "",
     category: item?.category ?? defaultCategory ?? itemCategories[0],
     imageUrl: item?.imageUrl ?? "",
+    description: item?.description ?? "",
+    weight: item?.weight === undefined ? "" : String(item.weight),
+    obtain: item?.obtain ?? "",
+    flags: item?.flags ?? defaultItemFlags,
   });
   const [error, setError] = useState<string | null>(null);
   const [saving, startSaving] = useTransition();
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
+
+  const setFlag = (key: ItemFlagKey, value: boolean) =>
+    setForm((prev) => ({ ...prev, flags: { ...prev.flags, [key]: value } }));
 
   const save = () => {
     setError(null);
@@ -63,7 +89,23 @@ export function ItemEditor({ item, defaultCategory, onClose }: ItemEditorProps) 
       return;
     }
 
-    const payload = { id, name: form.name, category: form.category, imageUrl: form.imageUrl.trim() || undefined };
+    const rawWeight = form.weight.trim().replace(",", ".");
+    const weight = rawWeight === "" ? undefined : Number(rawWeight);
+    if (weight !== undefined && (!Number.isFinite(weight) || weight < 0)) {
+      setError("Вес должен быть числом не меньше нуля или пустым");
+      return;
+    }
+
+    const payload = {
+      id,
+      name: form.name,
+      category: form.category,
+      imageUrl: form.imageUrl.trim() || undefined,
+      description: form.description.trim() || undefined,
+      weight,
+      obtain: form.obtain.trim() || undefined,
+      flags: form.flags,
+    };
 
     startSaving(async () => {
       try {
@@ -88,7 +130,7 @@ export function ItemEditor({ item, defaultCategory, onClose }: ItemEditorProps) 
         if (!open && !saving) onClose();
       }}
     >
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{item ? `Редактирование: ${item.name}` : "Новый предмет"}</DialogTitle>
           <DialogDescription>Изменения сразу появятся на сайте для всех посетителей.</DialogDescription>
@@ -137,6 +179,57 @@ export function ItemEditor({ item, defaultCategory, onClose }: ItemEditorProps) 
               {editing ? "ID нельзя изменить" : "Можно оставить пустым, номер выдастся сам"}
             </p>
           </div>
+
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label htmlFor="item-description">Описание</Label>
+            <Input
+              id="item-description"
+              value={form.description}
+              onChange={(event) => set("description", event.target.value)}
+              placeholder="Используется для защиты персонажа"
+              maxLength={300}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="item-weight">Вес, кг</Label>
+            <Input
+              id="item-weight"
+              inputMode="decimal"
+              value={form.weight}
+              onChange={(event) => set("weight", event.target.value)}
+              placeholder="1"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="item-obtain">Где можно получить</Label>
+            <Textarea
+              id="item-obtain"
+              rows={2}
+              value={form.obtain}
+              onChange={(event) => set("obtain", event.target.value)}
+              placeholder={`Если пусто: «Получить предмет можно в разделе «${form.category}»»`}
+              maxLength={300}
+            />
+          </div>
+
+          <fieldset className="m-0 grid min-w-0 gap-2 border-0 p-0 sm:col-span-2 sm:grid-cols-2">
+            <legend className="mb-1.5 font-medium text-sm">Свойства</legend>
+            {itemFlagDefs.map((def) => (
+              <Label
+                key={def.key}
+                className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 font-normal"
+              >
+                {def.label}
+                <Switch
+                  checked={form.flags[def.key]}
+                  onCheckedChange={(value) => setFlag(def.key, value)}
+                  aria-label={def.label}
+                />
+              </Label>
+            ))}
+          </fieldset>
 
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label>Картинка</Label>

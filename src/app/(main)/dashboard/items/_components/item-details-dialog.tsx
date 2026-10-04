@@ -1,20 +1,15 @@
 "use client";
 
-import { Pencil, Trash2 } from "lucide-react";
+import { useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
+import { Check, Copy, Pencil, Tag, Trash2, Weight, X } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
-import type { Item } from "../_data/items";
-import { categoryIcons, ItemId, ItemImage } from "./item-card";
+import { type Item, itemFlagDefs } from "../_data/items";
+import { ItemId, ItemImage } from "./item-card";
 
 type ItemDetailsDialogProps = {
   item: Item | null;
@@ -25,40 +20,121 @@ type ItemDetailsDialogProps = {
   onDelete: (item: Item) => void;
 };
 
-/** Окно с подробностями предмета: картинка, категория и ID. */
-export function ItemDetailsDialog({ item, canEdit, onOpenChange, onEdit, onDelete }: ItemDetailsDialogProps) {
-  const Icon = item ? categoryIcons[item.category] : null;
+function FlagRow({ label, value }: { label: string; value: boolean }) {
+  const Icon = value ? Check : X;
 
   return (
-    <Dialog open={item !== null} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] gap-4 overflow-y-auto sm:max-w-md">
-        {item && Icon && (
-          <>
-            <DialogHeader className="pr-8">
-              <DialogTitle className="text-lg">{item.name}</DialogTitle>
-              <DialogDescription className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary" className="gap-1.5">
-                  <Icon data-icon="inline-start" /> {item.category}
-                </Badge>
-                <ItemId id={item.id} className="text-sm" />
-              </DialogDescription>
-            </DialogHeader>
+    <div className="grid grid-cols-2 border-b last:border-b-0">
+      <dt className="border-r px-4 py-3 text-muted-foreground">{label}</dt>
+      <dd className="flex items-center gap-2 px-4 py-3 font-medium">
+        <Icon className={value ? "size-5 text-green-500" : "size-5 text-red-500"} aria-hidden="true" />
+        {value ? "Да" : "Нет"}
+      </dd>
+    </div>
+  );
+}
 
-            <ItemImage item={item} sizes="(max-width: 640px) 90vw, 448px" className="rounded-xl border" imageClassName="p-6" />
+function Tile({ children }: { children: React.ReactNode }) {
+  return <div className="flex min-w-0 items-center gap-3 rounded-xl bg-muted/50 px-4 py-3">{children}</div>;
+}
+
+function CopyId({ id }: { id: number }) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(String(id));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Не удалось скопировать ID");
+    }
+  };
+
+  return (
+    <Button type="button" variant="ghost" size="icon-xs" onClick={copy} aria-label="Скопировать ID">
+      {copied ? <Check className="text-green-500" /> : <Copy />}
+    </Button>
+  );
+}
+
+/** Окно предмета: слева картинка, описание и где получить, справа свойства, категория, вес и ID. */
+export function ItemDetailsDialog({ item, canEdit, onOpenChange, onEdit, onDelete }: ItemDetailsDialogProps) {
+  return (
+    <Dialog open={item !== null} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90dvh] gap-4 overflow-y-auto p-4 sm:max-w-4xl sm:p-5">
+        {item && (
+          <>
+            <div className="grid gap-4 md:grid-cols-[3fr_4fr]">
+              <div className="flex min-w-0 flex-col gap-4">
+                <ItemImage
+                  item={item}
+                  sizes="(max-width: 768px) 90vw, 400px"
+                  className="rounded-xl"
+                  imageClassName="p-8"
+                />
+
+                <div className="flex flex-col items-center gap-1.5 text-center">
+                  <DialogTitle className="text-xl">{item.name}</DialogTitle>
+                  <DialogDescription>{item.description || "Описание пока не добавлено"}</DialogDescription>
+                </div>
+
+                <section className="rounded-xl border px-4 py-3" aria-label="Где можно получить">
+                  <h3 className="font-semibold">Где можно получить</h3>
+                  <p className="mt-1 text-muted-foreground">
+                    {item.obtain || `Получить предмет можно в разделе «${item.category}».`}
+                  </p>
+                </section>
+              </div>
+
+              <div className="flex min-w-0 flex-col gap-3">
+                <section className="overflow-hidden rounded-xl border" aria-labelledby="item-props-title">
+                  <h3
+                    id="item-props-title"
+                    className="border-b px-4 py-3 font-semibold text-sm uppercase tracking-wide"
+                  >
+                    Свойства
+                  </h3>
+                  <dl>
+                    {itemFlagDefs.map((def) => (
+                      <FlagRow key={def.key} label={def.label} value={item.flags[def.key]} />
+                    ))}
+                  </dl>
+                </section>
+
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <Tile>
+                    <Tag className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <span className="truncate font-medium">{item.category}</span>
+                  </Tile>
+                  <Tile>
+                    <Weight className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <span className="truncate font-medium">
+                      {item.weight === undefined ? "—" : `${item.weight.toLocaleString("ru-RU")} кг`}
+                    </span>
+                  </Tile>
+                  <Tile>
+                    <ItemId id={item.id} className="font-medium" />
+                    <CopyId id={item.id} />
+                  </Tile>
+                </div>
+              </div>
+            </div>
 
             {canEdit && (
-              <DialogFooter>
+              <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
                 <Button
                   variant="outline"
+                  size="sm"
                   className="text-destructive hover:text-destructive"
                   onClick={() => onDelete(item)}
                 >
                   <Trash2 data-icon="inline-start" /> Удалить
                 </Button>
-                <Button variant="outline" onClick={() => onEdit(item)}>
+                <Button variant="outline" size="sm" onClick={() => onEdit(item)}>
                   <Pencil data-icon="inline-start" /> Редактировать
                 </Button>
-              </DialogFooter>
+              </div>
             )}
           </>
         )}

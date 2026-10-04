@@ -36,6 +36,25 @@ export const itemCategories: readonly ItemCategory[] = categories.filter(
 export const isItemCategory = (value: unknown): value is ItemCategory =>
   typeof value === "string" && (itemCategories as readonly string[]).includes(value);
 
+/** Свойства предмета: в окне предмета выводятся строками «Да» / «Нет» в таком же порядке. */
+export const itemFlagDefs = [
+  { key: "canUse", label: "Можно использовать в инвентаре", default: false },
+  { key: "canTake", label: "Возможно достать предмет", default: true },
+  { key: "dropOnDeath", label: "Выпадает из инвентаря при смерти", default: true },
+  { key: "dropOnLogout", label: "Выпадает из инвентаря при выходе из игры", default: true },
+  { key: "movable", label: "Можно перемещать куда-то кроме инвентаря", default: true },
+  { key: "seizable", label: "Может быть изъято гос. органами", default: false },
+  { key: "trunk", label: "Можно положить в багажник не матовозки", default: true },
+] as const;
+
+export type ItemFlagKey = (typeof itemFlagDefs)[number]["key"];
+export type ItemFlags = Record<ItemFlagKey, boolean>;
+
+/** Значения для нового предмета и для тех, у кого свойства ещё не заданы */
+export const defaultItemFlags: ItemFlags = Object.fromEntries(
+  itemFlagDefs.map((def) => [def.key, def.default]),
+) as ItemFlags;
+
 export type Item = {
   /** Порядковый номер предмета: чем больше, тем новее */
   id: number;
@@ -43,6 +62,13 @@ export type Item = {
   category: ItemCategory;
   /** Путь к картинке: локальный (/images/items/...) или внешний URL */
   imageUrl?: string;
+  /** Короткое описание под названием */
+  description?: string;
+  /** Вес одного предмета, кг */
+  weight?: number;
+  /** Где получить. Если пусто, окно подставляет раздел категории */
+  obtain?: string;
+  flags: ItemFlags;
 };
 
 export const itemKey = (item: Item) => `${item.category}-${item.id}`;
@@ -80,7 +106,7 @@ const seed: Record<ItemCategory, string[]> = {
 export const seedItems: Item[] = (() => {
   let id = 0;
   return (Object.keys(seed) as ItemCategory[]).flatMap((category) =>
-    seed[category].map((name) => ({ id: ++id, name, category })),
+    seed[category].map((name) => ({ id: ++id, name, category, flags: defaultItemFlags })),
   );
 })();
 
