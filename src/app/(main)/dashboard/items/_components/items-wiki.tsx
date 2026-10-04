@@ -4,7 +4,21 @@ import { useMemo, useState } from "react";
 
 import Image from "next/image";
 
-import { ChevronLeft, ChevronRight, Funnel, Grid2X2, List, Search, Sparkles } from "lucide-react";
+import {
+  CarFront,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Funnel,
+  Grid2X2,
+  List,
+  Search,
+  Sparkles,
+  Tag,
+  Weight,
+  X,
+} from "lucide-react";
 
 import { FilterDropdown } from "@/app/(main)/dashboard/_components/filter-dropdown";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +26,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 import { type Category, categories, compareByCategory, itemKey, items, pluralItems } from "../_data/items";
 import { categoryIcons, ItemCard, type ItemCardView } from "./item-card";
@@ -98,21 +111,17 @@ export function ItemsWiki({ initialQuery = "" }: { initialQuery?: string }) {
               }}
               className="max-lg:flex-1"
             />
-            <ToggleGroup
-              type="single"
-              value={view}
-              onValueChange={(value) => value && setView(value as ItemCardView)}
+            <Button
+              type="button"
               variant="outline"
               size="sm"
-              aria-label="Вид списка предметов"
+              className="gap-2"
+              aria-label={`Переключить вид: сейчас ${view === "grid" ? "плитка" : "список"}`}
+              onClick={() => setView(view === "grid" ? "list" : "grid")}
             >
-              <ToggleGroupItem value="grid" aria-label="Плитка">
-                <Grid2X2 data-icon="inline-start" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="list" aria-label="Список">
-                <List data-icon="inline-start" />
-              </ToggleGroupItem>
-            </ToggleGroup>
+              {view === "grid" ? <Grid2X2 data-icon="inline-start" /> : <List data-icon="inline-start" />}
+              {view === "grid" ? "Плитка" : "Список"}
+            </Button>
           </div>
         </div>
 
@@ -183,54 +192,112 @@ export function ItemsWiki({ initialQuery = "" }: { initialQuery?: string }) {
       </p>
 
       <Dialog open={selectedItem !== null} onOpenChange={(open) => !open && setSelectedItem(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-4xl overflow-y-auto sm:max-h-[calc(100dvh-3rem)] sm:max-w-4xl">
           {selectedItem &&
             (() => {
               const Icon = categoryIcons[selectedItem.category];
               return (
                 <>
-                  <div className="flex flex-col items-center text-center">
-                    <div className="relative flex aspect-square w-full max-w-56 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-muted/70 to-muted/20">
-                      {selectedItem.imageUrl ? (
-                        <Image
-                          src={selectedItem.imageUrl}
-                          alt={selectedItem.name}
-                          fill
-                          sizes="224px"
-                          unoptimized
-                          className="object-contain p-8"
-                        />
-                      ) : (
-                        <Icon className="size-24 text-muted-foreground/35 stroke-[1]" aria-hidden="true" />
-                      )}
+                  <div className="grid gap-6 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+                    <div className="flex flex-col gap-5">
+                      <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-muted/70 to-muted/20">
+                        {selectedItem.imageUrl ? (
+                          <Image
+                            src={selectedItem.imageUrl}
+                            alt={selectedItem.name}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 320px"
+                            unoptimized
+                            className="object-contain p-8"
+                          />
+                        ) : (
+                          <Icon className="size-24 text-muted-foreground/35 stroke-[1]" aria-hidden="true" />
+                        )}
+                      </div>
+                      <DialogHeader className="items-center text-center">
+                        <DialogTitle className="text-xl">{selectedItem.name}</DialogTitle>
+                        <DialogDescription>{selectedItem.functionality}</DialogDescription>
+                      </DialogHeader>
+                      <section className="rounded-xl border bg-muted/30 p-4" aria-labelledby="item-source-title">
+                        <h3 id="item-source-title" className="font-semibold text-sm">
+                          Где можно получить
+                        </h3>
+                        <p className="mt-1 text-muted-foreground text-sm">
+                          Получить предмет можно в разделе «{selectedItem.category}».
+                        </p>
+                      </section>
                     </div>
-                    <DialogHeader className="mt-5 items-center">
-                      <DialogTitle className="text-xl">{selectedItem.name}</DialogTitle>
-                      <DialogDescription>
-                        {selectedItem.name} — предмет категории «{selectedItem.category}».
-                      </DialogDescription>
-                    </DialogHeader>
+
+                    <div className="flex min-w-0 flex-col gap-4">
+                      <section className="overflow-hidden rounded-xl border" aria-labelledby="item-properties-title">
+                        <h3
+                          id="item-properties-title"
+                          className="border-b bg-muted/30 px-4 py-3 font-semibold text-sm uppercase tracking-wide"
+                        >
+                          Свойства
+                        </h3>
+                        <dl className="divide-y text-sm">
+                          {[
+                            ["Можно использовать в инвентаре", selectedItem.properties.usableInInventory],
+                            ["Возможно достать предмет", selectedItem.properties.obtainable],
+                            ["Выпадает из инвентаря при смерти", selectedItem.properties.dropsOnDeath],
+                            ["Выпадает из инвентаря при выходе из игры", selectedItem.properties.dropsOnExit],
+                            [
+                              "Можно перемещать куда-то кроме инвентаря",
+                              selectedItem.properties.movableOutsideInventory,
+                            ],
+                            ["Может быть изъято гос. органами", selectedItem.properties.confiscatable],
+                            ["Можно положить в багажник не матовозки", selectedItem.properties.stashableInTrunk],
+                          ].map(([label, value]) => {
+                            const isEnabled = Boolean(value);
+                            const StatusIcon = isEnabled ? Check : X;
+                            return (
+                              <div key={String(label)} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                                <dt className="border-r px-4 py-3 text-muted-foreground">{label}</dt>
+                                <dd className="flex items-center gap-2 px-4 py-3 font-medium">
+                                  <StatusIcon
+                                    className={isEnabled ? "text-green-500" : "text-red-500"}
+                                    aria-hidden="true"
+                                  />
+                                  {isEnabled ? "Да" : "Нет"}
+                                </dd>
+                              </div>
+                            );
+                          })}
+                        </dl>
+                      </section>
+
+                      <dl className="grid gap-2 text-sm sm:grid-cols-3">
+                        <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-3 py-2" title="Категория">
+                          <Tag className="text-muted-foreground" aria-hidden="true" />
+                          <dt className="sr-only">Категория</dt>
+                          <dd className="font-medium">{selectedItem.category}</dd>
+                        </div>
+                        <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-3 py-2" title="Вес">
+                          <Weight className="text-muted-foreground" aria-hidden="true" />
+                          <dt className="sr-only">Вес</dt>
+                          <dd className="font-medium">{selectedItem.weight} кг</dd>
+                        </div>
+                        <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-3 py-2" title="ID предмета">
+                          <CarFront className="text-muted-foreground" aria-hidden="true" />
+                          <dt className="sr-only">ID</dt>
+                          <dd className="flex min-w-0 items-center gap-1 font-medium">
+                            <span>{selectedItem.id}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="ml-auto size-7 shrink-0"
+                              aria-label={`Скопировать ID ${selectedItem.id}`}
+                              onClick={() => navigator.clipboard.writeText(String(selectedItem.id))}
+                            >
+                              <Copy aria-hidden="true" />
+                            </Button>
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
                   </div>
-
-                  <section className="rounded-xl border bg-muted/30 p-4" aria-labelledby="item-source-title">
-                    <h3 id="item-source-title" className="font-semibold text-sm">
-                      Где можно получить
-                    </h3>
-                    <p className="mt-1 text-muted-foreground text-sm">
-                      Получить предмет можно в разделе «{selectedItem.category}».
-                    </p>
-                  </section>
-
-                  <dl className="grid gap-2 text-sm sm:grid-cols-2">
-                    <div className="flex justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2">
-                      <dt className="text-muted-foreground">Категория</dt>
-                      <dd className="font-medium">{selectedItem.category}</dd>
-                    </div>
-                    <div className="flex justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2">
-                      <dt className="text-muted-foreground">ID</dt>
-                      <dd className="font-medium">{selectedItem.id}</dd>
-                    </div>
-                  </dl>
                 </>
               );
             })()}

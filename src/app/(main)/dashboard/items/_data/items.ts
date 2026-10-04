@@ -33,8 +33,39 @@ export type Item = {
   id: number;
   name: string;
   category: ItemCategory;
+  /** Коротко описывает назначение предмета */
+  functionality: string;
+  /** Вес предмета в килограммах */
+  weight: number;
   /** Путь к картинке: локальный (/images/items/...) или внешний URL */
   imageUrl?: string;
+  properties: {
+    usableInInventory: boolean;
+    obtainable: boolean;
+    dropsOnDeath: boolean;
+    dropsOnExit: boolean;
+    movableOutsideInventory: boolean;
+    confiscatable: boolean;
+    stashableInTrunk: boolean;
+  };
+};
+
+const defaultProperties: Item["properties"] = {
+  usableInInventory: false,
+  obtainable: true,
+  dropsOnDeath: true,
+  dropsOnExit: true,
+  movableOutsideInventory: true,
+  confiscatable: false,
+  stashableInTrunk: true,
+};
+
+const functionalityByCategory: Partial<Record<ItemCategory, string>> = {
+  Продукты: "Используется для восстановления сытости",
+  Инструменты: "Используется для выполнения работ",
+  Медицина: "Используется для восстановления здоровья",
+  Одежда: "Используется для экипировки персонажа",
+  Броня: "Используется для защиты персонажа",
 };
 
 export const itemKey = (item: Item) => `${item.category}-${item.id}`;
@@ -72,7 +103,14 @@ const seed: Record<ItemCategory, string[]> = {
 export const items: Item[] = (() => {
   let id = 0;
   return (Object.keys(seed) as ItemCategory[]).flatMap((category) =>
-    seed[category].map((name) => ({ id: ++id, name, category })),
+    seed[category].map((name) => ({
+      id: ++id,
+      name,
+      category,
+      functionality: functionalityByCategory[category] ?? "Используется по назначению в игровом мире",
+      weight: 1,
+      properties: { ...defaultProperties },
+    })),
   );
 })();
 
