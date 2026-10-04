@@ -2,16 +2,20 @@
 
 import { useMemo, useState } from "react";
 
-import { ChevronLeft, ChevronRight, Funnel, Search, Sparkles } from "lucide-react";
+import Image from "next/image";
+
+import { ChevronLeft, ChevronRight, Funnel, Grid2X2, List, Search, Sparkles } from "lucide-react";
 
 import { FilterDropdown } from "@/app/(main)/dashboard/_components/filter-dropdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 import { type Category, categories, compareByCategory, itemKey, items, pluralItems } from "../_data/items";
-import { ItemCard } from "./item-card";
+import { categoryIcons, ItemCard, type ItemCardView } from "./item-card";
 
 const PAGE_SIZE = 48;
 
@@ -28,6 +32,8 @@ export function ItemsWiki({ initialQuery = "" }: { initialQuery?: string }) {
   const [category, setCategory] = useState<Category>("Все");
   const [sort, setSort] = useState<SortId>("new");
   const [page, setPage] = useState(1);
+  const [view, setView] = useState<ItemCardView>("grid");
+  const [selectedItem, setSelectedItem] = useState<(typeof items)[number] | null>(null);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase().replaceAll("ё", "е");
@@ -80,17 +86,34 @@ export function ItemsWiki({ initialQuery = "" }: { initialQuery?: string }) {
             />
           </div>
           <Separator orientation="vertical" className="hidden h-6 data-vertical:self-center lg:block" />
-          <FilterDropdown
-            icon={Funnel}
-            label="Сортировка"
-            value={sort}
-            options={sortOptions}
-            onChange={(value) => {
-              setSort(value);
-              setPage(1);
-            }}
-            className="max-lg:w-full"
-          />
+          <div className="flex items-center gap-2 max-lg:w-full">
+            <FilterDropdown
+              icon={Funnel}
+              label="Сортировка"
+              value={sort}
+              options={sortOptions}
+              onChange={(value) => {
+                setSort(value);
+                setPage(1);
+              }}
+              className="max-lg:flex-1"
+            />
+            <ToggleGroup
+              type="single"
+              value={view}
+              onValueChange={(value) => value && setView(value as ItemCardView)}
+              variant="outline"
+              size="sm"
+              aria-label="Вид списка предметов"
+            >
+              <ToggleGroupItem value="grid" aria-label="Плитка">
+                <Grid2X2 data-icon="inline-start" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list" aria-label="Список">
+                <List data-icon="inline-start" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
         </div>
 
         <fieldset className="m-0 flex min-w-0 gap-2 overflow-x-auto border-0 p-0 pb-1">
@@ -114,9 +137,15 @@ export function ItemsWiki({ initialQuery = "" }: { initialQuery?: string }) {
       </section>
 
       {visible.length > 0 ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+        <div
+          className={
+            view === "grid"
+              ? "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6"
+              : "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+          }
+        >
           {visible.map((item) => (
-            <ItemCard key={itemKey(item)} item={item} />
+            <ItemCard key={itemKey(item)} item={item} view={view} onSelect={setSelectedItem} />
           ))}
         </div>
       ) : (
@@ -152,6 +181,61 @@ export function ItemsWiki({ initialQuery = "" }: { initialQuery?: string }) {
       <p className="text-center text-muted-foreground text-xs">
         Вся информация на сайте носит ознакомительный характер и не является публичной офертой.
       </p>
+
+      <Dialog open={selectedItem !== null} onOpenChange={(open) => !open && setSelectedItem(null)}>
+        <DialogContent>
+          {selectedItem &&
+            (() => {
+              const Icon = categoryIcons[selectedItem.category];
+              return (
+                <>
+                  <div className="flex flex-col items-center text-center">
+                    <div className="relative flex aspect-square w-full max-w-56 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-b from-muted/70 to-muted/20">
+                      {selectedItem.imageUrl ? (
+                        <Image
+                          src={selectedItem.imageUrl}
+                          alt={selectedItem.name}
+                          fill
+                          sizes="224px"
+                          unoptimized
+                          className="object-contain p-8"
+                        />
+                      ) : (
+                        <Icon className="size-24 text-muted-foreground/35 stroke-[1]" aria-hidden="true" />
+                      )}
+                    </div>
+                    <DialogHeader className="mt-5 items-center">
+                      <DialogTitle className="text-xl">{selectedItem.name}</DialogTitle>
+                      <DialogDescription>
+                        {selectedItem.name} — предмет категории «{selectedItem.category}».
+                      </DialogDescription>
+                    </DialogHeader>
+                  </div>
+
+                  <section className="rounded-xl border bg-muted/30 p-4" aria-labelledby="item-source-title">
+                    <h3 id="item-source-title" className="font-semibold text-sm">
+                      Где можно получить
+                    </h3>
+                    <p className="mt-1 text-muted-foreground text-sm">
+                      Получить предмет можно в разделе «{selectedItem.category}».
+                    </p>
+                  </section>
+
+                  <dl className="grid gap-2 text-sm sm:grid-cols-2">
+                    <div className="flex justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2">
+                      <dt className="text-muted-foreground">Категория</dt>
+                      <dd className="font-medium">{selectedItem.category}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2">
+                      <dt className="text-muted-foreground">ID</dt>
+                      <dd className="font-medium">{selectedItem.id}</dd>
+                    </div>
+                  </dl>
+                </>
+              );
+            })()}
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
