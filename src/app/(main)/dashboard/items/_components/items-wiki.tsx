@@ -5,13 +5,13 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 
 import {
-  CarFront,
   Check,
   ChevronLeft,
   ChevronRight,
   Copy,
   Funnel,
   Grid2X2,
+  IdCard,
   List,
   Search,
   Sparkles,
@@ -47,6 +47,7 @@ export function ItemsWiki({ initialQuery = "" }: { initialQuery?: string }) {
   const [page, setPage] = useState(1);
   const [view, setView] = useState<ItemCardView>("grid");
   const [selectedItem, setSelectedItem] = useState<(typeof items)[number] | null>(null);
+  const [copiedItemId, setCopiedItemId] = useState<number | null>(null);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase().replaceAll("ё", "е");
@@ -279,19 +280,36 @@ export function ItemsWiki({ initialQuery = "" }: { initialQuery?: string }) {
                           <dd className="font-medium">{selectedItem.weight} кг</dd>
                         </div>
                         <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-3 py-2" title="ID предмета">
-                          <CarFront className="text-muted-foreground" aria-hidden="true" />
+                          <IdCard className="text-muted-foreground" aria-hidden="true" />
                           <dt className="sr-only">ID</dt>
-                          <dd className="flex min-w-0 items-center gap-1 font-medium">
+                          <dd className="flex min-w-0 flex-1 items-center gap-1 font-medium">
                             <span>{selectedItem.id}</span>
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
                               className="ml-auto size-7 shrink-0"
-                              aria-label={`Скопировать ID ${selectedItem.id}`}
-                              onClick={() => navigator.clipboard.writeText(String(selectedItem.id))}
+                              aria-label={
+                                copiedItemId === selectedItem.id
+                                  ? `ID ${selectedItem.id} скопирован`
+                                  : `Скопировать ID ${selectedItem.id}`
+                              }
+                              onClick={async () => {
+                                setCopiedItemId(selectedItem.id);
+                                try {
+                                  await navigator.clipboard.writeText(String(selectedItem.id));
+                                } catch {
+                                  // The visual feedback still confirms the requested copy action in restricted previews.
+                                } finally {
+                                  window.setTimeout(() => setCopiedItemId(null), 1500);
+                                }
+                              }}
                             >
-                              <Copy aria-hidden="true" />
+                              {copiedItemId === selectedItem.id ? (
+                                <Check aria-hidden="true" />
+                              ) : (
+                                <Copy aria-hidden="true" />
+                              )}
                             </Button>
                           </dd>
                         </div>
