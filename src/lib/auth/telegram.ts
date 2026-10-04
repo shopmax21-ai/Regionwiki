@@ -1,5 +1,6 @@
 import { type AuthConfig, CODE_LENGTH, CODE_TTL_SECONDS, TELEGRAM_API_URL } from "./config";
-import { type DbUser, getGroupPermissions, listAdmins } from "./db";
+import { type DbUser, getGroupPermissions, listAdmins, listUserOverrides } from "./db";
+import { effectivePermissions } from "./groups";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 type InlineButton = { text: string; callback_data: string };
@@ -61,12 +62,16 @@ export async function requestRecipients(config: AuthConfig): Promise<string[]> {
   const known = new Set<string>();
 
   try {
-    const permissions = await getGroupPermissions();
+    const [permissions, overrides] = await Promise.all([getGroupPermissions(), listUserOverrides()]);
     for (const admin of await listAdmins()) {
       known.add(admin.telegramId);
       const group = config.adminIds.includes(admin.telegramId) ? "chief" : admin.adminGroup;
-      if (group && admin.notifyRequests && permissions[group].includes("access.decide"))
-        recipients.add(admin.telegramId);
+      if (!group || !admin.notifyRequests) continue;
+      const own =
+        group === "chief"
+          ? permissions[group]
+          : effectivePermissions(permissions[group], overrides.get(admin.telegramId));
+      if (own.includes("access.decide")) recipients.add(admin.telegramId);
     }
   } catch (error) {
     console.error("[auth] Не удалось определить получателей уведомлений, шлём администраторам из настроек", error);

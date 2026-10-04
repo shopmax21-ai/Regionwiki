@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 
-import { Check, MoreHorizontal, Search, ShieldCheck, ShieldOff, X } from "lucide-react";
+import { Check, KeyRound, MoreHorizontal, Search, ShieldCheck, ShieldOff, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -27,26 +27,28 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { type AdminGroup, adminGroups, groupInfo, groupLevel } from "@/lib/auth/groups";
+import {
+  type AdminGroup,
+  adminGroups,
+  groupInfo,
+  groupLevel,
+  type Permission,
+  type PermissionOverride,
+} from "@/lib/auth/groups";
 import { getInitials } from "@/lib/utils";
 
-import { changeUserGroup, changeUserStatus } from "../_actions";
-
-export type UserItem = {
-  telegramId: string;
-  name: string;
-  username: string | null;
-  status: "pending" | "approved" | "rejected";
-  adminGroup: AdminGroup | null;
-  createdAt: string;
-  lastLoginAt: string | null;
-  loginCount: number;
-};
+import {
+  type ActionResult,
+  changeUserGroup,
+  changeUserPermission,
+  changeUserStatus,
+  resetUserPermissions,
+} from "../_actions";
+import type { Me, UserItem } from "../_lib";
+import { UserAccessSheet } from "./user-access-sheet";
 
 type Filter = "all" | "pending" | "approved" | "rejected" | "admin";
 type Action = { type: "approve" } | { type: "reject" } | { type: "group"; group: AdminGroup | "none" };
-
-type Me = { id: string; level: number; canDecide: boolean; canAssign: boolean };
 
 const filters: { id: Filter; label: string }[] = [
   { id: "all", label: "Все" },
@@ -109,43 +111,146 @@ function UserIdentity({ user }: { user: UserItem }) {
   );
 }
 
-export function UsersManager({ users, me, lockedAdminIds }: { users: UserItem[]; me: Me; lockedAdminIds: string[] }) {
+const NO_CONNECTION: ActionResult = { ok: false, error: "Нет связи с сервером, попробуйте ещё раз" };
+
+type UsersManagerProps = {
+  users: UserItem[];
+  me: Me;
+  lockedAdminIds: string[];
+  /** Права каждой группы: личные настройки считаются поверх них */
+  groupPermissions: Record<AdminGroup, Permission[]>;
+};
+
+export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: UsersManagerProps) {
+  // Список живёт в состоянии: изменения показываются сразу, а ответ сервера лишь подтверждает или откатывает их.
+  const [items, setItems] = useState(users);
+  const [busy, setBusy] = useState<ReadonlySet<string>>(new Set());
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [pendingAction, setPendingAction] = useState<{ user: UserItem; action: Action } | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [sheetUserId, setSheetUserId] = useState<string | null>(null);
+
+  const sheetUser = items.find((user) => user.telegramId === sheetUserId) ?? null;
 
   const counts = useMemo(
     () =>
       Object.fromEntries(
-        filters.map(({ id }) => [id, users.filter((user) => matchesFilter(user, id)).length]),
+        filters.map(({ id }) => [id, items.filter((user) => matchesFilter(user, id)).length]),
       ) as Record<Filter, number>,
-    [users],
+    [items],
   );
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase().replace(/^@/, "");
-    return users.filter(
+    return items.filter(
       (user) =>
         matchesFilter(user, filter) &&
         `${user.name} ${user.username ?? ""} ${user.telegramId}`.toLowerCase().includes(needle),
     );
-  }, [filter, query, users]);
+  }, [filter, query, items]);
+
+  const patchUser = (id: string, update: (user: UserItem) => UserItem) =>
+    setItems((prev) => prev.map((user) => (user.telegramId === id ? update(user) : user)));
+
+  const setBusyKey = (key: string, on: boolean) =>
+    setBusy((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+
+  /** Есть ли у пользователя незавершённые изменения: пока они идут, новые не запускаем, чтобы ответы не перемешались. */
+  const isLocked = (id: string) => {
+    for (const key of busy) if (key === id || key.startsWith(`${id}:`)) return true;
+    return false;
+  };
+
+  /** Статус и группа: меняем в списке сразу, при отказе сервера возвращаем как было. */
+  const apply = async (user: UserItem, action: Action) => {
+    const id = user.telegramId;
+    if (isLocked(id)) return;
+
+    const snapshot = user;
+    patchUser(id, (current) => {
+      if (action.type === "group") {
+        const group = action.group === "none" ? null : action.group;
+        return {
+          ...current,
+          adminGroup: group,
+          status: group ? "approved" : current.status,
+          overrides: group ? current.overrides : {},
+        };
+      }
+      return { ...current, status: action.type === "approve" ? "approved" : "rejected" };
+    });
+    setBusyKey(id, true);
+
+    const result = await (action.type === "group"
+      ? changeUserGroup(id, action.group)
+      : changeUserStatus(id, action.type === "approve" ? "approved" : "rejected")
+    ).catch(() => NO_CONNECTION);
+
+    setBusyKey(id, false);
+    if (result.ok) {
+      patchUser(id, () => result.user);
+      toast.success("Готово");
+    } else {
+      patchUser(id, () => snapshot);
+      toast.error(result.error);
+    }
+  };
+
+  /** Одно личное право: переключатель меняется сразу, откат касается только этого права. */
+  const togglePermission = async (user: UserItem, permission: Permission, mode: PermissionOverride | null) => {
+    const id = user.telegramId;
+    const key = `${id}:${permission}`;
+    if (busy.has(id) || busy.has(key)) return;
+
+    const previous = user.overrides[permission] ?? null;
+    const setMode = (value: PermissionOverride | null) =>
+      patchUser(id, (current) => {
+        const overrides = { ...current.overrides };
+        if (value) overrides[permission] = value;
+        else delete overrides[permission];
+        return { ...current, overrides };
+      });
+
+    setMode(mode);
+    setBusyKey(key, true);
+    const result = await changeUserPermission(id, permission, mode).catch(() => NO_CONNECTION);
+    setBusyKey(key, false);
+
+    if (!result.ok) {
+      setMode(previous);
+      toast.error(result.error);
+    }
+  };
+
+  const resetPermissions = async (user: UserItem) => {
+    const id = user.telegramId;
+    if (isLocked(id)) return;
+
+    const snapshot = user.overrides;
+    patchUser(id, (current) => ({ ...current, overrides: {} }));
+    setBusyKey(id, true);
+    const result = await resetUserPermissions(id).catch(() => NO_CONNECTION);
+    setBusyKey(id, false);
+
+    if (result.ok) {
+      toast.success("Права сброшены до прав группы");
+    } else {
+      patchUser(id, (current) => ({ ...current, overrides: snapshot }));
+      toast.error(result.error);
+    }
+  };
 
   const run = () => {
     if (!pendingAction) return;
     const { user, action } = pendingAction;
-
-    startTransition(async () => {
-      const result =
-        action.type === "group"
-          ? await changeUserGroup(user.telegramId, action.group)
-          : await changeUserStatus(user.telegramId, action.type === "approve" ? "approved" : "rejected");
-
-      if (result.ok) toast.success("Готово");
-      else toast.error(result.error);
-      setPendingAction(null);
-    });
+    // Окно закрываем сразу: результат уже виден в списке
+    setPendingAction(null);
+    void apply(user, action);
   };
 
   const actionsFor = (user: UserItem): { action: Action; label: string; icon: typeof Check }[] => {
@@ -238,14 +343,18 @@ export function UsersManager({ users, me, lockedAdminIds }: { users: UserItem[];
             {visible.length === 0 && (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                  {users.length === 0 ? "Пока никто не входил." : "Никого не найдено. Измените запрос или фильтр."}
+                  {items.length === 0 ? "Пока никто не входил." : "Никого не найдено. Измените запрос или фильтр."}
                 </TableCell>
               </TableRow>
             )}
             {visible.map((user) => {
               const actions = actionsFor(user);
               return (
-                <TableRow key={user.telegramId}>
+                <TableRow
+                  key={user.telegramId}
+                  aria-busy={isLocked(user.telegramId)}
+                  className={isLocked(user.telegramId) ? "opacity-70" : undefined}
+                >
                   <TableCell className="pl-4">
                     <UserIdentity user={user} />
                   </TableCell>
@@ -288,6 +397,9 @@ export function UsersManager({ users, me, lockedAdminIds }: { users: UserItem[];
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => setSheetUserId(user.telegramId)}>
+                            <KeyRound /> Права и роль
+                          </DropdownMenuItem>
                           {actions.map(({ action, label, icon: Icon }) => (
                             <DropdownMenuItem key={label} onSelect={() => setPendingAction({ user, action })}>
                               <Icon /> {label}
@@ -308,26 +420,30 @@ export function UsersManager({ users, me, lockedAdminIds }: { users: UserItem[];
         </Table>
       </Card>
 
-      <AlertDialog open={pendingAction !== null} onOpenChange={(open) => !open && !isPending && setPendingAction(null)}>
+      <AlertDialog open={pendingAction !== null} onOpenChange={(open) => !open && setPendingAction(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{texts?.title}</AlertDialogTitle>
             <AlertDialogDescription>{texts?.text}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending}>Отмена</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={isPending}
-              onClick={(event) => {
-                event.preventDefault();
-                run();
-              }}
-            >
-              {isPending ? "Выполняем..." : texts?.button}
-            </AlertDialogAction>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction onClick={run}>{texts?.button}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <UserAccessSheet
+        user={sheetUser}
+        onClose={() => setSheetUserId(null)}
+        me={me}
+        lockedAdminIds={lockedAdminIds}
+        groupPermissions={groupPermissions}
+        busy={busy}
+        onGroup={(user, group) => void apply(user, { type: "group", group })}
+        onToggle={(user, permission, mode) => void togglePermission(user, permission, mode)}
+        onReset={(user) => void resetPermissions(user)}
+      />
     </div>
   );
 }

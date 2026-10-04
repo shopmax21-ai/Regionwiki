@@ -9,8 +9,12 @@ import {
   editableGroups,
   isAdminGroup,
   isEditableGroup,
+  isPermission,
+  isPermissionOverride,
   isToggleablePermission,
   type Permission,
+  type PermissionOverride,
+  type PermissionOverrides,
   permissionDefs,
 } from "./groups";
 import type { AccessRole, AccessStatus } from "./session";
@@ -87,6 +91,14 @@ function ensureSchema(): Promise<void> {
       permission text NOT NULL,
       enabled    boolean NOT NULL,
       PRIMARY KEY (grp, permission)
+    )`;
+    await sql`CREATE TABLE IF NOT EXISTS user_permissions (
+      telegram_id text NOT NULL,
+      permission  text NOT NULL,
+      mode        text NOT NULL,
+      changed_by  text,
+      changed_at  timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY (telegram_id, permission)
     )`;
     // Недостающие права добавляются со значениями по умолчанию, уже настроенные не трогаются
     for (const group of editableGroups) {
@@ -301,6 +313,8 @@ export async function setUserGroup(
         WHERE telegram_id = ${telegramId} RETURNING *`
     : await sql`UPDATE users SET role = 'user', admin_group = NULL, decided_at = now(), decided_by = ${changedBy}
         WHERE telegram_id = ${telegramId} RETURNING *`;
+  // Личные права привязаны к работе администратора: после снятия группы они не должны «вернуться» при новом назначении
+  if (!group) await sql`DELETE FROM user_permissions WHERE telegram_id = ${telegramId}`;
   return rows[0] ? toUser(rows[0] as UserRow) : null;
 }
 
@@ -362,4 +376,53 @@ export async function getLoginEvents(telegramId: string, limit = 8): Promise<Log
     ip: row.ip,
     userAgent: row.user_agent,
   }));
+}
+
+/* ---------- Личные права ---------- */
+
+function collectOverrides(rows: Record<string, unknown>[]): Map<string, PermissionOverrides> {
+  const result = new Map<string, PermissionOverrides>();
+  for (const row of rows as { telegram_id: string; permission: string; mode: string }[]) {
+    if (!isPermission(row.permission) || !isPermissionOverride(row.mode)) continue;
+    const entry = result.get(row.telegram_id) ?? {};
+    entry[row.permission] = row.mode;
+    result.set(row.telegram_id, entry);
+  }
+  return result;
+}
+
+/** Личные права одного человека. */
+export async function getUserOverrides(telegramId: string): Promise<PermissionOverrides> {
+  await ensureSchema();
+  const rows = await sql`SELECT telegram_id, permission, mode FROM user_permissions WHERE telegram_id = ${telegramId}`;
+  return collectOverrides(rows).get(telegramId) ?? {};
+}
+
+/** Личные права всех, у кого они есть. */
+export async function listUserOverrides(): Promise<Map<string, PermissionOverrides>> {
+  await ensureSchema();
+  return collectOverrides(await sql`SELECT telegram_id, permission, mode FROM user_permissions`);
+}
+
+/** Выдать или отозвать право лично. null возвращает право «как у группы». */
+export async function setUserOverride(
+  telegramId: string,
+  permission: Permission,
+  mode: PermissionOverride | null,
+  changedBy: string,
+): Promise<void> {
+  await ensureSchema();
+  if (mode === null) {
+    await sql`DELETE FROM user_permissions WHERE telegram_id = ${telegramId} AND permission = ${permission}`;
+    return;
+  }
+  await sql`INSERT INTO user_permissions (telegram_id, permission, mode, changed_by)
+    VALUES (${telegramId}, ${permission}, ${mode}, ${changedBy})
+    ON CONFLICT (telegram_id, permission) DO UPDATE SET mode = EXCLUDED.mode, changed_by = EXCLUDED.changed_by, changed_at = now()`;
+}
+
+/** Сбросить все личные права человека до прав его группы. */
+export async function clearUserOverrides(telegramId: string): Promise<void> {
+  await ensureSchema();
+  await sql`DELETE FROM user_permissions WHERE telegram_id = ${telegramId}`;
 }

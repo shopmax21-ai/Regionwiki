@@ -76,7 +76,7 @@ export const permissionDefs: readonly PermissionDef[] = [
   {
     key: "groups.assign",
     label: "Назначение групп",
-    description: "Выдавать и снимать группы администраторов, но только ниже своей.",
+    description: "Выдавать и снимать группы и отдельные права пользователям, но только ниже своей группы.",
     category: "Пользователи",
   },
   {
@@ -137,3 +137,27 @@ export const defaultPermissions: Record<EditableGroup, readonly Permission[]> = 
     "permissions.view",
   ],
 };
+
+/**
+ * Личная настройка права поверх группы: "grant" выдаёт право, которого у группы нет, "deny" забирает то, что есть.
+ * Отсутствие записи означает «как у группы».
+ */
+export type PermissionOverride = "grant" | "deny";
+export type PermissionOverrides = Partial<Record<Permission, PermissionOverride>>;
+
+export const isPermissionOverride = (value: unknown): value is PermissionOverride =>
+  value === "grant" || value === "deny";
+
+/** Итоговые права человека: права группы плюс выданные лично, минус отозванные лично. */
+export function effectivePermissions(
+  base: readonly Permission[],
+  overrides: PermissionOverrides | undefined,
+): Permission[] {
+  if (!overrides) return [...base];
+  const result = new Set<Permission>(base);
+  for (const [key, mode] of Object.entries(overrides) as [Permission, PermissionOverride][]) {
+    if (mode === "grant") result.add(key);
+    else result.delete(key);
+  }
+  return allPermissions.filter((key) => result.has(key));
+}

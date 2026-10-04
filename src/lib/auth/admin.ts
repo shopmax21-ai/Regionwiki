@@ -1,7 +1,7 @@
 import { getAuthConfig } from "./config";
 import { getCurrentUser } from "./current-user";
-import { getGroupPermissions, getUser } from "./db";
-import { type AdminGroup, groupLevel, type Permission } from "./groups";
+import { getGroupPermissions, getUser, getUserOverrides } from "./db";
+import { type AdminGroup, effectivePermissions, groupLevel, type Permission } from "./groups";
 
 export type AdminContext = {
   id: string;
@@ -27,7 +27,9 @@ export async function getAdminContext(): Promise<AdminContext | null> {
     const group: AdminGroup | null = fromEnv ? "chief" : user.role === "admin" ? user.adminGroup : null;
     if (!group) return null;
 
-    const permissions = (await getGroupPermissions())[group];
+    // Гл.Администратор всегда имеет все права, личные настройки на него не действуют
+    const base = (await getGroupPermissions())[group];
+    const permissions = group === "chief" ? base : effectivePermissions(base, await getUserOverrides(user.telegramId));
     return { id: user.telegramId, name: user.name, group, level: groupLevel(group), permissions };
   } catch {
     return null;
@@ -40,7 +42,10 @@ export async function canUserDecideAccess(telegramId: string): Promise<boolean> 
     if (getAuthConfig()?.adminIds.includes(telegramId)) return true;
     const user = await getUser(telegramId);
     if (!user || user.status !== "approved" || user.role !== "admin" || !user.adminGroup) return false;
-    return (await getGroupPermissions())[user.adminGroup].includes("access.decide");
+    const base = (await getGroupPermissions())[user.adminGroup];
+    const permissions =
+      user.adminGroup === "chief" ? base : effectivePermissions(base, await getUserOverrides(user.telegramId));
+    return permissions.includes("access.decide");
   } catch {
     return false;
   }

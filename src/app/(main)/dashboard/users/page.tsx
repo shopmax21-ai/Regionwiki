@@ -4,9 +4,10 @@ import type { Metadata } from "next";
 
 import { getAdminContext } from "@/lib/auth/admin";
 import { getAuthConfig } from "@/lib/auth/config";
-import { checkDatabase, listUsers } from "@/lib/auth/db";
+import { checkDatabase, getGroupPermissions, listUserOverrides, listUsers } from "@/lib/auth/db";
 
-import { type UserItem, UsersManager } from "./_components/users-manager";
+import { UsersManager } from "./_components/users-manager";
+import { toUserItem, type UserItem } from "./_lib";
 
 export const metadata: Metadata = {
   title: "Пользователи | Region WIKI",
@@ -35,17 +36,11 @@ export default async function Page() {
   }
 
   let users: UserItem[];
+  let groupPermissions: Awaited<ReturnType<typeof getGroupPermissions>>;
   try {
-    users = (await listUsers()).map((user) => ({
-      telegramId: user.telegramId,
-      name: user.name,
-      username: user.username,
-      status: user.status,
-      adminGroup: user.adminGroup,
-      createdAt: user.createdAt.toISOString(),
-      lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
-      loginCount: user.loginCount,
-    }));
+    const [list, overrides, permissions] = await Promise.all([listUsers(), listUserOverrides(), getGroupPermissions()]);
+    users = list.map((user) => toUserItem(user, overrides.get(user.telegramId)));
+    groupPermissions = permissions;
   } catch (error) {
     console.error("[users] Не удалось загрузить список", error);
     return <Notice>База данных недоступна. Список пользователей появится, когда подключение восстановится.</Notice>;
@@ -59,7 +54,9 @@ export default async function Page() {
         level: admin.level,
         canDecide: admin.permissions.includes("access.decide"),
         canAssign: admin.permissions.includes("groups.assign"),
+        permissions: admin.permissions,
       }}
+      groupPermissions={groupPermissions}
       lockedAdminIds={config.adminIds}
     />
   );
