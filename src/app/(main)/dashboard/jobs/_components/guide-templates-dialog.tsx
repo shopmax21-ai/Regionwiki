@@ -50,7 +50,7 @@ const blocksLabel = (count: number) => `${count} ${plural(count, BLOCK_NOUNS)}`;
 /** Короткое описание раздела: сколько в нём блоков и есть ли картинки */
 function sectionSummary(section: TemplateSection) {
   const body = section.blocks.filter((block) => block.type !== "heading");
-  const media = body.filter((block) => block.type === "image" || block.type === "slider").length;
+  const media = body.filter((block) => block.type === "image" || block.type === "slider" || (block.type === "textImage" && Boolean(block.src))).length;
   return media > 0 ? `${blocksLabel(body.length)}, из них с картинками: ${media}` : blocksLabel(body.length);
 }
 

@@ -67,7 +67,9 @@ export type GuideBlock =
   | { type: "list"; ordered: boolean; items: string[] }
   | { type: "callout"; variant: CalloutVariant; text: string }
   | { type: "image"; src: string; caption?: string }
-  | { type: "slider"; slides: { src: string; caption?: string }[] };
+  | { type: "slider"; slides: { src: string; caption?: string }[] }
+  /** Текст с картинкой сбоку: для объяснений «как пользоваться телефоном, меню, интерфейсом». Без картинки показывается как обычный текст. */
+  | { type: "textImage"; side: "left" | "right"; text: string; src?: string; caption?: string };
 
 export type GuideBlockType = GuideBlock["type"];
 
@@ -696,10 +698,13 @@ export function blocksText(blocks: readonly GuideBlock[]): string {
           return block.caption ? [block.caption] : [];
         case "slider":
           return block.slides.flatMap((slide) => (slide.caption ? [slide.caption] : []));
+        case "textImage":
+          return [block.text, ...(block.caption ? [block.caption] : [])];
       }
     })
     .join(" ")
-    .replace(/\*\*/g, "");
+    // Знаки форматирования (**жирный**, *курсив*, __подчёркнутый__, ~~зачёркнутый~~, ==выделение==) в поиск не попадают
+    .replace(/\*\*|__|~~|==|\*/g, "");
 }
 
 /** Весь текст гайда для поиска */

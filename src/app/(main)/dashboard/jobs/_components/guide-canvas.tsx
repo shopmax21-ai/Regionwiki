@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { type CalloutVariant, calloutVariants, JOB_LIMITS } from "../_data/jobs";
 import type { EditorBlock } from "./editor-model";
 import { calloutStyle, InlineText } from "./guide-blocks";
-import { type BlockActions, FloatingAddBlock, ImageBody, InsertSlot, SliderBody } from "./job-block-editor";
+import { FormatToolbar, handleFormatShortcut } from "./format-toolbar";
+import { type BlockActions, FloatingAddBlock, ImageBody, InsertSlot, SideToggle, SliderBody } from "./job-block-editor";
 
 type InlineFieldProps = {
   value: string;
@@ -100,32 +101,38 @@ function InlineField({
   }
 
   return (
-    <textarea
-      ref={area}
-      value={value}
-      rows={1}
-      maxLength={maxLength}
-      aria-label={label}
-      placeholder={placeholder}
-      onChange={(event) => onChange(singleLine ? event.target.value.replace(/\n/g, " ") : event.target.value)}
-      onBlur={() => setEditing(false)}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") {
-          event.currentTarget.blur();
-        } else if (event.key === "Enter" && !event.shiftKey && (singleLine || onEnter)) {
-          event.preventDefault();
-          if (onEnter) onEnter();
-          else event.currentTarget.blur();
-        } else if (event.key === "Backspace" && value === "" && onBackspaceEmpty) {
-          event.preventDefault();
-          onBackspaceEmpty();
-        }
-      }}
-      className={cn(
-        "m-0 block w-full resize-none overflow-hidden rounded-sm border-0 bg-primary/5 p-0 text-inherit outline-none ring-2 ring-primary/40 placeholder:text-muted-foreground",
-        className,
+    <div className="relative">
+      {rich && (
+        <FormatToolbar getTextarea={() => area.current} onChange={onChange} className="absolute -top-9 left-0 z-30" />
       )}
-    />
+      <textarea
+        ref={area}
+        value={value}
+        rows={1}
+        maxLength={maxLength}
+        aria-label={label}
+        placeholder={placeholder}
+        onChange={(event) => onChange(singleLine ? event.target.value.replace(/\n/g, " ") : event.target.value)}
+        onBlur={() => setEditing(false)}
+        onKeyDown={(event) => {
+          if (rich && handleFormatShortcut(event, onChange)) return;
+          if (event.key === "Escape") {
+            event.currentTarget.blur();
+          } else if (event.key === "Enter" && !event.shiftKey && (singleLine || onEnter)) {
+            event.preventDefault();
+            if (onEnter) onEnter();
+            else event.currentTarget.blur();
+          } else if (event.key === "Backspace" && value === "" && onBackspaceEmpty) {
+            event.preventDefault();
+            onBackspaceEmpty();
+          }
+        }}
+        className={cn(
+          "m-0 block w-full resize-none overflow-hidden rounded-sm border-0 bg-primary/5 p-0 text-inherit outline-none ring-2 ring-primary/40 placeholder:text-muted-foreground",
+          className,
+        )}
+      />
+    </div>
   );
 }
 
@@ -250,6 +257,8 @@ const blockLabel = (block: EditorBlock) => {
       return "картинка";
     case "slider":
       return "слайдер";
+    case "textImage":
+      return "текст с картинкой";
   }
 };
 
@@ -269,7 +278,7 @@ function BlockChrome({
 }) {
   const label = blockLabel(block);
   const busy =
-    (block.type === "image" && block.uploading) ||
+    ((block.type === "image" || block.type === "textImage") && block.uploading) ||
     (block.type === "slider" && block.slides.some((slide) => slide.uploading));
 
   return (
@@ -364,6 +373,34 @@ function BlockContent({ block, actions }: { block: EditorBlock; actions: BlockAc
 
     case "slider":
       return <SliderBody block={block} actions={actions} />;
+
+    case "textImage":
+      return (
+        <div className="flex flex-col gap-3">
+          <SideToggle block={block} actions={actions} />
+          <div
+            className={cn(
+              "flex flex-col gap-4 sm:items-start",
+              block.side === "left" ? "sm:flex-row" : "sm:flex-row-reverse",
+            )}
+          >
+            <div className="w-full shrink-0 sm:w-[38%] sm:max-w-sm">
+              <ImageBody block={block} actions={actions} compact />
+            </div>
+            <div className="min-w-0 flex-1">
+              <InlineField
+                rich
+                value={block.text}
+                label="Текст рядом с картинкой"
+                placeholder="Объяснение рядом с картинкой. Нажмите, чтобы написать."
+                maxLength={JOB_LIMITS.blockText}
+                className="whitespace-pre-line"
+                onChange={(text) => actions.update(block.id, { text })}
+              />
+            </div>
+          </div>
+        </div>
+      );
   }
 }
 

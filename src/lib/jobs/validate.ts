@@ -54,6 +54,19 @@ const blockSchema = z.discriminatedUnion("type", [
       .min(1, "В слайдере должен быть хотя бы один слайд")
       .max(JOB_LIMITS.sliderSlides, `Не больше ${JOB_LIMITS.sliderSlides} слайдов в одном слайдере`),
   }),
+  z.object({
+    type: z.literal("textImage"),
+    side: z.enum(["left", "right"]),
+    // Текст и картинка необязательны по отдельности: пустые блоки редактор отбрасывает сам
+    text: z.string().trim().max(JOB_LIMITS.blockText, "Текст блока слишком длинный"),
+    src: imageSrc.optional(),
+    caption: z
+      .string()
+      .trim()
+      .max(JOB_LIMITS.caption, "Подпись к картинке слишком длинная")
+      .optional()
+      .transform((value) => (value ? value : undefined)),
+  }),
 ]);
 
 const optionalText = (max: number, message: string) =>

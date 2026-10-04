@@ -1,3 +1,5 @@
+import { Fragment } from "react";
+
 import { cn } from "cn";
 import { Info, Lightbulb, TriangleAlert } from "lucide-react";
 
@@ -5,24 +7,86 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 
 import type { CalloutVariant, GuideBlock } from "../_data/jobs";
 
-/** Выделение **жирным** внутри текста блока. Больше никакой разметки нет, чтобы чужой текст не мог сломать страницу. */
+const MARKS = [
+  { delimiter: "**", render: (children: React.ReactNode[]) => <strong className="font-semibold">{children}</strong> },
+  { delimiter: "__", render: (children: React.ReactNode[]) => <u className="underline-offset-2">{children}</u> },
+  { delimiter: "~~", render: (children: React.ReactNode[]) => <s>{children}</s> },
+  {
+    delimiter: "==",
+    render: (children: React.ReactNode[]) => (
+      <mark className="rounded-sm bg-amber-400/35 px-0.5 text-inherit">{children}</mark>
+    ),
+  },
+  { delimiter: "*", render: (children: React.ReactNode[]) => <em>{children}</em> },
+] as const;
+
+const isBlank = (char: string | undefined) => char === undefined || /\s/.test(char);
+
+/** Ищет закрывающий знак: он не может стоять сразу после пробела, а внутри разметки должен быть хотя бы один символ. */
+function findClose(text: string, delimiter: string, from: number): number {
+  let index = from;
+  while (index < text.length) {
+    let found = text.indexOf(delimiter, index);
+    if (found === -1) return -1;
+
+    if (delimiter === "*" && text[found + 1] === "*") {
+      // Это часть **жирного**: пропускаем всю серию звёздочек
+      let end = found;
+      while (text[end] === "*") end += 1;
+      index = end;
+      continue;
+    }
+    if (delimiter === "**") {
+      // ***жирный курсив***: закрывающими берём последние две звёздочки серии
+      while (text[found + 2] === "*") found += 1;
+    }
+    if (found > from && !isBlank(text[found - 1])) return found;
+    index = found + delimiter.length;
+  }
+  return -1;
+}
+
+function parseInline(text: string): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
+  let plain = "";
+  let index = 0;
+
+  const flush = () => {
+    if (plain) nodes.push(plain);
+    plain = "";
+  };
+
+  while (index < text.length) {
+    let matched = false;
+    for (const { delimiter, render } of MARKS) {
+      if (!text.startsWith(delimiter, index)) continue;
+      const contentStart = index + delimiter.length;
+      // Открывающий знак должен стоять перед словом, а не перед пробелом; одиночная * не может быть началом **
+      if (isBlank(text[contentStart]) || (delimiter === "*" && text[contentStart] === "*")) continue;
+      const close = findClose(text, delimiter, contentStart);
+      if (close === -1) continue;
+
+      flush();
+      nodes.push(<Fragment key={nodes.length}>{render(parseInline(text.slice(contentStart, close)))}</Fragment>);
+      index = close + delimiter.length;
+      matched = true;
+      break;
+    }
+    if (!matched) {
+      plain += text[index];
+      index += 1;
+    }
+  }
+  flush();
+  return nodes;
+}
+
+/**
+ * Форматирование внутри текста блока: **жирный**, *курсив*, __подчёркнутый__, ~~зачёркнутый~~, ==выделение==.
+ * Это единственная разметка, и она превращается только в безопасные элементы React: чужой текст не может добавить на страницу HTML.
+ */
 export function InlineText({ text }: { text: string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return (
-    <>
-      {parts.map((part, index) =>
-        part.length > 4 && part.startsWith("**") && part.endsWith("**") ? (
-          // biome-ignore lint/suspicious/noArrayIndexKey: куски текста не переставляются
-          <strong key={index} className="font-semibold">
-            {part.slice(2, -2)}
-          </strong>
-        ) : (
-          // biome-ignore lint/suspicious/noArrayIndexKey: куски текста не переставляются
-          <span key={index}>{part}</span>
-        ),
-      )}
-    </>
-  );
+  return <>{parseInline(text)}</>;
 }
 
 export const calloutStyle: Record<CalloutVariant, { box: string; icon: string; Icon: typeof Info }> = {
@@ -99,6 +163,36 @@ export function BlockView({ block }: { block: Exclude<GuideBlock, { type: "headi
           {block.caption && <figcaption className="text-center text-muted-foreground text-xs">{block.caption}</figcaption>}
         </figure>
       );
+
+    case "textImage": {
+      const imageFirst = block.side === "left";
+      return (
+        <div
+          className={cn(
+            "flex flex-col gap-4 sm:items-start",
+            block.src && (imageFirst ? "sm:flex-row" : "sm:flex-row-reverse"),
+          )}
+        >
+          {block.src && (
+            <figure className="flex shrink-0 flex-col gap-2 sm:w-[38%] sm:max-w-sm">
+              {/* biome-ignore lint/performance/noImgElement: размеры загруженной картинки заранее неизвестны, next/image здесь не подходит */}
+              <img
+                src={block.src}
+                alt={block.caption ?? ""}
+                loading="lazy"
+                className="max-h-[560px] w-full rounded-xl border bg-muted/30 object-contain"
+              />
+              {block.caption && (
+                <figcaption className="text-center text-muted-foreground text-xs">{block.caption}</figcaption>
+              )}
+            </figure>
+          )}
+          <p className="min-w-0 flex-1 whitespace-pre-line">
+            <InlineText text={block.text} />
+          </p>
+        </div>
+      );
+    }
 
     case "slider":
       return (

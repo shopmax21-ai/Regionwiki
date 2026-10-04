@@ -32,7 +32,18 @@ export type EditorBlock =
       uploading?: boolean;
       error?: string;
     }
-  | { id: string; type: "slider"; slides: EditorSlide[] };
+  | { id: string; type: "slider"; slides: EditorSlide[] }
+  | {
+      id: string;
+      type: "textImage";
+      side: "left" | "right";
+      text: string;
+      src: string;
+      caption: string;
+      local?: string;
+      uploading?: boolean;
+      error?: string;
+    };
 
 export type BlockKind =
   | "heading"
@@ -43,7 +54,9 @@ export type BlockKind =
   | "info"
   | "warning"
   | "image"
-  | "slider";
+  | "slider"
+  | "textImageRight"
+  | "textImageLeft";
 
 export type FormState = {
   title: string;
@@ -57,7 +70,7 @@ export type FormState = {
   alt2: string;
 };
 
-export type GuideTemplateId = "starter" | "instruction" | "faq" | "media";
+export type GuideTemplateId = "starter" | "instruction" | "faq" | "media" | "howto-screens";
 
 export type GuideTemplate = {
   id: GuideTemplateId;
@@ -89,6 +102,9 @@ export function createBlock(kind: BlockKind): EditorBlock {
       return { id, type: "image", src: "", caption: "" };
     case "slider":
       return { id, type: "slider", slides: [] };
+    case "textImageRight":
+    case "textImageLeft":
+      return { id, type: "textImage", side: kind === "textImageLeft" ? "left" : "right", text: "", src: "", caption: "" };
   }
 }
 
@@ -128,6 +144,23 @@ export const guideTemplates: GuideTemplate[] = [
     ],
   },
   {
+    id: "howto-screens",
+    label: "Объяснение со скриншотами",
+    hint: "Текст и картинка справа или слева, для телефона и меню",
+    create: () => [
+      { ...block("heading"), text: "Как пользоваться" },
+      {
+        ...block("textImageRight"),
+        text: "Опишите, что нужно сделать на этом экране. Например: откройте приложение **«Моя работа»** и нажмите ==«Начать смену»==.",
+      },
+      {
+        ...block("textImageLeft"),
+        text: "Опишите следующий шаг: куда нажать и что должно появиться. Важные слова можно сделать *курсивом* или __подчеркнуть__.",
+      },
+      { ...block("tip"), text: "Добавьте совет: например, как быстро вернуться на главный экран." },
+    ],
+  },
+  {
     id: "media",
     label: "Медиа-секция",
     hint: "Текст и слайдер для скриншотов",
@@ -158,6 +191,15 @@ export function toEditorBlocks(blocks: readonly GuideBlock[]): EditorBlock[] {
           id,
           type: "slider",
           slides: block.slides.map((slide) => ({ id: newId(), src: slide.src, caption: slide.caption ?? "" })),
+        };
+      case "textImage":
+        return {
+          id,
+          type: "textImage",
+          side: block.side,
+          text: block.text,
+          src: block.src ?? "",
+          caption: block.caption ?? "",
         };
       default:
         return { id, ...block };
@@ -199,6 +241,13 @@ export function toGuideBlocks(blocks: readonly EditorBlock[], options: { preview
           return [{ src, caption: caption || undefined }];
         });
         return slides.length > 0 ? [{ type: "slider", slides }] : [];
+      }
+      case "textImage": {
+        const src = block.src || (options.preview ? (block.local ?? "") : "");
+        const text = block.text.trim();
+        if (!src && !text) return [];
+        const caption = block.caption.trim();
+        return [{ type: "textImage", side: block.side, text, src: src || undefined, caption: caption || undefined }];
       }
     }
   });

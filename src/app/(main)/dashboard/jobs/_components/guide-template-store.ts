@@ -58,6 +58,12 @@ function isBlock(value: unknown): value is GuideBlock {
       return typeof value.src === "string";
     case "slider":
       return Array.isArray(value.slides) && value.slides.every(isSlide);
+    case "textImage":
+      return (
+        typeof value.text === "string" &&
+        (value.side === "left" || value.side === "right") &&
+        (value.src === undefined || typeof value.src === "string")
+      );
     default:
       return false;
   }

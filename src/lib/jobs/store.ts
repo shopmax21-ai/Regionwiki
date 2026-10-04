@@ -114,6 +114,19 @@ function toBlocks(value: unknown): GuideBlock[] | undefined {
         });
         return slides.length > 0 ? [{ type: "slider", slides }] : [];
       }
+      case "textImage": {
+        const src = typeof block.src === "string" && block.src ? block.src : undefined;
+        if (!src && !text) return [];
+        return [
+          {
+            type: "textImage",
+            side: block.side === "left" ? "left" : "right",
+            text,
+            src,
+            caption: optionalString(block.caption),
+          },
+        ];
+      }
       default:
         return [];
     }

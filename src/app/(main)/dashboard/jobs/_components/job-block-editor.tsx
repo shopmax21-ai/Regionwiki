@@ -17,6 +17,8 @@ import {
   List,
   ListOrdered,
   LoaderCircle,
+  PanelLeft,
+  PanelRight,
   Plus,
   Trash2,
   TriangleAlert,
@@ -25,6 +27,7 @@ import {
 
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,9 +37,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 
 import { calloutVariants, JOB_LIMITS } from "../_data/jobs";
+import { RichTextarea } from "./format-toolbar";
 import { type BlockKind, type EditorBlock, type EditorSlide } from "./editor-model";
 import { IMAGE_ACCEPT } from "./upload-image";
 
@@ -67,6 +70,8 @@ const kindMeta: { kind: BlockKind; label: string; hint: string; icon: typeof Typ
   { kind: "info", label: "Заметка", hint: "Справка или уточнение", icon: Info },
   { kind: "image", label: "Картинка", hint: "Перетащите файл или нажмите Ctrl+V", icon: ImagePlus },
   { kind: "slider", label: "Слайдер", hint: "Несколько изображений с переключением", icon: Images },
+  { kind: "textImageRight", label: "Текст и картинка справа", hint: "Объяснение со скриншотом сбоку", icon: PanelRight },
+  { kind: "textImageLeft", label: "Текст и картинка слева", hint: "Объяснение со скриншотом сбоку", icon: PanelLeft },
 ];
 
 
@@ -87,6 +92,8 @@ const typeLabel = (block: EditorBlock) => {
       return { label: "Картинка", icon: ImagePlus };
     case "slider":
       return { label: "Слайдер", icon: Blocks };
+    case "textImage":
+      return { label: "Текст с картинкой", icon: block.side === "left" ? PanelLeft : PanelRight };
   }
 };
 
@@ -151,7 +158,48 @@ export function InsertSlot({ afterId, actions }: { afterId: string | null; actio
   );
 }
 
-export function ImageBody({ block, actions }: { block: Extract<EditorBlock, { type: "image" }>; actions: BlockActions }) {
+type ImageLikeBlock = Extract<EditorBlock, { type: "image" | "textImage" }>;
+
+/** Выбор стороны, с которой стоит картинка в блоке «Текст с картинкой». */
+export function SideToggle({
+  block,
+  actions,
+}: {
+  block: Extract<EditorBlock, { type: "textImage" }>;
+  actions: BlockActions;
+}) {
+  return (
+    <ToggleGroup
+      type="single"
+      variant="outline"
+      size="sm"
+      value={block.side}
+      onValueChange={(value) => {
+        if (value === "left" || value === "right") actions.update(block.id, { side: value });
+      }}
+      aria-label="Сторона картинки"
+      className="w-fit"
+    >
+      <ToggleGroupItem value="left" aria-label="Картинка слева">
+        <PanelLeft /> Картинка слева
+      </ToggleGroupItem>
+      <ToggleGroupItem value="right" aria-label="Картинка справа">
+        <PanelRight /> Картинка справа
+      </ToggleGroupItem>
+    </ToggleGroup>
+  );
+}
+
+export function ImageBody({
+  block,
+  actions,
+  compact,
+}: {
+  block: ImageLikeBlock;
+  actions: BlockActions;
+  /** Узкий вариант для колонки рядом с текстом */
+  compact?: boolean;
+}) {
   const input = useRef<HTMLInputElement>(null);
   const shown = block.src || block.local;
 
@@ -188,7 +236,9 @@ export function ImageBody({ block, actions }: { block: Extract<EditorBlock, { ty
         >
           <ImagePlus className="size-6" aria-hidden="true" />
           <span>Перетащите картинку сюда или вставьте её через Ctrl+V</span>
-          <span className="text-xs">или нажмите, чтобы выбрать файл · PNG, JPEG, WebP, GIF до 5 МБ</span>
+          <span className="text-xs">
+            {compact ? "или нажмите, чтобы выбрать файл" : "или нажмите, чтобы выбрать файл · PNG, JPEG, WebP, GIF до 5 МБ"}
+          </span>
         </button>
       )}
 
@@ -199,7 +249,7 @@ export function ImageBody({ block, actions }: { block: Extract<EditorBlock, { ty
       )}
 
       {shown && (
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className={cn("flex flex-col gap-2", !compact && "sm:flex-row")}>
           <Input
             value={block.caption}
             maxLength={JOB_LIMITS.caption}
@@ -213,7 +263,7 @@ export function ImageBody({ block, actions }: { block: Extract<EditorBlock, { ty
             variant="outline"
             size="sm"
             disabled={block.uploading}
-            className="shrink-0 self-start sm:self-center"
+            className={cn("shrink-0 self-start", !compact && "sm:self-center")}
             onClick={() => input.current?.click()}
           >
             <ImagePlus data-icon="inline-start" /> Заменить
@@ -353,11 +403,11 @@ function BlockBody({ block, actions }: { block: EditorBlock; actions: BlockActio
 
     case "text":
       return (
-        <Textarea
+        <RichTextarea
           value={block.text}
           maxLength={JOB_LIMITS.blockText}
-          onChange={(event) => actions.update(block.id, { text: event.target.value })}
-          placeholder="Текст блока. Можно редактировать прямо здесь. Для жирного используйте **две звёздочки**."
+          onValueChange={(text) => actions.update(block.id, { text })}
+          placeholder="Текст блока. Выделите слово и нажмите кнопку форматирования или Ctrl+B."
           aria-label="Текст блока"
           className="min-h-24"
         />
@@ -366,10 +416,11 @@ function BlockBody({ block, actions }: { block: EditorBlock; actions: BlockActio
     case "list":
       return (
         <div className="flex flex-col gap-1.5">
-          <Textarea
+          <RichTextarea
+            perLine
             value={block.text}
             maxLength={JOB_LIMITS.blockText}
-            onChange={(event) => actions.update(block.id, { text: event.target.value })}
+            onValueChange={(text) => actions.update(block.id, { text })}
             placeholder={block.ordered ? "Шаги по порядку, каждый с новой строки" : "Пункты, каждый с новой строки"}
             aria-label={block.ordered ? "Шаги" : "Пункты списка"}
             className="min-h-24"
@@ -395,10 +446,10 @@ function BlockBody({ block, actions }: { block: EditorBlock; actions: BlockActio
               </Button>
             ))}
           </div>
-          <Textarea
+          <RichTextarea
             value={block.text}
             maxLength={JOB_LIMITS.blockText}
-            onChange={(event) => actions.update(block.id, { text: event.target.value })}
+            onValueChange={(text) => actions.update(block.id, { text })}
             placeholder="Текст выделенного блока — редактируется прямо внутри карточки"
             aria-label="Текст выделенного блока"
             className="min-h-20"
@@ -411,6 +462,26 @@ function BlockBody({ block, actions }: { block: EditorBlock; actions: BlockActio
 
     case "slider":
       return <SliderBody block={block} actions={actions} />;
+
+    case "textImage":
+      return (
+        <div className="flex flex-col gap-3">
+          <SideToggle block={block} actions={actions} />
+          <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+            <div className={cn(block.side === "right" && "md:order-2")}>
+              <ImageBody block={block} actions={actions} compact />
+            </div>
+            <RichTextarea
+              value={block.text}
+              maxLength={JOB_LIMITS.blockText}
+              onValueChange={(text) => actions.update(block.id, { text })}
+              placeholder="Объяснение рядом с картинкой. Можно выделять слова: жирным, курсивом, цветом."
+              aria-label="Текст рядом с картинкой"
+              className="min-h-32"
+            />
+          </div>
+        </div>
+      );
   }
 }
 
@@ -426,7 +497,7 @@ function BlockCard({
   actions: BlockActions;
 }) {
   const { label, icon: Icon } = typeLabel(block);
-  const busy = block.type === "image" && block.uploading;
+  const busy = (block.type === "image" || block.type === "textImage") && block.uploading;
   const sliderBusy = block.type === "slider" && block.slides.some((slide) => slide.uploading);
 
   return (
