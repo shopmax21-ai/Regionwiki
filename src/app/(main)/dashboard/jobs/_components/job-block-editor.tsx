@@ -6,32 +6,38 @@ import { cn } from "cn";
 import {
   ArrowDown,
   ArrowUp,
+  Blocks,
   Copy,
   Heading2,
   ImagePlus,
+  Images,
   Info,
-  LoaderCircle,
+  LayoutTemplate,
   Lightbulb,
   List,
   ListOrdered,
+  LoaderCircle,
   Plus,
-  TriangleAlert,
   Trash2,
+  TriangleAlert,
   Type,
 } from "lucide-react";
 
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 import { calloutVariants, JOB_LIMITS } from "../_data/jobs";
-import { type BlockKind, type EditorBlock } from "./editor-model";
+import { type BlockKind, type EditorBlock, type EditorSlide } from "./editor-model";
 import { IMAGE_ACCEPT } from "./upload-image";
 
 export type BlockActions = {
@@ -41,8 +47,14 @@ export type BlockActions = {
   duplicate: (id: string) => void;
   /** Вставить новый блок после блока afterId (null — в начало) */
   insert: (kind: BlockKind, afterId: string | null) => void;
-  /** Добавить картинки после блока targetId. Пустой блок с картинкой заполняется первым файлом, replace заменяет и заполненный. */
+  /** Открыть окно шаблонов: выбранное вставится после блока afterId (null — в начало) */
+  openTemplates: (afterId: string | null) => void;
+  /** Добавить картинки после блока targetId. Пустой блок с картинкой заполняется первым файлом, replace заменяет заполненный. */
   addFiles: (files: File[], targetId: string | null, options?: { replace?: boolean }) => void;
+  /** Добавить файлы как новые слайды в конкретный слайдер. */
+  addSliderFiles: (files: File[], sliderId: string) => void;
+  updateSliderSlide: (sliderId: string, slideId: string, patch: Partial<EditorSlide>) => void;
+  removeSliderSlide: (sliderId: string, slideId: string) => void;
 };
 
 const kindMeta: { kind: BlockKind; label: string; hint: string; icon: typeof Type }[] = [
@@ -54,7 +66,9 @@ const kindMeta: { kind: BlockKind; label: string; hint: string; icon: typeof Typ
   { kind: "warning", label: "Важно", hint: "Предупреждение", icon: TriangleAlert },
   { kind: "info", label: "Заметка", hint: "Справка или уточнение", icon: Info },
   { kind: "image", label: "Картинка", hint: "Перетащите файл или нажмите Ctrl+V", icon: ImagePlus },
+  { kind: "slider", label: "Слайдер", hint: "Несколько изображений с переключением", icon: Images },
 ];
+
 
 const typeLabel = (block: EditorBlock) => {
   switch (block.type) {
@@ -71,22 +85,29 @@ const typeLabel = (block: EditorBlock) => {
       };
     case "image":
       return { label: "Картинка", icon: ImagePlus };
+    case "slider":
+      return { label: "Слайдер", icon: Blocks };
   }
 };
 
-function AddBlockMenu({
+export function AddBlockMenu({
   onAdd,
+  onTemplates,
   children,
 }: {
   onAdd: (kind: BlockKind) => void;
+  onTemplates: () => void;
   children: React.ReactNode;
 }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
-      <DropdownMenuContent align="center" className="w-64">
+      <DropdownMenuContent align="end" side="top" sideOffset={8} className="max-h-[min(70svh,560px)] w-80 overflow-y-auto">
+        <DropdownMenuLabel className="flex items-center gap-2">
+          <Blocks className="size-4" /> Добавить блок
+        </DropdownMenuLabel>
         {kindMeta.map(({ kind, label, hint, icon: Icon }) => (
-          <DropdownMenuItem key={kind} onSelect={() => onAdd(kind)} className="items-start gap-2.5">
+          <DropdownMenuItem key={kind} onSelect={() => onAdd(kind)} className="items-start gap-2.5 py-2.5">
             <Icon className="mt-0.5" />
             <span className="flex flex-col">
               <span className="font-medium">{label}</span>
@@ -94,23 +115,34 @@ function AddBlockMenu({
             </span>
           </DropdownMenuItem>
         ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={onTemplates} className="items-start gap-2.5 py-2.5">
+          <LayoutTemplate className="mt-0.5" />
+          <span className="flex flex-col">
+            <span className="font-medium">Шаблоны…</span>
+            <span className="text-muted-foreground text-xs">Готовые, разделы из других гайдов и ваши</span>
+          </span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
-/** Тонкая полоса между блоками: при наведении превращается в кнопку «Добавить блок сюда». */
-function InsertSlot({ afterId, actions }: { afterId: string | null; actions: BlockActions }) {
+/** Тонкая полоса между блоками: при наведении превращается в кнопку добавления. */
+export function InsertSlot({ afterId, actions }: { afterId: string | null; actions: BlockActions }) {
   return (
     <div className="group/slot relative flex h-5 items-center justify-center">
-      <div className="absolute inset-x-0 top-1/2 h-px bg-border opacity-0 transition-opacity group-focus-within/slot:opacity-100 group-hover/slot:opacity-100" />
-      <AddBlockMenu onAdd={(kind) => actions.insert(kind, afterId)}>
+      <div className="absolute inset-x-0 top-1/2 h-px bg-border opacity-0 transition-opacity group-hover/slot:opacity-100 group-focus-within/slot:opacity-100" />
+      <AddBlockMenu
+        onAdd={(kind) => actions.insert(kind, afterId)}
+        onTemplates={() => actions.openTemplates(afterId)}
+      >
         <Button
           type="button"
           variant="outline"
           size="icon-xs"
           aria-label="Добавить блок сюда"
-          className="relative rounded-full bg-background opacity-0 transition-opacity focus-visible:opacity-100 group-hover/slot:opacity-100 data-[state=open]:opacity-100 max-md:opacity-100"
+          className="relative rounded-full bg-background opacity-0 transition-opacity group-hover/slot:opacity-100 group-focus-visible/slot:opacity-100 data-[state=open]:opacity-100 max-md:opacity-100"
         >
           <Plus />
         </Button>
@@ -119,7 +151,7 @@ function InsertSlot({ afterId, actions }: { afterId: string | null; actions: Blo
   );
 }
 
-function ImageBody({ block, actions }: { block: Extract<EditorBlock, { type: "image" }>; actions: BlockActions }) {
+export function ImageBody({ block, actions }: { block: Extract<EditorBlock, { type: "image" }>; actions: BlockActions }) {
   const input = useRef<HTMLInputElement>(null);
   const shown = block.src || block.local;
 
@@ -192,6 +224,118 @@ function ImageBody({ block, actions }: { block: Extract<EditorBlock, { type: "im
   );
 }
 
+export function SliderBody({ block, actions }: { block: Extract<EditorBlock, { type: "slider" }>; actions: BlockActions }) {
+  const input = useRef<HTMLInputElement>(null);
+  const hasSlides = block.slides.length > 0;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <input
+        ref={input}
+        type="file"
+        accept={IMAGE_ACCEPT}
+        multiple
+        hidden
+        onChange={(event) => {
+          const files = Array.from(event.target.files ?? []);
+          event.target.value = "";
+          if (files.length > 0) actions.addSliderFiles(files, block.id);
+        }}
+      />
+
+      <div className="rounded-xl border bg-muted/20 p-2 sm:p-3" data-slider-preview={block.id}>
+        {hasSlides ? (
+          <Carousel opts={{ loop: block.slides.length > 1 }}>
+            <CarouselContent>
+              {block.slides.map((slide, index) => (
+                <CarouselItem key={slide.id}>
+                  <div className="relative overflow-hidden rounded-lg border bg-background">
+                    {slide.src || slide.local ? (
+                      // biome-ignore lint/performance/noImgElement: локальные адреса используются во время загрузки
+                      <img
+                        src={slide.src || slide.local}
+                        alt={slide.caption || `Слайд ${index + 1}`}
+                        className={cn("mx-auto max-h-64 object-contain", slide.uploading && "opacity-50")}
+                      />
+                    ) : (
+                      <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">Загрузите изображение</div>
+                    )}
+                    {slide.uploading && (
+                      <div className="absolute inset-0 flex items-center justify-center gap-2 bg-background/60 text-sm">
+                        <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> Загрузка…
+                      </div>
+                    )}
+                    {block.slides.length > 1 && (
+                      <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-1 text-xs shadow-sm">
+                        {index + 1} / {block.slides.length}
+                      </span>
+                    )}
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            {block.slides.length > 1 && (
+              <>
+                <CarouselPrevious className="left-2" />
+                <CarouselNext className="right-2" />
+              </>
+            )}
+          </Carousel>
+        ) : (
+          <div className="flex min-h-36 items-center justify-center text-center text-sm text-muted-foreground">
+            Добавьте несколько изображений — они станут слайдами.
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {block.slides.map((slide, index) => (
+          <div key={slide.id} className="grid gap-2 rounded-lg border p-2 sm:grid-cols-[56px_minmax(0,1fr)_auto] sm:items-center">
+            <div className="size-14 overflow-hidden rounded-md border bg-muted/30">
+              {slide.src || slide.local ? (
+                // biome-ignore lint/performance/noImgElement: thumbnail uses uploaded/local image URL
+                <img src={slide.src || slide.local} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full items-center justify-center text-xs text-muted-foreground">{index + 1}</div>
+              )}
+            </div>
+            <Input
+              value={slide.caption}
+              maxLength={JOB_LIMITS.caption}
+              onChange={(event) => actions.updateSliderSlide(block.id, slide.id, { caption: event.target.value })}
+              placeholder={`Подпись к слайду ${index + 1}`}
+              aria-label={`Подпись к слайду ${index + 1}`}
+              disabled={slide.uploading}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              className="text-destructive hover:text-destructive sm:justify-self-end"
+              aria-label={`Удалить слайд ${index + 1}`}
+              onClick={() => actions.removeSliderSlide(block.id, slide.id)}
+            >
+              <Trash2 />
+            </Button>
+            {slide.error && (
+              <p role="alert" className="sm:col-span-3 text-destructive text-xs">
+                {slide.error}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <Button type="button" variant="outline" size="sm" onClick={() => input.current?.click()}>
+        <ImagePlus data-icon="inline-start" /> Добавить изображения
+      </Button>
+      <p className="text-muted-foreground text-xs">
+        До {JOB_LIMITS.sliderSlides} слайдов. Подписи можно редактировать прямо в карточках слайдов.
+      </p>
+    </div>
+  );
+}
+
 function BlockBody({ block, actions }: { block: EditorBlock; actions: BlockActions }) {
   switch (block.type) {
     case "heading":
@@ -213,9 +357,9 @@ function BlockBody({ block, actions }: { block: EditorBlock; actions: BlockActio
           value={block.text}
           maxLength={JOB_LIMITS.blockText}
           onChange={(event) => actions.update(block.id, { text: event.target.value })}
-          placeholder="Текст. Чтобы выделить слово, оберните его в **две звёздочки**"
-          aria-label="Текст"
-          className="min-h-20"
+          placeholder="Текст блока. Можно редактировать прямо здесь. Для жирного используйте **две звёздочки**."
+          aria-label="Текст блока"
+          className="min-h-24"
         />
       );
 
@@ -224,15 +368,13 @@ function BlockBody({ block, actions }: { block: EditorBlock; actions: BlockActio
         <div className="flex flex-col gap-1.5">
           <Textarea
             value={block.text}
+            maxLength={JOB_LIMITS.blockText}
             onChange={(event) => actions.update(block.id, { text: event.target.value })}
             placeholder={block.ordered ? "Шаги по порядку, каждый с новой строки" : "Пункты, каждый с новой строки"}
             aria-label={block.ordered ? "Шаги" : "Пункты списка"}
-            className="min-h-20"
+            className="min-h-24"
           />
-          <p className="text-muted-foreground text-xs">
-            Каждая строка — отдельный пункт.
-            {block.ordered ? " Номера появятся сами." : ""}
-          </p>
+          <p className="text-muted-foreground text-xs">Каждая строка — отдельный пункт. {block.ordered ? "Номера появятся сами." : ""}</p>
         </div>
       );
 
@@ -257,15 +399,18 @@ function BlockBody({ block, actions }: { block: EditorBlock; actions: BlockActio
             value={block.text}
             maxLength={JOB_LIMITS.blockText}
             onChange={(event) => actions.update(block.id, { text: event.target.value })}
-            placeholder="Текст подсказки"
+            placeholder="Текст выделенного блока — редактируется прямо внутри карточки"
             aria-label="Текст выделенного блока"
-            className="min-h-16"
+            className="min-h-20"
           />
         </div>
       );
 
     case "image":
       return <ImageBody block={block} actions={actions} />;
+
+    case "slider":
+      return <SliderBody block={block} actions={actions} />;
   }
 }
 
@@ -282,10 +427,12 @@ function BlockCard({
 }) {
   const { label, icon: Icon } = typeLabel(block);
   const busy = block.type === "image" && block.uploading;
+  const sliderBusy = block.type === "slider" && block.slides.some((slide) => slide.uploading);
 
   return (
     <div
       data-block-id={block.id}
+      data-slider-preview={block.type === "slider" ? block.id : undefined}
       tabIndex={-1}
       className="rounded-xl border bg-card p-3 shadow-xs outline-none transition-shadow focus-within:ring-2 focus-within:ring-primary/30 focus:ring-2 focus:ring-primary/30"
     >
@@ -294,44 +441,16 @@ function BlockCard({
           <Icon className="size-3.5" aria-hidden="true" /> {label}
         </span>
         <div className="flex items-center gap-0.5">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label={`Поднять блок «${label}» выше`}
-            disabled={index === 0}
-            onClick={() => actions.move(block.id, -1)}
-          >
+          <Button type="button" variant="ghost" size="icon-xs" aria-label={`Поднять блок «${label}» выше`} disabled={index === 0} onClick={() => actions.move(block.id, -1)}>
             <ArrowUp />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label={`Опустить блок «${label}» ниже`}
-            disabled={index === count - 1}
-            onClick={() => actions.move(block.id, 1)}
-          >
+          <Button type="button" variant="ghost" size="icon-xs" aria-label={`Опустить блок «${label}» ниже`} disabled={index === count - 1} onClick={() => actions.move(block.id, 1)}>
             <ArrowDown />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label={`Дублировать блок «${label}»`}
-            disabled={busy}
-            onClick={() => actions.duplicate(block.id)}
-          >
+          <Button type="button" variant="ghost" size="icon-xs" aria-label={`Дублировать блок «${label}»`} disabled={busy || sliderBusy} onClick={() => actions.duplicate(block.id)}>
             <Copy />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label={`Удалить блок «${label}»`}
-            className="text-destructive hover:text-destructive"
-            onClick={() => actions.remove(block.id)}
-          >
+          <Button type="button" variant="ghost" size="icon-xs" aria-label={`Удалить блок «${label}»`} className="text-destructive hover:text-destructive" onClick={() => actions.remove(block.id)}>
             <Trash2 />
           </Button>
         </div>
@@ -341,7 +460,28 @@ function BlockCard({
   );
 }
 
-/** Список блоков гайда с кнопками добавления. Сама вставка и загрузка картинок живёт в родителе. */
+/** Плавающая кнопка добавления блока справа снизу: общая для режимов «Карточки» и «На странице». */
+export function FloatingAddBlock({ blocks, actions }: { blocks: readonly EditorBlock[]; actions: BlockActions }) {
+  const atLimit = blocks.length >= JOB_LIMITS.blocks;
+  const endId = blocks.at(-1)?.id ?? null;
+
+  return (
+    <div className="fixed right-5 bottom-24 z-40 sm:right-7 sm:bottom-28">
+      <AddBlockMenu onAdd={(kind) => actions.insert(kind, endId)} onTemplates={() => actions.openTemplates(endId)}>
+        <Button
+          type="button"
+          size="lg"
+          disabled={atLimit}
+          className="h-12 rounded-full px-5 shadow-lg shadow-black/10"
+        >
+          <Plus data-icon="inline-start" /> Добавить блок
+        </Button>
+      </AddBlockMenu>
+    </div>
+  );
+}
+
+/** Список блоков гайда. Основное меню добавления закреплено справа снизу, а между блоками остаются тонкие слоты. */
 export function JobBlockEditor({ blocks, actions }: { blocks: EditorBlock[]; actions: BlockActions }) {
   const atLimit = blocks.length >= JOB_LIMITS.blocks;
 
@@ -349,8 +489,7 @@ export function JobBlockEditor({ blocks, actions }: { blocks: EditorBlock[]; act
     <div className="flex flex-col">
       {blocks.length === 0 && (
         <div className="mb-3 rounded-xl border border-dashed p-8 text-center text-muted-foreground text-sm">
-          В гайде пока нет блоков. Добавьте заголовок, текст или список, а картинку можно просто перетащить в окно или
-          вставить через Ctrl+V.
+          В гайде пока нет блоков. Используйте плавающую кнопку справа снизу, чтобы добавить блок или готовый шаблон.
         </div>
       )}
 
@@ -361,23 +500,12 @@ export function JobBlockEditor({ blocks, actions }: { blocks: EditorBlock[]; act
         </div>
       ))}
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        {kindMeta.map(({ kind, label, icon: Icon }) => (
-          <Button
-            key={kind}
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={atLimit}
-            onClick={() => actions.insert(kind, blocks.at(-1)?.id ?? null)}
-          >
-            <Icon data-icon="inline-start" /> {label}
-          </Button>
-        ))}
+      <div className="mt-4 text-xs text-muted-foreground">
+        Контент каждого блока редактируется непосредственно внутри его карточки. Для точной вставки между блоками используйте «+» на границе.
+        {atLimit && <span className="ml-1">Достигнут предел: {JOB_LIMITS.blocks} блоков.</span>}
       </div>
-      {atLimit && (
-        <p className="mt-2 text-muted-foreground text-xs">Достигнут предел: {JOB_LIMITS.blocks} блоков в одном гайде.</p>
-      )}
+
+      <FloatingAddBlock blocks={blocks} actions={actions} />
     </div>
   );
 }

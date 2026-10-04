@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { cn } from "cn";
-import { ArrowLeft, Columns2, Eye, ImagePlus, Pencil, Save } from "lucide-react";
+import { ArrowLeft, Columns2, Eye, ImagePlus, LayoutList, MousePointerClick, Pencil, Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import {
   createBlock,
   draftJob,
   type EditorBlock,
+  type EditorSlide,
   editorBlocksFromJob,
   emptyForm,
   type FormState,
@@ -31,12 +32,17 @@ import {
   newId,
   toGuideBlocks,
 } from "./editor-model";
+import { GuideCanvas } from "./guide-canvas";
+import { GuideTemplatesDialog } from "./guide-templates-dialog";
 import { JobArticleView } from "./job-article";
 import { type BlockActions, JobBlockEditor } from "./job-block-editor";
 import { JobCoverField } from "./job-cover-field";
 import { isImageFile, uploadImage } from "./upload-image";
 
 type View = "edit" | "split" | "preview";
+
+/** Как редактируются блоки: карточками с полями или прямо на странице гайда */
+type ContentMode = "cards" | "page";
 
 type JobEditorPageProps = {
   /** Все работы: нужны для выбора предыдущего этапа и для предпросмотра соседних гайдов */
@@ -50,7 +56,7 @@ const hasFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? [
 
 /**
  * Отдельная страница создания и редактирования гайда работы: настройки сверху, ниже блоки (заголовки, текст, списки,
- * советы, картинки) и предпросмотр. Картинки добавляются перетаскиванием в окно или через Ctrl+V.
+ * советы, картинки и слайдеры) и предпросмотр. Картинки добавляются перетаскиванием в окно или через Ctrl+V.
  */
 export function JobEditorPage(props: JobEditorPageProps) {
   const router = useRouter();
@@ -65,6 +71,9 @@ export function JobEditorPage(props: JobEditorPageProps) {
     snapshot(job ? formFromJob(job) : emptyForm, job ? editorBlocksFromJob(job) : []),
   );
   const [view, setView] = useState<View>("edit");
+  const [contentMode, setContentMode] = useState<ContentMode>("cards");
+  // Окно шаблонов: afterId — после какого блока вставлять (null — в начало)
+  const [templatesTarget, setTemplatesTarget] = useState<{ afterId: string | null } | null>(null);
   // Пока адрес не правили руками, он строится из названия
   const [slugTouched, setSlugTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +84,11 @@ export function JobEditorPage(props: JobEditorPageProps) {
   const focusedId = useRef<string | null>(null);
 
   const dirty = snapshot(form, blocks) !== baseline;
-  const uploading = blocks.some((block) => block.type === "image" && block.uploading);
+  const uploading = blocks.some(
+    (block) =>
+      (block.type === "image" && block.uploading) ||
+      (block.type === "slider" && block.slides.some((slide) => slide.uploading)),
+  );
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -90,7 +103,75 @@ export function JobEditorPage(props: JobEditorPageProps) {
     return [...props.allJobs, draft];
   }, [props.allJobs, currentSlug, draft]);
 
+  const addSliderFiles: BlockActions["addSliderFiles"] = (files, sliderId) => {
+    const images = files.filter(isImageFile);
+    if (images.length < files.length) toast.error("Подходят только PNG, JPEG, WebP и GIF");
+    if (images.length === 0) return;
+
+    const slider = blocks.find((block) => block.id === sliderId);
+    if (!slider || slider.type !== "slider") return;
+    if (slider.slides.length + images.length > JOB_LIMITS.sliderSlides) {
+      toast.error(`Не больше ${JOB_LIMITS.sliderSlides} слайдов в одном слайдере`);
+      return;
+    }
+
+    const items = images.map((file) => ({ file, id: newId(), local: URL.createObjectURL(file) }));
+    setBlocks((prev) =>
+      prev.map((block) =>
+        block.id === sliderId && block.type === "slider"
+          ? {
+              ...block,
+              slides: [
+                ...block.slides,
+                ...items.map(
+                  (item): EditorSlide => ({
+                    id: item.id,
+                    src: "",
+                    caption: "",
+                    local: item.local,
+                    uploading: true,
+                  }),
+                ),
+              ],
+            }
+          : block,
+      ),
+    );
+
+    const finish = (local: string, patch: Partial<EditorSlide>) =>
+      setBlocks((prev) =>
+        prev.map((block) =>
+          block.type === "slider"
+            ? {
+                ...block,
+                slides: block.slides.map((slide) => (slide.local === local ? { ...slide, ...patch } : slide)),
+              }
+            : block,
+        ),
+      );
+
+    for (const item of items) {
+      uploadImage(item.file).then(
+        (url) => {
+          finish(item.local, { src: url, local: undefined, uploading: false, error: undefined });
+          URL.revokeObjectURL(item.local);
+        },
+        (reason: unknown) => {
+          const message = reason instanceof Error ? reason.message : "Не удалось загрузить картинку";
+          finish(item.local, { uploading: false, error: message });
+          toast.error(message);
+        },
+      );
+    }
+  };
+
   const addFiles: BlockActions["addFiles"] = (files, targetId, options) => {
+    const target = targetId ? blocks.find((block) => block.id === targetId) : undefined;
+    if (target?.type === "slider" && !options?.replace) {
+      addSliderFiles(files, target.id);
+      return;
+    }
+
     const images = files.filter(isImageFile);
     if (images.length < files.length) toast.error("Подходят только PNG, JPEG, WebP и GIF");
     if (images.length === 0) return;
@@ -143,6 +224,20 @@ export function JobEditorPage(props: JobEditorPageProps) {
     }
   };
 
+  /** Вставляет готовые блоки (шаблон, раздел чужого гайда, свой шаблон). Возвращает false, если они не помещаются. */
+  const insertBlocks = (additions: EditorBlock[], afterId: string | null): boolean => {
+    if (blocks.length + additions.length > JOB_LIMITS.blocks) {
+      toast.error(`Не помещается: в гайде максимум ${JOB_LIMITS.blocks} блоков`);
+      return false;
+    }
+    const index = afterId ? blocks.findIndex((item) => item.id === afterId) : -1;
+    const at = index >= 0 ? index + 1 : afterId === null ? 0 : blocks.length;
+    focusedId.current = additions.at(-1)?.id ?? null;
+    setBlocks([...blocks.slice(0, at), ...additions, ...blocks.slice(at)]);
+    toast.success(`Добавлено блоков: ${additions.length}`);
+    return true;
+  };
+
   const actions: BlockActions = {
     update: (id, patch) =>
       setBlocks((prev) => prev.map((block) => (block.id === id ? ({ ...block, ...patch } as EditorBlock) : block))),
@@ -163,19 +258,47 @@ export function JobEditorPage(props: JobEditorPageProps) {
       setBlocks((prev) => {
         const index = prev.findIndex((block) => block.id === id);
         if (index < 0 || prev.length >= JOB_LIMITS.blocks) return prev;
-        const copy = { ...prev[index], id: newId() } as EditorBlock;
+        const source = prev[index];
+        const copy: EditorBlock =
+          source.type === "slider"
+            ? {
+                ...source,
+                id: newId(),
+                slides: source.slides.map((slide) => ({ ...slide, id: newId() })),
+              }
+            : { ...source, id: newId() };
         return [...prev.slice(0, index + 1), copy, ...prev.slice(index + 1)];
       }),
     insert: (kind: BlockKind, afterId) => {
-      const block = createBlock(kind);
-      focusedId.current = block.id;
+      const newBlock = createBlock(kind);
+      focusedId.current = newBlock.id;
       setBlocks((prev) => {
         const index = afterId ? prev.findIndex((item) => item.id === afterId) : -1;
         const at = index >= 0 ? index + 1 : afterId === null ? 0 : prev.length;
-        return [...prev.slice(0, at), block, ...prev.slice(at)];
+        if (prev.length >= JOB_LIMITS.blocks) return prev;
+        return [...prev.slice(0, at), newBlock, ...prev.slice(at)];
       });
     },
+    openTemplates: (afterId) => setTemplatesTarget({ afterId }),
     addFiles,
+    addSliderFiles,
+    updateSliderSlide: (sliderId, slideId, patch) =>
+      setBlocks((prev) =>
+        prev.map((block) =>
+          block.id === sliderId && block.type === "slider"
+            ? { ...block, slides: block.slides.map((slide) => (slide.id === slideId ? { ...slide, ...patch } : slide)) }
+            : block,
+        ),
+      ),
+    removeSliderSlide: (sliderId, slideId) =>
+      setBlocks((prev) =>
+        prev.map((block) => {
+          if (block.id !== sliderId || block.type !== "slider") return block;
+          const slide = block.slides.find((item) => item.id === slideId);
+          if (slide?.local) URL.revokeObjectURL(slide.local);
+          return { ...block, slides: block.slides.filter((item) => item.id !== slideId) };
+        }),
+      ),
   };
 
   // Ctrl+V: картинка из буфера обмена (скриншот или скопированный файл) становится блоком
@@ -248,8 +371,14 @@ export function JobEditorPage(props: JobEditorPageProps) {
       setError("Дождитесь окончания загрузки картинок");
       return;
     }
-    if (blocks.some((block) => block.type === "image" && !block.src && block.error)) {
-      setError("Одна из картинок не загрузилась: выберите файл заново или удалите этот блок");
+    if (
+      blocks.some(
+        (block) =>
+          (block.type === "image" && !block.src && block.error) ||
+          (block.type === "slider" && block.slides.some((slide) => !slide.src && slide.error)),
+      )
+    ) {
+      setError("Одна из картинок не загрузилась: выберите файл заново или удалите её");
       return;
     }
 
@@ -496,13 +625,36 @@ export function JobEditorPage(props: JobEditorPageProps) {
             </section>
 
             <section className="flex flex-col gap-3" aria-label="Содержимое гайда">
-              <div>
-                <h2 className="font-semibold text-base">Содержимое гайда</h2>
-                <p className="text-muted-foreground text-xs">
-                  Заголовки попадают в содержание страницы. Пустые блоки при сохранении отбрасываются.
-                </p>
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="font-semibold text-base">Содержимое гайда</h2>
+                  <p className="text-muted-foreground text-xs">
+                    Заголовки попадают в содержание страницы. Пустые блоки при сохранении отбрасываются.
+                  </p>
+                </div>
+                <ToggleGroup
+                  type="single"
+                  variant="outline"
+                  size="sm"
+                  value={contentMode}
+                  onValueChange={(value) => {
+                    if (value) setContentMode(value as ContentMode);
+                  }}
+                  aria-label="Способ редактирования блоков"
+                >
+                  <ToggleGroupItem value="cards" aria-label="Редактировать в карточках">
+                    <LayoutList /> Карточки
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="page" aria-label="Редактировать прямо на странице">
+                    <MousePointerClick /> На странице
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
-              <JobBlockEditor blocks={blocks} actions={actions} />
+              {contentMode === "page" ? (
+                <GuideCanvas blocks={blocks} actions={actions} />
+              ) : (
+                <JobBlockEditor blocks={blocks} actions={actions} />
+              )}
             </section>
           </div>
         )}
@@ -554,6 +706,16 @@ export function JobEditorPage(props: JobEditorPageProps) {
           </Button>
         </div>
       </div>
+
+      <GuideTemplatesDialog
+        open={templatesTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setTemplatesTarget(null);
+        }}
+        blocks={blocks}
+        otherJobs={altOptions}
+        onInsert={(additions) => insertBlocks(additions, templatesTarget?.afterId ?? null)}
+      />
     </main>
   );
 }

@@ -1,6 +1,8 @@
 import { cn } from "cn";
 import { Info, Lightbulb, TriangleAlert } from "lucide-react";
 
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+
 import type { CalloutVariant, GuideBlock } from "../_data/jobs";
 
 /** Выделение **жирным** внутри текста блока. Больше никакой разметки нет, чтобы чужой текст не мог сломать страницу. */
@@ -23,7 +25,7 @@ export function InlineText({ text }: { text: string }) {
   );
 }
 
-const calloutStyle: Record<CalloutVariant, { box: string; icon: string; Icon: typeof Info }> = {
+export const calloutStyle: Record<CalloutVariant, { box: string; icon: string; Icon: typeof Info }> = {
   tip: {
     box: "border-amber-500/60 bg-amber-500/10",
     icon: "text-amber-600 dark:text-amber-300",
@@ -96,6 +98,38 @@ export function BlockView({ block }: { block: Exclude<GuideBlock, { type: "headi
           />
           {block.caption && <figcaption className="text-center text-muted-foreground text-xs">{block.caption}</figcaption>}
         </figure>
+      );
+
+    case "slider":
+      return (
+        <div className="min-w-0">
+          <Carousel opts={{ loop: block.slides.length > 1 }}>
+            <CarouselContent>
+              {block.slides.map((slide, index) => (
+                <CarouselItem key={`${slide.src}-${index}`}>
+                  <figure className="flex flex-col gap-2">
+                    {/* biome-ignore lint/performance/noImgElement: размеры загруженной картинки заранее неизвестны, next/image здесь не подходит */}
+                    <img
+                      src={slide.src}
+                      alt={slide.caption ?? `Слайд ${index + 1}`}
+                      loading={index === 0 ? "eager" : "lazy"}
+                      className="max-h-[560px] w-full rounded-xl border bg-muted/30 object-contain"
+                    />
+                    {slide.caption && (
+                      <figcaption className="text-center text-muted-foreground text-xs">{slide.caption}</figcaption>
+                    )}
+                  </figure>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            {block.slides.length > 1 && (
+              <>
+                <CarouselPrevious className="left-2" />
+                <CarouselNext className="right-2" />
+              </>
+            )}
+          </Carousel>
+        </div>
       );
   }
 }
