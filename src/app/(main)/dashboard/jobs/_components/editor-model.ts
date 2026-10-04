@@ -6,7 +6,17 @@ import {
   jobBlocks,
 } from "../_data/jobs";
 
-/** Блок в редакторе: у каждого есть id для React, у списка текст вместо массива, у картинки состояние загрузки. */
+/** Слайд в редакторе: id нужен только клиенту, local/uploading/error — только на время загрузки. */
+export type EditorSlide = {
+  id: string;
+  src: string;
+  caption: string;
+  local?: string;
+  uploading?: boolean;
+  error?: string;
+};
+
+/** Блок в редакторе: у каждого есть id для React, у списков текст вместо массива, у медиа — состояние загрузки. */
 export type EditorBlock =
   | { id: string; type: "heading"; text: string }
   | { id: string; type: "text"; text: string }
@@ -21,9 +31,19 @@ export type EditorBlock =
       local?: string;
       uploading?: boolean;
       error?: string;
-    };
+    }
+  | { id: string; type: "slider"; slides: EditorSlide[] };
 
-export type BlockKind = "heading" | "text" | "bullets" | "steps" | "tip" | "info" | "warning" | "image";
+export type BlockKind =
+  | "heading"
+  | "text"
+  | "bullets"
+  | "steps"
+  | "tip"
+  | "info"
+  | "warning"
+  | "image"
+  | "slider";
 
 export type FormState = {
   title: string;
@@ -37,7 +57,18 @@ export type FormState = {
   alt2: string;
 };
 
+export type GuideTemplateId = "starter" | "instruction" | "faq" | "media";
+
+export type GuideTemplate = {
+  id: GuideTemplateId;
+  label: string;
+  hint: string;
+  create: () => EditorBlock[];
+};
+
 export const newId = () => crypto.randomUUID();
+
+const block = (kind: BlockKind): EditorBlock => createBlock(kind);
 
 export function createBlock(kind: BlockKind): EditorBlock {
   const id = newId();
@@ -56,8 +87,57 @@ export function createBlock(kind: BlockKind): EditorBlock {
       return { id, type: "callout", variant: kind, text: "" };
     case "image":
       return { id, type: "image", src: "", caption: "" };
+    case "slider":
+      return { id, type: "slider", slides: [] };
   }
 }
+
+/** Готовые группы блоков. Каждый пункт создаётся с новыми id, поэтому шаблоны можно вставлять многократно. */
+export const guideTemplates: GuideTemplate[] = [
+  {
+    id: "starter",
+    label: "Базовый гайд",
+    hint: "Условия, процесс и советы",
+    create: () => [
+      { ...block("heading"), text: "Условия и требования" },
+      { ...block("bullets"), text: "Что нужно для старта\nГде получить необходимые предметы" },
+      { ...block("heading"), text: "Как начать работу" },
+      { ...block("steps"), text: "Получите задание\nВыполните первый этап\nСдайте результат" },
+      { ...block("heading"), text: "Советы" },
+      { ...block("tip"), text: "Здесь можно добавить полезный совет для новичков." },
+    ],
+  },
+  {
+    id: "instruction",
+    label: "Пошаговая инструкция",
+    hint: "Заголовок, шаги и важное замечание",
+    create: () => [
+      { ...block("heading"), text: "Инструкция" },
+      { ...block("steps"), text: "Шаг 1 — подготовьтесь\nШаг 2 — выполните действие\nШаг 3 — завершите процесс" },
+      { ...block("warning"), text: "Обратите внимание на важное условие или ограничение." },
+    ],
+  },
+  {
+    id: "faq",
+    label: "Вопросы и ответы",
+    hint: "Несколько заметок для частых вопросов",
+    create: () => [
+      { ...block("heading"), text: "Частые вопросы" },
+      { ...block("info"), text: "Вопрос: где начать?\nОтвет: укажите точную точку или действие." },
+      { ...block("info"), text: "Вопрос: что делать после завершения?\nОтвет: укажите следующий шаг." },
+    ],
+  },
+  {
+    id: "media",
+    label: "Медиа-секция",
+    hint: "Текст и слайдер для скриншотов",
+    create: () => [
+      { ...block("heading"), text: "Как это выглядит" },
+      { ...block("text"), text: "Добавьте короткое описание к изображениям ниже." },
+      block("slider"),
+    ],
+  },
+];
 
 export const lines = (text: string) =>
   text
@@ -73,6 +153,12 @@ export function toEditorBlocks(blocks: readonly GuideBlock[]): EditorBlock[] {
         return { id, type: "list", ordered: block.ordered, text: block.items.join("\n") };
       case "image":
         return { id, type: "image", src: block.src, caption: block.caption ?? "" };
+      case "slider":
+        return {
+          id,
+          type: "slider",
+          slides: block.slides.map((slide) => ({ id: newId(), src: slide.src, caption: slide.caption ?? "" })),
+        };
       default:
         return { id, ...block };
     }
@@ -80,8 +166,8 @@ export function toEditorBlocks(blocks: readonly GuideBlock[]): EditorBlock[] {
 }
 
 /**
- * Блоки для сохранения и предпросмотра. Пустые блоки отбрасываются.
- * В предпросмотре картинка, которая ещё грузится, показывается по адресу из памяти браузера.
+ * Блоки для сохранения и предпросмотра. Пустые блоки/слайды отбрасываются.
+ * В предпросмотре медиа, которое ещё грузится, показывается по адресу из памяти браузера.
  */
 export function toGuideBlocks(blocks: readonly EditorBlock[], options: { preview?: boolean } = {}): GuideBlock[] {
   return blocks.flatMap((block): GuideBlock[] => {
@@ -104,6 +190,15 @@ export function toGuideBlocks(blocks: readonly EditorBlock[], options: { preview
         if (!src) return [];
         const caption = block.caption.trim();
         return [{ type: "image", src, caption: caption || undefined }];
+      }
+      case "slider": {
+        const slides = block.slides.flatMap((slide) => {
+          const src = slide.src || (options.preview ? (slide.local ?? "") : "");
+          if (!src) return [];
+          const caption = slide.caption.trim();
+          return [{ src, caption: caption || undefined }];
+        });
+        return slides.length > 0 ? [{ type: "slider", slides }] : [];
       }
     }
   });
