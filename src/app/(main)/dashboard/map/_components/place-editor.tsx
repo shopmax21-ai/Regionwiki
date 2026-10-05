@@ -1,17 +1,28 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useRef, useState } from "react";
 
 import { cn } from "cn";
-import { Crosshair, X } from "lucide-react";
+import { Crosshair, ImageUp, LoaderCircle, RotateCcw, X } from "lucide-react";
+import { toast } from "sonner";
 
+import { IMAGE_ACCEPT, uploadImage } from "@/app/(main)/dashboard/jobs/_components/upload-image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-import { PLACE_LIMITS, type PlaceCategoryId, placeCategories } from "./map-data";
+import {
+  isPlaceIconImage,
+  isPlaceIconPreset,
+  PLACE_LIMITS,
+  type PlaceCategoryId,
+  type PlaceIconId,
+  placeCategories,
+  placeIconIds,
+} from "./map-data";
+import { MarkerBadge, placeIconPresets } from "./place-icons";
 
 /** Метка в работе. Координаты хранятся строками, чтобы в полях можно было набирать «-» и «12.» */
 export interface PlaceDraft {
@@ -20,6 +31,8 @@ export interface PlaceDraft {
   name: string;
   category: PlaceCategoryId;
   description: string;
+  /** Пусто — иконка категории; иначе id готовой иконки или адрес своей картинки */
+  icon: string;
   x: string;
   y: string;
 }
@@ -31,6 +44,123 @@ interface PlaceEditorProps {
   onCancel: () => void;
   pending: boolean;
   error: string | null;
+}
+
+
+/**
+ * Выбор иконки метки: по умолчанию берётся иконка категории, можно выбрать готовую или загрузить свою картинку.
+ * Загрузка идёт на тот же сервер, что и картинки гайдов.
+ */
+export function IconPicker({
+  category,
+  value,
+  onChange,
+  disabled,
+}: {
+  category: PlaceCategoryId;
+  value: string;
+  onChange: (icon: string) => void;
+  disabled?: boolean;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const custom = isPlaceIconImage(value);
+
+  const upload = async (file: File) => {
+    setError(null);
+    setUploading(true);
+    try {
+      onChange(await uploadImage(file));
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : "Не удалось загрузить картинку";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <fieldset className="flex flex-col gap-2 border-0 p-0">
+      <legend className="mb-1.5 flex w-full items-center justify-between gap-2 font-medium text-sm">
+        Иконка метки
+        {value !== "" && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            className="-my-1 text-muted-foreground"
+            disabled={disabled || uploading}
+            onClick={() => onChange("")}
+          >
+            <RotateCcw data-icon="inline-start" /> По категории
+          </Button>
+        )}
+      </legend>
+
+      <input
+        ref={input}
+        type="file"
+        accept={IMAGE_ACCEPT}
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (file) void upload(file);
+        }}
+      />
+
+      <div className="flex items-center gap-3">
+        <MarkerBadge category={category} icon={value} size="xl" className="rounded-full ring-4 ring-border" />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled || uploading}
+          onClick={() => input.current?.click()}
+        >
+          {uploading ? <LoaderCircle data-icon="inline-start" className="animate-spin" /> : <ImageUp data-icon="inline-start" />}
+          {custom ? "Заменить картинку" : "Своя картинка"}
+        </Button>
+      </div>
+
+      <div
+        role="radiogroup"
+        aria-label="Готовые иконки"
+        className="grid max-h-36 grid-cols-7 gap-1 overflow-y-auto rounded-lg border p-1.5"
+      >
+        {placeIconIds.map((id: PlaceIconId) => {
+          const { label, icon: Icon } = placeIconPresets[id];
+          const active = isPlaceIconPreset(value) && value === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              aria-label={label}
+              title={label}
+              disabled={disabled}
+              onClick={() => onChange(id)}
+              className={cn(
+                "flex size-9 items-center justify-center rounded-md outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50",
+                active && "bg-primary text-primary-foreground hover:bg-primary",
+              )}
+            >
+              <Icon aria-hidden="true" className="size-4" />
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-muted-foreground text-xs">PNG, JPEG, WebP или GIF до 5 МБ. Квадратная картинка смотрится лучше.</p>
+      {error && (
+        <p role="alert" className="text-destructive text-sm">
+          {error}
+        </p>
+      )}
+    </fieldset>
+  );
 }
 
 /**
@@ -105,6 +235,13 @@ export function PlaceEditor({ draft, onChange, onSave, onCancel, pending, error 
             })}
           </div>
         </fieldset>
+
+        <IconPicker
+          category={draft.category}
+          value={draft.icon}
+          onChange={(icon) => onChange({ icon })}
+          disabled={pending}
+        />
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">

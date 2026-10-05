@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import {
   isInsideWorld,
+  isPlaceIconImage,
+  isPlaceIconPreset,
   MAP_WORLD,
   PLACE_LIMITS,
   type PlaceCategoryId,
@@ -20,6 +22,16 @@ export const placeSchema = z.object({
   x: coordinate("X", MAP_WORLD.minX, MAP_WORLD.maxX),
   y: coordinate("Y", MAP_WORLD.minY, MAP_WORLD.maxY),
   description: z.string().trim().max(PLACE_LIMITS.description, "Описание слишком длинное").default(""),
+  /** Пусто — иконка категории; иначе id готовой иконки или адрес своей картинки */
+  icon: z
+    .string()
+    .trim()
+    .max(PLACE_LIMITS.icon, "Ссылка на иконку слишком длинная")
+    .refine(
+      (value) => value === "" || isPlaceIconPreset(value) || isPlaceIconImage(value),
+      "Иконка: выберите готовую или загрузите свою картинку",
+    )
+    .default(""),
 });
 
 export type PlaceInput = {
@@ -28,6 +40,7 @@ export type PlaceInput = {
   x: number;
   y: number;
   description: string;
+  icon: string;
 };
 
 export function validatePlace(input: unknown): { ok: true; place: PlaceInput } | { ok: false; error: string } {

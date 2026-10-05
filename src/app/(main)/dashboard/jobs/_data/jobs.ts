@@ -69,9 +69,24 @@ export type GuideBlock =
   | { type: "image"; src: string; caption?: string }
   | { type: "slider"; slides: { src: string; caption?: string }[] }
   /** Текст с картинкой сбоку: для объяснений «как пользоваться телефоном, меню, интерфейсом». Без картинки показывается как обычный текст. */
-  | { type: "textImage"; side: "left" | "right"; text: string; src?: string; caption?: string };
+  | { type: "textImage"; side: "left" | "right"; text: string; src?: string; caption?: string }
+  /** Интерактивная карта с указанными местами: для «где находится работа, магазин, точка сдачи». */
+  | { type: "map"; title?: string; places: GuideMapPlace[] };
 
 export type GuideBlockType = GuideBlock["type"];
+
+/** Место на карте внутри гайда. Хранится вместе с гайдом, поэтому правка меток на общей карте его не ломает. */
+export type GuideMapPlace = {
+  name: string;
+  /** Игровые координаты, как на общей карте */
+  x: number;
+  y: number;
+  /** Категория определяет цвет метки (id из карты: job, shop, state, transport, leisure, other) */
+  category: string;
+  /** Своя иконка: id готовой иконки или адрес картинки. Без неё берётся иконка категории. */
+  icon?: string;
+  description?: string;
+};
 
 /** Адреса, которые нельзя занимать под гайд: они ведут на служебные страницы. */
 export const RESERVED_JOB_SLUGS: readonly string[] = ["new"];
@@ -93,6 +108,10 @@ export const JOB_LIMITS = {
   caption: 200,
   listItems: 50,
   sliderSlides: 20,
+  mapPlaces: 30,
+  mapTitle: 80,
+  placeName: 80,
+  placeDescription: 300,
 } as const;
 
 /**
@@ -700,11 +719,18 @@ export function blocksText(blocks: readonly GuideBlock[]): string {
           return block.slides.flatMap((slide) => (slide.caption ? [slide.caption] : []));
         case "textImage":
           return [block.text, ...(block.caption ? [block.caption] : [])];
+        case "map":
+          return [
+            ...(block.title ? [block.title] : []),
+            ...block.places.flatMap((place) => [place.name, ...(place.description ? [place.description] : [])]),
+          ];
       }
     })
     .join(" ")
     // Знаки форматирования (**жирный**, *курсив*, __подчёркнутый__, ~~зачёркнутый~~, ==выделение==) в поиск не попадают
-    .replace(/\*\*|__|~~|==|\*/g, "");
+    .replace(/\*\*|__|~~|==|\*|`/g, "")
+    // Маршрут [[Телефон > Whaash]] читается как обычный текст, а «## » и «1. » в начале строки — служебные знаки
+    .replace(/\[\[|\]\]/g, "")
 }
 
 /** Весь текст гайда для поиска */

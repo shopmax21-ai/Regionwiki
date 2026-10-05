@@ -1,11 +1,12 @@
 import { Fragment } from "react";
 
 import { cn } from "cn";
-import { Info, Lightbulb, TriangleAlert } from "lucide-react";
+import { ChevronRight, Info, Lightbulb, TriangleAlert } from "lucide-react";
 
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 import type { CalloutVariant, GuideBlock } from "../_data/jobs";
+import { GuideMap } from "./guide-map";
 
 const MARKS = [
   { delimiter: "**", render: (children: React.ReactNode[]) => <strong className="font-semibold">{children}</strong> },
@@ -46,6 +47,30 @@ function findClose(text: string, delimiter: string, from: number): number {
   return -1;
 }
 
+/** Шаги маршрута разделяются знаками > , -> , → или › : «Телефон > Whaash > Чаты». */
+const ROUTE_SEPARATOR = /\s*(?:->|>|→|›)\s*/;
+
+export const parseRoute = (source: string) =>
+  source
+    .split(ROUTE_SEPARATOR)
+    .map((step) => step.trim())
+    .filter(Boolean);
+
+/** Маршрут по меню: шаги в одной «плашке» со стрелками между ними. Последний шаг выделен как цель. */
+function Route({ steps }: { steps: string[] }) {
+  return (
+    <span className="mx-0.5 inline-flex flex-wrap items-center gap-x-1 rounded-md border bg-muted/50 px-1.5 py-0.5 align-baseline font-medium text-[0.92em] leading-snug">
+      {steps.map((step, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: шаги могут повторяться, порядок не меняется
+        <Fragment key={`${index}-${step}`}>
+          {index > 0 && <ChevronRight aria-label="затем" className="size-3.5 shrink-0 text-muted-foreground" />}
+          <span className={index === steps.length - 1 && steps.length > 1 ? "text-primary" : undefined}>{step}</span>
+        </Fragment>
+      ))}
+    </span>
+  );
+}
+
 function parseInline(text: string): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
   let plain = "";
@@ -58,6 +83,34 @@ function parseInline(text: string): React.ReactNode[] {
 
   while (index < text.length) {
     let matched = false;
+
+    // [[Телефон > Whaash]]: маршрут по меню. Внутри маршрута другая разметка не разбирается.
+    if (text.startsWith("[[", index)) {
+      const close = text.indexOf("]]", index + 2);
+      const steps = close === -1 ? [] : parseRoute(text.slice(index + 2, close));
+      if (steps.length > 0) {
+        flush();
+        nodes.push(<Route key={nodes.length} steps={steps} />);
+        index = close + 2;
+        continue;
+      }
+    }
+
+    // `команда` или `E`: моноширинный текст для команд, клавиш и названий из интерфейса
+    if (text[index] === "`") {
+      const close = text.indexOf("`", index + 1);
+      if (close > index + 1) {
+        flush();
+        nodes.push(
+          <code key={nodes.length} className="rounded border bg-muted px-1 py-px font-mono text-[0.88em]">
+            {text.slice(index + 1, close)}
+          </code>,
+        );
+        index = close + 1;
+        continue;
+      }
+    }
+
     for (const { delimiter, render } of MARKS) {
       if (!text.startsWith(delimiter, index)) continue;
       const contentStart = index + delimiter.length;
@@ -82,11 +135,119 @@ function parseInline(text: string): React.ReactNode[] {
 }
 
 /**
- * Форматирование внутри текста блока: **жирный**, *курсив*, __подчёркнутый__, ~~зачёркнутый~~, ==выделение==.
+ * Форматирование внутри текста блока: **жирный**, *курсив*, __подчёркнутый__, ~~зачёркнутый~~, ==выделение==,
+ * [[Телефон > Whaash]] (маршрут по меню) и `команда` (моноширинный текст).
  * Это единственная разметка, и она превращается только в безопасные элементы React: чужой текст не может добавить на страницу HTML.
  */
 export function InlineText({ text }: { text: string }) {
   return <>{parseInline(text)}</>;
+}
+
+type RichPiece =
+  | { kind: "p"; text: string }
+  | { kind: "h"; text: string }
+  | { kind: "ol"; start: number; items: string[] }
+  | { kind: "ul"; items: string[] };
+
+const ORDERED_LINE = /^(\d{1,3})[.)]\s+(.*)$/;
+const BULLET_LINE = /^[-•]\s+(.*)$/;
+const HEADING_LINE = /^##\s+(.*)$/;
+
+/**
+ * Разбирает текст блока на абзацы, нумерованные и маркированные списки и подзаголовки.
+ * Строки вида «1. шаг» и «- пункт» собираются в список, «## Название» становится подзаголовком,
+ * остальные строки остаются абзацами (пустая строка начинает новый абзац).
+ */
+export function parseRichBlocks(text: string): RichPiece[] {
+  const pieces: RichPiece[] = [];
+  let paragraph: string[] = [];
+
+  const flushParagraph = () => {
+    if (paragraph.length > 0) pieces.push({ kind: "p", text: paragraph.join("\n") });
+    paragraph = [];
+  };
+
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    const ordered = ORDERED_LINE.exec(line);
+    const bullet = BULLET_LINE.exec(line);
+    const heading = HEADING_LINE.exec(line);
+    const last = pieces.at(-1);
+
+    if (ordered?.[2]) {
+      flushParagraph();
+      if (last?.kind === "ol") last.items.push(ordered[2]);
+      else pieces.push({ kind: "ol", start: Number(ordered[1]), items: [ordered[2]] });
+    } else if (bullet?.[1]) {
+      flushParagraph();
+      if (last?.kind === "ul") last.items.push(bullet[1]);
+      else pieces.push({ kind: "ul", items: [bullet[1]] });
+    } else if (heading?.[1]) {
+      flushParagraph();
+      pieces.push({ kind: "h", text: heading[1] });
+    } else if (line === "") {
+      flushParagraph();
+    } else {
+      // Строка-абзац после списка не должна «приклеиваться» к нему: список закрывается сам
+      paragraph.push(line);
+    }
+  }
+  flushParagraph();
+  return pieces;
+}
+
+/** Текст блока с нумерацией, списками, подзаголовками и маршрутами. Используется рядом с картинкой. */
+export function RichBlocks({ text }: { text: string }) {
+  const pieces = parseRichBlocks(text);
+  return (
+    <div className="flex flex-col gap-2.5">
+      {pieces.map((piece, pieceIndex) => {
+        // biome-ignore lint/suspicious/noArrayIndexKey: у частей текста нет id, порядок задаёт сам текст
+        const key = `${pieceIndex}-${piece.kind}`;
+        switch (piece.kind) {
+          case "p":
+            return (
+              <p key={key} className="whitespace-pre-line">
+                <InlineText text={piece.text} />
+              </p>
+            );
+          case "h":
+            return (
+              <p key={key} className="font-semibold">
+                <InlineText text={piece.text} />
+              </p>
+            );
+          case "ol":
+            return (
+              <ol key={key} className="flex flex-col gap-2.5">
+                {piece.items.map((item, index) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: пункты могут повторяться, порядок не меняется
+                  <li key={`${index}-${item}`} className="flex items-start gap-3">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 font-semibold text-primary text-xs">
+                      {piece.start + index}
+                    </span>
+                    <span className="min-w-0 pt-0.5">
+                      <InlineText text={item} />
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            );
+          case "ul":
+            return (
+              <ul key={key} className="flex list-disc flex-col gap-1.5 pl-5 marker:text-muted-foreground">
+                {piece.items.map((item, index) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: пункты могут повторяться, порядок не меняется
+                  <li key={`${index}-${item}`}>
+                    <InlineText text={item} />
+                  </li>
+                ))}
+              </ul>
+            );
+        }
+      })}
+    </div>
+  );
 }
 
 export const calloutStyle: Record<CalloutVariant, { box: string; icon: string; Icon: typeof Info }> = {
@@ -187,12 +348,15 @@ export function BlockView({ block }: { block: Exclude<GuideBlock, { type: "headi
               )}
             </figure>
           )}
-          <p className="min-w-0 flex-1 whitespace-pre-line">
-            <InlineText text={block.text} />
-          </p>
+          <div className="min-w-0 flex-1">
+            <RichBlocks text={block.text} />
+          </div>
         </div>
       );
     }
+
+    case "map":
+      return <GuideMap title={block.title} places={block.places} />;
 
     case "slider":
       return (

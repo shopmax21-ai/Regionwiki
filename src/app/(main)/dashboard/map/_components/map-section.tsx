@@ -5,10 +5,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import dynamic from "next/dynamic";
 
 import { cn } from "cn";
-import { List, Plus, Upload, X } from "lucide-react";
+import { LayoutGrid, List, PanelLeftClose, PanelLeftOpen, Plus, Search, Upload, X } from "lucide-react";
 
 import { PlaceCard } from "@/app/(main)/dashboard/map/_components/place-card";
-import { PlacesPanel } from "@/app/(main)/dashboard/map/_components/places-panel";
+import { PlacesPanel, PlacesRail } from "@/app/(main)/dashboard/map/_components/places-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -71,6 +71,35 @@ function CategoryChips({
   );
 }
 
+/** Свёрнутая панель запоминается в браузере: на следующем заходе карта откроется так же. */
+const PANEL_STORAGE_KEY = "region-map-panel-collapsed";
+
+/** Узкие кнопки категорий для свёрнутой панели: «Все» и по значку на категорию. */
+function CategoryRail({ value, onChange }: { value: CategoryFilter; onChange: (value: CategoryFilter) => void }) {
+  const items: { id: CategoryFilter; label: string; icon: typeof LayoutGrid }[] = [
+    { id: "all", label: "Все категории", icon: LayoutGrid },
+    ...placeCategories.map(({ id, label, icon }) => ({ id, label, icon })),
+  ];
+  return (
+    <fieldset aria-label="Категории" className="flex flex-col items-center gap-1 border-0 p-0">
+      {items.map(({ id, label, icon: Icon }) => (
+        <Button
+          key={id}
+          variant={value === id ? "default" : "ghost"}
+          size="icon"
+          title={label}
+          aria-label={label}
+          aria-pressed={value === id}
+          className="size-10"
+          onClick={() => onChange(id)}
+        >
+          <Icon aria-hidden="true" className="size-4" />
+        </Button>
+      ))}
+    </fieldset>
+  );
+}
+
 const parseCoordinate = (value: string): number | null => {
   const trimmed = value.trim().replace(",", ".");
   if (trimmed === "") return null;
@@ -86,6 +115,7 @@ export function MapSection({ places: allPlaces, editor, problem }: MapSectionPro
   const [category, setCategory] = useState<CategoryFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [focus, setFocus] = useState<FocusRequest | null>(null);
   const [fullscreen, setFullscreen] = useState<FullscreenMode>("off");
   const [draft, setDraft] = useState<PlaceDraft | null>(null);
@@ -113,7 +143,7 @@ export function MapSection({ places: allPlaces, editor, problem }: MapSectionPro
     const x = parseCoordinate(draft.x);
     const y = parseCoordinate(draft.y);
     if (x === null || y === null || !isInsideWorld({ x, y })) return null;
-    return { x, y, category: draft.category };
+    return { x, y, category: draft.category, icon: draft.icon || undefined };
   }, [draft]);
 
   const focusPlace = (id: string, point?: { x: number; y: number }) =>
@@ -124,6 +154,25 @@ export function MapSection({ places: allPlaces, editor, problem }: MapSectionPro
     focusPlace(id);
     setListOpen(false);
   };
+
+  // ---------- Свёрнутая боковая панель ----------
+
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(PANEL_STORAGE_KEY) === "1") setCollapsed(true);
+    } catch {
+      // Хранилище браузера недоступно: панель просто открывается развёрнутой
+    }
+  }, []);
+
+  const changeCollapsed = useCallback((next: boolean) => {
+    setCollapsed(next);
+    try {
+      window.localStorage.setItem(PANEL_STORAGE_KEY, next ? "1" : "0");
+    } catch {
+      // Не страшно: выбор просто не запомнится
+    }
+  }, []);
 
   // ---------- Полноэкранный режим ----------
   // На весь экран разворачивается весь раздел, а не только картинка: так в нём остаются боковая панель,
@@ -188,6 +237,7 @@ export function MapSection({ places: allPlaces, editor, problem }: MapSectionPro
       name: "",
       category: category === "all" ? "other" : category,
       description: "",
+      icon: "",
       x: "",
       y: "",
     });
@@ -209,6 +259,7 @@ export function MapSection({ places: allPlaces, editor, problem }: MapSectionPro
       name: place.name,
       category: place.category,
       description: place.description ?? "",
+      icon: place.icon ?? "",
       x: formatCoordinate(place.x),
       y: formatCoordinate(place.y),
     });
@@ -226,6 +277,7 @@ export function MapSection({ places: allPlaces, editor, problem }: MapSectionPro
       name: draft.name,
       category: draft.category,
       description: draft.description,
+      icon: draft.icon,
       x: parseCoordinate(draft.x) ?? undefined,
       y: parseCoordinate(draft.y) ?? undefined,
     };
@@ -306,30 +358,107 @@ export function MapSection({ places: allPlaces, editor, problem }: MapSectionPro
         focus={focus}
       />
 
-      {/* Десктоп: боковая панель */}
-      <aside className="absolute top-4 bottom-4 left-4 z-10 hidden w-80 flex-col gap-3 rounded-xl bg-card/95 py-4 shadow-sm ring-1 ring-foreground/10 backdrop-blur md:flex">
-        <div className="flex flex-col gap-3 px-4">
-          <div>
-            <h2 className="font-medium text-lg leading-none tracking-tight">Карта штата</h2>
-            <p className="mt-1 text-muted-foreground text-sm">Важные места и полезные адреса</p>
+      {/* Десктоп: боковая панель. Сворачивается в узкую полосу со значками, чтобы не закрывать карту. */}
+      {collapsed ? (
+        <aside
+          aria-label="Панель карты (свёрнута)"
+          className="absolute top-4 bottom-4 left-4 z-10 hidden w-14 flex-col items-center gap-2 rounded-xl bg-card/95 py-2 shadow-sm ring-1 ring-foreground/10 backdrop-blur md:flex"
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-10"
+            title="Развернуть панель"
+            aria-label="Развернуть панель"
+            aria-expanded={false}
+            onClick={() => changeCollapsed(false)}
+          >
+            <PanelLeftOpen aria-hidden="true" className="size-4" />
+          </Button>
+          <CategoryRail value={category} onChange={setCategory} />
+          <div className="flex flex-col items-center gap-1 border-t pt-2">
+            <Button
+              variant={query ? "default" : "ghost"}
+              size="icon"
+              className="size-10"
+              title={query ? `Поиск: «${query}». Развернуть панель` : "Поиск по местам"}
+              aria-label="Открыть поиск по местам"
+              onClick={() => changeCollapsed(false)}
+            >
+              <Search aria-hidden="true" className="size-4" />
+            </Button>
+            {canEdit && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-10"
+                  title="Добавить метку"
+                  aria-label="Добавить метку"
+                  onClick={startCreate}
+                  disabled={draft !== null}
+                >
+                  <Plus aria-hidden="true" className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-10"
+                  title="Загрузить метки из файла"
+                  aria-label="Загрузить метки из файла"
+                  onClick={startImport}
+                  disabled={draft !== null || importOpen}
+                >
+                  <Upload aria-hidden="true" className="size-4" />
+                </Button>
+              </>
+            )}
           </div>
-          <CategoryChips value={category} onChange={setCategory} className="flex-wrap overflow-visible" />
-          {canEdit && editorButtons}
-          {editor === "unavailable" && (
-            <p className="text-muted-foreground text-xs">
-              Редактирование карты сейчас недоступно{problem ? `: ${problem}` : ""}
-            </p>
-          )}
-        </div>
-        <PlacesPanel
-          places={visiblePlaces}
-          query={query}
-          onQueryChange={setQuery}
-          selectedId={selected?.id ?? null}
-          onSelect={handleSelectFromList}
-          className="flex-1"
-        />
-      </aside>
+          <PlacesRail
+            places={visiblePlaces}
+            selectedId={selected?.id ?? null}
+            onSelect={handleSelectFromList}
+            className="flex-1 border-t pt-2"
+          />
+        </aside>
+      ) : (
+        <aside className="absolute top-4 bottom-4 left-4 z-10 hidden w-80 flex-col gap-3 rounded-xl bg-card/95 py-4 shadow-sm ring-1 ring-foreground/10 backdrop-blur md:flex">
+          <div className="flex flex-col gap-3 px-4">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h2 className="font-medium text-lg leading-none tracking-tight">Карта штата</h2>
+                <p className="mt-1 text-muted-foreground text-sm">Важные места и полезные адреса</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="-mt-1 -mr-2 size-9 shrink-0"
+                title="Свернуть панель"
+                aria-label="Свернуть панель"
+                aria-expanded
+                onClick={() => changeCollapsed(true)}
+              >
+                <PanelLeftClose aria-hidden="true" className="size-4" />
+              </Button>
+            </div>
+            <CategoryChips value={category} onChange={setCategory} className="flex-wrap overflow-visible" />
+            {canEdit && editorButtons}
+            {editor === "unavailable" && (
+              <p className="text-muted-foreground text-xs">
+                Редактирование карты сейчас недоступно{problem ? `: ${problem}` : ""}
+              </p>
+            )}
+          </div>
+          <PlacesPanel
+            places={visiblePlaces}
+            query={query}
+            onQueryChange={setQuery}
+            selectedId={selected?.id ?? null}
+            onSelect={handleSelectFromList}
+            className="flex-1"
+          />
+        </aside>
+      )}
 
       {/* Телефон: кнопка списка и категории сверху */}
       <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-2 p-3 md:hidden">

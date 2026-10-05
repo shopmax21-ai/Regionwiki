@@ -1,4 +1,11 @@
-import { isInsideWorld, PLACE_LIMITS, type PlaceCategoryId, placeCategories } from "./map-data";
+import {
+  isInsideWorld,
+  isPlaceIconImage,
+  isPlaceIconPreset,
+  PLACE_LIMITS,
+  type PlaceCategoryId,
+  placeCategories,
+} from "./map-data";
 
 /** Не больше стольких меток за один раз: больше нужно только при ошибке в файле. */
 export const IMPORT_MAX_ROWS = 500;
@@ -9,6 +16,8 @@ export interface ImportRow {
   x: number;
   y: number;
   description: string;
+  /** Пусто — иконка категории */
+  icon: string;
 }
 
 export interface ImportError {
@@ -40,6 +49,8 @@ const FIELD_ALIASES: Record<string, string> = {
   description: "description",
   desc: "description",
   описание: "description",
+  icon: "icon",
+  иконка: "icon",
 };
 
 const normalizeKey = (key: string) => FIELD_ALIASES[key.trim().toLowerCase().replace(/^\uFEFF/, "")];
@@ -78,7 +89,12 @@ function toRow(record: Record<string, unknown>): ImportRow | string {
   if (description.length > PLACE_LIMITS.description) {
     return `описание длиннее ${PLACE_LIMITS.description} символов`;
   }
-  return { name, category, x, y, description };
+
+  const icon = typeof record.icon === "string" ? record.icon.trim() : "";
+  if (icon && !isPlaceIconPreset(icon) && !isPlaceIconImage(icon)) {
+    return `неизвестная иконка «${icon}»: нужен id готовой иконки или адрес картинки`;
+  }
+  return { name, category, x, y, description, icon };
 }
 
 function finish(records: { line: number; record: Record<string, unknown> }[]): ParseResult {

@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 
 import { getAdmin } from "@/lib/auth/admin";
 import { createJob, deleteJob, JobStoreError, updateJob } from "@/lib/jobs/store";
+import { listMapPlaces } from "@/lib/map/store";
+import type { MapPlace } from "@/app/(main)/dashboard/map/_components/map-data";
 import { validateJob } from "@/lib/jobs/validate";
 
 export type JobActionResult = { ok: true; slug: string } | { ok: false; error: string };
@@ -73,4 +75,14 @@ export async function deleteJobAction(slug: string): Promise<JobActionResult> {
   }
   refresh();
   return { ok: true, slug };
+}
+
+export type MapPlacesResult = { ok: true; places: MapPlace[] } | { ok: false; error: string };
+
+/** Метки общей карты штата: из них редактор гайда берёт места для блока «Карта». Нужно то же право, что и для правки гайдов. */
+export async function listMapPlacesForGuideAction(): Promise<MapPlacesResult> {
+  const admin = await getAdmin("jobs.edit");
+  if (!admin) return { ok: false, error: "Недостаточно прав для редактирования работ" };
+  const { places } = await listMapPlaces();
+  return { ok: true, places };
 }

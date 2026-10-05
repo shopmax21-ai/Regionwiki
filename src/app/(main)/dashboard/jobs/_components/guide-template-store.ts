@@ -64,6 +64,13 @@ function isBlock(value: unknown): value is GuideBlock {
         (value.side === "left" || value.side === "right") &&
         (value.src === undefined || typeof value.src === "string")
       );
+    case "map":
+      return (
+        Array.isArray(value.places) &&
+        value.places.every(
+          (place) => isRecord(place) && typeof place.name === "string" && typeof place.x === "number" && typeof place.y === "number",
+        )
+      );
     default:
       return false;
   }

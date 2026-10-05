@@ -17,6 +17,7 @@ import {
   List,
   ListOrdered,
   LoaderCircle,
+  MapPinned,
   PanelLeft,
   PanelRight,
   Plus,
@@ -40,6 +41,7 @@ import { Input } from "@/components/ui/input";
 
 import { calloutVariants, JOB_LIMITS } from "../_data/jobs";
 import { RichTextarea } from "./format-toolbar";
+import { MapBody } from "./guide-map-editor";
 import { type BlockKind, type EditorBlock, type EditorSlide } from "./editor-model";
 import { IMAGE_ACCEPT } from "./upload-image";
 
@@ -72,6 +74,7 @@ const kindMeta: { kind: BlockKind; label: string; hint: string; icon: typeof Typ
   { kind: "slider", label: "Слайдер", hint: "Несколько изображений с переключением", icon: Images },
   { kind: "textImageRight", label: "Текст и картинка справа", hint: "Объяснение со скриншотом сбоку", icon: PanelRight },
   { kind: "textImageLeft", label: "Текст и картинка слева", hint: "Объяснение со скриншотом сбоку", icon: PanelLeft },
+  { kind: "map", label: "Карта с местами", hint: "Интерактивная карта с отмеченными точками", icon: MapPinned },
 ];
 
 
@@ -94,6 +97,8 @@ const typeLabel = (block: EditorBlock) => {
       return { label: "Слайдер", icon: Blocks };
     case "textImage":
       return { label: "Текст с картинкой", icon: block.side === "left" ? PanelLeft : PanelRight };
+    case "map":
+      return { label: "Карта", icon: MapPinned };
   }
 };
 
@@ -463,6 +468,9 @@ function BlockBody({ block, actions }: { block: EditorBlock; actions: BlockActio
     case "slider":
       return <SliderBody block={block} actions={actions} />;
 
+    case "map":
+      return <MapBody block={block} actions={actions} />;
+
     case "textImage":
       return (
         <div className="flex flex-col gap-3">
@@ -475,7 +483,8 @@ function BlockBody({ block, actions }: { block: EditorBlock; actions: BlockActio
               value={block.text}
               maxLength={JOB_LIMITS.blockText}
               onValueChange={(text) => actions.update(block.id, { text })}
-              placeholder="Объяснение рядом с картинкой. Можно выделять слова: жирным, курсивом, цветом."
+              blockTools
+              placeholder={"Объяснение рядом с картинкой. Строки «1. шаг» станут нумерацией, «- пункт» — списком, а [[Телефон > Whaash]] — маршрутом по меню."}
               aria-label="Текст рядом с картинкой"
               className="min-h-32"
             />

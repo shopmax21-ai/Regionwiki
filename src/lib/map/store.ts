@@ -42,6 +42,8 @@ async function init(): Promise<void> {
       updated_at timestamptz NOT NULL DEFAULT now(),
       updated_by text
     )`);
+    // Своя иконка метки появилась позже первых версий таблицы
+    await client.query("ALTER TABLE map_places ADD COLUMN IF NOT EXISTS icon text NOT NULL DEFAULT ''");
     const existing = await client.query("SELECT 1 FROM map_places LIMIT 1");
     if (existing.rowCount === 0) {
       for (const place of seedPlaces) {
@@ -75,7 +77,15 @@ export const getMapPlacesVersion = () => version;
 /** problem — почему редактирование недоступно (null, если всё в порядке). Показывается тем, у кого есть право редактирования. */
 export type MapPlaceList = { places: MapPlace[]; editable: boolean; problem: string | null };
 
-type PlaceRow = { id: string; name: string; category: string; x: number; y: number; description: string };
+type PlaceRow = {
+  id: string;
+  name: string;
+  category: string;
+  x: number;
+  y: number;
+  description: string;
+  icon: string;
+};
 
 const toPlace = (row: PlaceRow): MapPlace => ({
   id: row.id,
@@ -84,6 +94,7 @@ const toPlace = (row: PlaceRow): MapPlace => ({
   x: row.x,
   y: row.y,
   description: row.description || undefined,
+  icon: row.icon || undefined,
 });
 
 export async function listMapPlaces(): Promise<MapPlaceList> {
@@ -93,7 +104,7 @@ export async function listMapPlaces(): Promise<MapPlaceList> {
   try {
     await ensureReady();
     const { rows } = await getPool().query<PlaceRow>(
-      "SELECT id, name, category, x, y, description FROM map_places ORDER BY position ASC",
+      "SELECT id, name, category, x, y, description, icon FROM map_places ORDER BY position ASC",
     );
     return { places: rows.map(toPlace), editable: true, problem: null };
   } catch (error) {
@@ -117,8 +128,8 @@ export const createMapPlace = (input: PlaceInput, updatedBy: string) =>
   run(async () => {
     const id = randomUUID();
     await getPool().query(
-      "INSERT INTO map_places (id, name, category, x, y, description, updated_by) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-      [id, input.name, input.category, input.x, input.y, input.description, updatedBy],
+      "INSERT INTO map_places (id, name, category, x, y, description, icon, updated_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+      [id, input.name, input.category, input.x, input.y, input.description, input.icon, updatedBy],
     );
     version++;
     return id;
@@ -127,9 +138,9 @@ export const createMapPlace = (input: PlaceInput, updatedBy: string) =>
 export const updateMapPlace = (id: string, input: PlaceInput, updatedBy: string) =>
   run(async () => {
     const result = await getPool().query(
-      `UPDATE map_places SET name = $2, category = $3, x = $4, y = $5, description = $6, updated_at = now(), updated_by = $7
+      `UPDATE map_places SET name = $2, category = $3, x = $4, y = $5, description = $6, icon = $7, updated_at = now(), updated_by = $8
        WHERE id = $1`,
-      [id, input.name, input.category, input.x, input.y, input.description, updatedBy],
+      [id, input.name, input.category, input.x, input.y, input.description, input.icon, updatedBy],
     );
     if (result.rowCount === 0) throw new MapStoreError("not_found");
     version++;
@@ -167,8 +178,8 @@ export const createMapPlaces = (inputs: PlaceInput[], updatedBy: string) =>
         }
         seen.add(key);
         await client.query(
-          "INSERT INTO map_places (id, name, category, x, y, description, updated_by) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-          [randomUUID(), input.name, input.category, input.x, input.y, input.description, updatedBy],
+          "INSERT INTO map_places (id, name, category, x, y, description, icon, updated_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+          [randomUUID(), input.name, input.category, input.x, input.y, input.description, input.icon, updatedBy],
         );
         added++;
       }

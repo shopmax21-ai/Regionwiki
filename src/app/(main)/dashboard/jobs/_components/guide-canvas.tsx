@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 
 import { type CalloutVariant, calloutVariants, JOB_LIMITS } from "../_data/jobs";
 import type { EditorBlock } from "./editor-model";
-import { calloutStyle, InlineText } from "./guide-blocks";
+import { calloutStyle, InlineText, RichBlocks } from "./guide-blocks";
+import { MapBody } from "./guide-map-editor";
 import { FormatToolbar, handleFormatShortcut } from "./format-toolbar";
 import { type BlockActions, FloatingAddBlock, ImageBody, InsertSlot, SideToggle, SliderBody } from "./job-block-editor";
 
@@ -21,6 +22,8 @@ type InlineFieldProps = {
   maxLength?: number;
   /** Показывать **жирный** как на странице, пока поле не редактируется */
   rich?: boolean;
+  /** Показывать нумерацию, списки и подзаголовки как на странице, а в панели форматирования — кнопки списков и маршрута */
+  blocks?: boolean;
   /** Одна строка: Enter завершает правку (или вызывает onEnter) */
   singleLine?: boolean;
   /** Новое значение переводит поле в режим правки: так фокус переходит между пунктами списка */
@@ -41,6 +44,7 @@ function InlineField({
   label,
   maxLength,
   rich,
+  blocks,
   singleLine,
   focusToken = 0,
   className,
@@ -72,6 +76,7 @@ function InlineField({
 
   let shown: React.ReactNode = value;
   if (!value) shown = placeholder;
+  else if (blocks) shown = <RichBlocks text={value} />;
   else if (rich) shown = <InlineText text={value} />;
 
   if (!editing) {
@@ -103,7 +108,12 @@ function InlineField({
   return (
     <div className="relative">
       {rich && (
-        <FormatToolbar getTextarea={() => area.current} onChange={onChange} className="absolute -top-9 left-0 z-30" />
+        <FormatToolbar
+          getTextarea={() => area.current}
+          onChange={onChange}
+          blockTools={blocks}
+          className="absolute -top-9 left-0 z-30"
+        />
       )}
       <textarea
         ref={area}
@@ -259,6 +269,8 @@ const blockLabel = (block: EditorBlock) => {
       return "слайдер";
     case "textImage":
       return "текст с картинкой";
+    case "map":
+      return "карта";
   }
 };
 
@@ -374,6 +386,9 @@ function BlockContent({ block, actions }: { block: EditorBlock; actions: BlockAc
     case "slider":
       return <SliderBody block={block} actions={actions} />;
 
+    case "map":
+      return <MapBody block={block} actions={actions} />;
+
     case "textImage":
       return (
         <div className="flex flex-col gap-3">
@@ -390,6 +405,7 @@ function BlockContent({ block, actions }: { block: EditorBlock; actions: BlockAc
             <div className="min-w-0 flex-1">
               <InlineField
                 rich
+                blocks
                 value={block.text}
                 label="Текст рядом с картинкой"
                 placeholder="Объяснение рядом с картинкой. Нажмите, чтобы написать."

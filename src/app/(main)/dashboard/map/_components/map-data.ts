@@ -82,7 +82,29 @@ export function getCategory(id: PlaceCategoryId): PlaceCategory {
   return placeCategories.find((category) => category.id === id) ?? placeCategories[placeCategories.length - 1];
 }
 
-export const PLACE_LIMITS = { name: 80, description: 500 } as const;
+export const PLACE_LIMITS = { name: 80, description: 500, icon: 300 } as const;
+
+/**
+ * Готовые иконки для меток. Значение поля icon у метки — либо id из этого списка, либо адрес своей картинки
+ * (путь вида /api/jobs/images/... или ссылка https://). Пустое значение — иконка категории.
+ * Сами компоненты иконок лежат в place-icons.tsx: тут только id, чтобы их мог использовать сервер.
+ */
+export const placeIconIds = [
+  "pin", "home", "building", "store", "cart", "hospital", "cross", "shield", "siren", "bank",
+  "money", "fuel", "car", "bus", "truck", "bike", "plane", "ship", "train", "wrench",
+  "hammer", "helmet", "pickaxe", "food", "coffee", "bar", "gym", "ticket", "music", "game",
+  "film", "flag", "star", "heart", "key", "mail", "phone", "school", "warehouse", "factory",
+  "tractor", "fish", "tree", "mountain", "anchor", "skull", "package", "zap", "flame", "camera",
+  "paw", "scissors", "pill", "bed",
+] as const;
+export type PlaceIconId = (typeof placeIconIds)[number];
+
+/** Свою картинку для метки можно задать путём с сайта или ссылкой https:// */
+export const isPlaceIconImage = (icon: string | undefined): boolean =>
+  typeof icon === "string" && /^(\/(?!\/)|https:\/\/)/.test(icon);
+
+export const isPlaceIconPreset = (icon: string | undefined): icon is PlaceIconId =>
+  typeof icon === "string" && (placeIconIds as readonly string[]).includes(icon);
 
 export interface MapPlace {
   id: string;
@@ -91,6 +113,8 @@ export interface MapPlace {
   y: number;
   category: PlaceCategoryId;
   description?: string;
+  /** Своя иконка метки: id из placeIconIds или адрес картинки. Если не задана, берётся иконка категории. */
+  icon?: string;
 }
 
 // Начальный набор меток: при первом обращении к базе он копируется в таблицу map_places.

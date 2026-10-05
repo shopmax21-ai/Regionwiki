@@ -88,7 +88,14 @@ export function PlaceImport({ places, onClose, onImported }: PlaceImportProps) {
     download(
       "map-places.json",
       JSON.stringify(
-        places.map(({ name, category, x, y, description }) => ({ name, category, x, y, description: description ?? "" })),
+        places.map(({ name, category, x, y, description, icon }) => ({
+          name,
+          category,
+          x,
+          y,
+          description: description ?? "",
+          icon: icon ?? "",
+        })),
         null,
         2,
       ),

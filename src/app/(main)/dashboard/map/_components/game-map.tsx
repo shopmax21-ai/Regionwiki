@@ -6,6 +6,7 @@ import { cn } from "cn";
 import { Maximize2, Minimize2, Minus, Plus } from "lucide-react";
 
 import { fractionToWorld, getCategory, type MapPlace, type PlaceCategoryId, worldToFraction } from "./map-data";
+import { MarkerBadge } from "./place-icons";
 
 const mapImageUrl = "/map.png";
 
@@ -14,6 +15,7 @@ export interface DraftMarker {
   x: number;
   y: number;
   category: PlaceCategoryId;
+  icon?: string;
 }
 
 /** Просьба показать место. n меняется при каждом запросе, чтобы можно было повторить то же место. */
@@ -35,6 +37,15 @@ interface GameMapProps {
   onPick?: (point: { x: number; y: number }) => void;
   draft?: DraftMarker | null;
   focus?: FocusRequest | null;
+  /**
+   * Встроенная карта (в гайде): колесо мыши масштабирует только вместе с Ctrl, иначе страница не прокручивалась бы,
+   * а кнопки управления ставятся ближе к углу.
+   */
+  embedded?: boolean;
+  /** Скрыть кнопку «на весь экран» (в гайде карта разворачивается не на весь экран, а остаётся в тексте) */
+  hideFullscreen?: boolean;
+  /** Точки, которые нужно уместить в окно при открытии и при смене набора. Без них карта открывается целиком. */
+  fit?: readonly { x: number; y: number }[];
 }
 
 interface View {
@@ -86,6 +97,9 @@ export default function GameMap({
   onPick,
   draft,
   focus,
+  embedded = false,
+  hideFullscreen = false,
+  fit,
 }: GameMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<Size>({ width: 0, height: 0 });
@@ -101,8 +115,10 @@ export default function GameMap({
   const pinchDistance = useRef(0);
   const pickModeRef = useRef(pickMode);
   const onPickRef = useRef(onPick);
+  const embeddedRef = useRef(embedded);
   pickModeRef.current = pickMode;
   onPickRef.current = onPick;
+  embeddedRef.current = embedded;
 
   const setView = useCallback((next: View) => {
     viewRef.current = next;
@@ -145,6 +161,8 @@ export default function GameMap({
     const element = containerRef.current;
     if (!element) return;
     const onWheel = (event: WheelEvent) => {
+      // В гайде обычная прокрутка колесом листает страницу, а масштаб включается с Ctrl (так же работает щипок на тачпаде)
+      if (embeddedRef.current && !(event.ctrlKey || event.metaKey)) return;
       event.preventDefault();
       const rect = element.getBoundingClientRect();
       const pixels = event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
@@ -175,6 +193,34 @@ export default function GameMap({
     const timer = window.setTimeout(() => setAnimating(false), 400);
     return () => window.clearTimeout(timer);
   }, [focus, places, setView]);
+
+  // Уместить заданные точки в окно: при открытии и каждый раз, когда набор точек меняется.
+  // Размер окна в зависимостях не нужен: после изменения размера границы пересчитывает ResizeObserver.
+  const fitKey = fit ? fit.map((point) => `${point.x},${point.y}`).join("|") : "";
+  const ready = size.width > 0 && size.height > 0;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: набор точек сравнивается по fitKey, а размер читается из ref
+  useEffect(() => {
+    if (!fit || fit.length === 0 || !ready) return;
+    const currentSize = sizeRef.current;
+    const points = fit.map((point) => worldToFraction(point.x, point.y));
+    const xs = points.map((point) => point.fx);
+    const ys = points.map((point) => point.fy);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const base = baseSide(currentSize);
+    // Запас по краям, чтобы крайние метки и их подписи не прилипали к границе окна
+    const padding = 1.8;
+    const zoomX = currentSize.width / (base * Math.max(maxX - minX, 0.01) * padding);
+    const zoomY = currentSize.height / (base * Math.max(maxY - minY, 0.01) * padding);
+    const zoom = clamp(Math.min(zoomX, zoomY), MIN_ZOOM, fit.length === 1 ? FOCUS_ZOOM : MAX_ZOOM - 2);
+    const side = base * zoom;
+    setAnimating(false);
+    setView(clampView({ zoom, x: -(cx - 0.5) * side, y: -(cy - 0.5) * side }, currentSize));
+  }, [fitKey, ready, setView]);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
@@ -307,6 +353,7 @@ export default function GameMap({
       }}
       role="application"
       aria-label="Интерактивная карта штата. Стрелки двигают карту, плюс и минус меняют масштаб."
+
     >
       {pickMode && (
         <p className="pointer-events-none absolute inset-x-16 top-20 z-10 mx-auto w-fit max-w-full rounded-lg bg-foreground px-3 py-1.5 text-center text-background text-xs shadow-lg md:inset-x-auto md:top-4 md:left-1/2 md:-translate-x-1/2">
@@ -316,7 +363,10 @@ export default function GameMap({
 
       {/* Кнопки управления лежат внутри окна карты, поэтому работают и в полноэкранном режиме */}
       <div
-        className="absolute top-20 right-4 z-10 flex flex-col overflow-hidden rounded-lg border border-border/60 bg-background/90 shadow-lg backdrop-blur-sm md:top-4"
+        className={cn(
+          "absolute z-10 flex flex-col overflow-hidden rounded-lg border border-border/60 bg-background/90 shadow-lg backdrop-blur-sm",
+          embedded ? "top-3 right-3" : "top-20 right-4 md:top-4",
+        )}
         onPointerDown={stopPropagation}
         onDoubleClick={stopPropagation}
       >
@@ -332,7 +382,7 @@ export default function GameMap({
         </button>
         <button
           type="button"
-          className={cn(controlClass, "border-b border-border/60")}
+          className={cn(controlClass, !hideFullscreen && "border-b border-border/60")}
           onClick={() => zoomBy(1 / 1.5)}
           disabled={view.zoom <= MIN_ZOOM}
           aria-label="Уменьшить масштаб"
@@ -340,20 +390,22 @@ export default function GameMap({
         >
           <Minus aria-hidden="true" className="size-4" />
         </button>
-        <button
-          type="button"
-          className={controlClass}
-          onClick={onToggleFullscreen}
-          aria-pressed={isFullscreen}
-          aria-label={isFullscreen ? "Выйти из полноэкранного режима" : "Развернуть карту на весь экран"}
-          title={isFullscreen ? "Выйти из полноэкранного режима" : "На весь экран"}
-        >
-          {isFullscreen ? (
-            <Minimize2 aria-hidden="true" className="size-4" />
-          ) : (
-            <Maximize2 aria-hidden="true" className="size-4" />
-          )}
-        </button>
+        {!hideFullscreen && (
+          <button
+            type="button"
+            className={controlClass}
+            onClick={onToggleFullscreen}
+            aria-pressed={isFullscreen}
+            aria-label={isFullscreen ? "Выйти из полноэкранного режима" : "Развернуть карту на весь экран"}
+            title={isFullscreen ? "Выйти из полноэкранного режима" : "На весь экран"}
+          >
+            {isFullscreen ? (
+              <Minimize2 aria-hidden="true" className="size-4" />
+            ) : (
+              <Maximize2 aria-hidden="true" className="size-4" />
+            )}
+          </button>
+        )}
       </div>
 
       <div
@@ -376,7 +428,6 @@ export default function GameMap({
         {places.map((place) => {
           const { fx, fy } = worldToFraction(place.x, place.y);
           const category = getCategory(place.category);
-          const Icon = category.icon;
           const selected = selectedId === place.id;
           return (
             <button
@@ -399,16 +450,16 @@ export default function GameMap({
               onDoubleClick={stopPropagation}
               onClick={() => onSelect(selected ? null : place.id)}
             >
-              <span
+              <MarkerBadge
+                category={place.category}
+                icon={place.icon}
+                size="sm"
                 className={cn(
-                  "flex size-6 items-center justify-center rounded-full ring-4 transition-transform group-hover:scale-110 group-focus-visible:ring-ring/60",
-                  category.dotClass,
+                  "rounded-full ring-4 transition-transform group-hover:scale-110 group-focus-visible:ring-ring/60",
                   category.ringClass,
                   selected && "scale-125 ring-foreground/40",
                 )}
-              >
-                <Icon aria-hidden="true" className="size-3.5" />
-              </span>
+              />
               <span
                 className={cn(
                   "pointer-events-none absolute bottom-full mb-0.5 whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-background text-xs opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100",
@@ -434,15 +485,15 @@ export default function GameMap({
               transform: `translate(-50%, -50%) scale(${1 / view.zoom})`,
             }}
           >
-            <span
+            <MarkerBadge
+              category={draft.category}
+              icon={draft.icon}
+              size="md"
               className={cn(
-                "flex size-7 animate-pulse items-center justify-center rounded-full ring-4 ring-offset-2 ring-offset-background",
-                draftCategory.dotClass,
+                "animate-pulse rounded-full ring-4 ring-offset-2 ring-offset-background",
                 draftCategory.ringClass,
               )}
-            >
-              <draftCategory.icon className="size-4" />
-            </span>
+            />
           </span>
         )}
       </div>

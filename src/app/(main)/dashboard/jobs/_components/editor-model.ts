@@ -1,6 +1,7 @@
 import {
   type CalloutVariant,
   type GuideBlock,
+  type GuideMapPlace,
   type Job,
   type JobKind,
   jobBlocks,
@@ -14,6 +15,17 @@ export type EditorSlide = {
   local?: string;
   uploading?: boolean;
   error?: string;
+};
+
+/** Место на карте в редакторе: id нужен только клиенту, пустые необязательные поля хранятся пустыми строками. */
+export type EditorMapPlace = {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  category: string;
+  icon: string;
+  description: string;
 };
 
 /** Блок в редакторе: у каждого есть id для React, у списков текст вместо массива, у медиа — состояние загрузки. */
@@ -43,7 +55,8 @@ export type EditorBlock =
       local?: string;
       uploading?: boolean;
       error?: string;
-    };
+    }
+  | { id: string; type: "map"; title: string; places: EditorMapPlace[] };
 
 export type BlockKind =
   | "heading"
@@ -56,7 +69,8 @@ export type BlockKind =
   | "image"
   | "slider"
   | "textImageRight"
-  | "textImageLeft";
+  | "textImageLeft"
+  | "map";
 
 export type FormState = {
   title: string;
@@ -102,6 +116,8 @@ export function createBlock(kind: BlockKind): EditorBlock {
       return { id, type: "image", src: "", caption: "" };
     case "slider":
       return { id, type: "slider", slides: [] };
+    case "map":
+      return { id, type: "map", title: "", places: [] };
     case "textImageRight":
     case "textImageLeft":
       return { id, type: "textImage", side: kind === "textImageLeft" ? "left" : "right", text: "", src: "", caption: "" };
@@ -201,6 +217,23 @@ export function toEditorBlocks(blocks: readonly GuideBlock[]): EditorBlock[] {
           src: block.src ?? "",
           caption: block.caption ?? "",
         };
+      case "map":
+        return {
+          id,
+          type: "map",
+          title: block.title ?? "",
+          places: block.places.map(
+            (place): EditorMapPlace => ({
+              id: newId(),
+              name: place.name,
+              x: place.x,
+              y: place.y,
+              category: place.category,
+              icon: place.icon ?? "",
+              description: place.description ?? "",
+            }),
+          ),
+        };
       default:
         return { id, ...block };
     }
@@ -248,6 +281,24 @@ export function toGuideBlocks(blocks: readonly EditorBlock[], options: { preview
         if (!src && !text) return [];
         const caption = block.caption.trim();
         return [{ type: "textImage", side: block.side, text, src: src || undefined, caption: caption || undefined }];
+      }
+      case "map": {
+        const places = block.places.flatMap((place): GuideMapPlace[] => {
+          const name = place.name.trim();
+          if (!name) return [];
+          return [
+            {
+              name,
+              x: place.x,
+              y: place.y,
+              category: place.category,
+              icon: place.icon || undefined,
+              description: place.description.trim() || undefined,
+            },
+          ];
+        });
+        if (places.length === 0) return [];
+        return [{ type: "map", title: block.title.trim() || undefined, places }];
       }
     }
   });

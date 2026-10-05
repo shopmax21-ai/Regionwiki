@@ -3,7 +3,18 @@
 import { type ComponentProps, useRef } from "react";
 
 import { cn } from "cn";
-import { Bold, Highlighter, Italic, type LucideIcon, Strikethrough, Underline } from "lucide-react";
+import {
+  Bold,
+  Code,
+  Highlighter,
+  Italic,
+  List,
+  ListOrdered,
+  type LucideIcon,
+  Route,
+  Strikethrough,
+  Underline,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +34,7 @@ export const FORMATS: readonly {
   { id: "underline", delimiter: "__", label: "Подчёркнутый", key: "u", code: "KeyU", icon: Underline },
   { id: "strike", delimiter: "~~", label: "Зачёркнутый", icon: Strikethrough },
   { id: "highlight", delimiter: "==", label: "Выделение цветом", icon: Highlighter },
+  { id: "code", delimiter: "`", label: "Команда или кнопка (моноширинный текст)", icon: Code },
 ];
 
 type Edit = { value: string; start: number; end: number };
@@ -150,6 +162,78 @@ export function formatSelection(
   });
 }
 
+/** Границы строк, которых касается выделение: [начало первой строки, конец последней). */
+function lineRange(value: string, start: number, end: number) {
+  const from = value.lastIndexOf("\n", start - 1) + 1;
+  const nextBreak = value.indexOf("\n", end);
+  return { from, to: nextBreak === -1 ? value.length : nextBreak };
+}
+
+const NUMBER_PREFIX = /^\d{1,3}[.)]\s+/;
+const BULLET_PREFIX = /^[-•]\s+/;
+
+/**
+ * Превращает выделенные строки в нумерованный или маркированный список (или снимает список, если он уже есть).
+ * Номера расставляются заново с единицы: «1. », «2. »…
+ */
+export function toggleListLines(
+  element: HTMLTextAreaElement,
+  kind: "ordered" | "bullet",
+  onChange: (value: string) => void,
+) {
+  const { value, selectionStart, selectionEnd } = element;
+  const { from, to } = lineRange(value, selectionStart, selectionEnd);
+  const lines = value.slice(from, to).split("\n");
+  const prefix = kind === "ordered" ? NUMBER_PREFIX : BULLET_PREFIX;
+  const content = lines.filter((line) => line.trim() !== "");
+  const allMarked = content.length > 0 && content.every((line) => prefix.test(line.trim()));
+
+  let counter = 0;
+  const next = lines.map((line) => {
+    if (line.trim() === "") return line;
+    const clean = line.trim().replace(NUMBER_PREFIX, "").replace(BULLET_PREFIX, "");
+    if (allMarked) return clean;
+    counter += 1;
+    return kind === "ordered" ? `${counter}. ${clean}` : `- ${clean}`;
+  });
+
+  const replaced = next.join("\n");
+  onChange(value.slice(0, from) + replaced + value.slice(to));
+  requestAnimationFrame(() => {
+    element.focus();
+    element.setSelectionRange(from, from + replaced.length);
+  });
+}
+
+/**
+ * Оформляет выделенный текст как маршрут: «Телефон > Whaash» превращается в [[Телефон > Whaash]].
+ * Без выделения вставляет заготовку с выделенным примером, который можно сразу переписать.
+ */
+export function insertRoute(element: HTMLTextAreaElement, onChange: (value: string) => void) {
+  const { value, selectionStart, selectionEnd } = element;
+  const selected = value.slice(selectionStart, selectionEnd).trim();
+
+  // Выделен уже готовый маршрут: убираем скобки
+  const wrapped = /^\[\[([\s\S]+)\]\]$/.exec(selected);
+  if (wrapped?.[1]) {
+    onChange(value.slice(0, selectionStart) + wrapped[1] + value.slice(selectionEnd));
+    requestAnimationFrame(() => {
+      element.focus();
+      element.setSelectionRange(selectionStart, selectionStart + wrapped[1].length);
+    });
+    return;
+  }
+
+  const body = selected.replace(/\n+/g, " ") || "Телефон > Приложение";
+  const text = `[[${body}]]`;
+  onChange(value.slice(0, selectionStart) + text + value.slice(selectionEnd));
+  requestAnimationFrame(() => {
+    element.focus();
+    // Выделяем только содержимое, чтобы пример сразу заменялся набором
+    element.setSelectionRange(selectionStart + 2, selectionStart + 2 + body.length);
+  });
+}
+
 /** Ctrl/Cmd + B, I, U работают и на русской раскладке (проверяем физическую клавишу). */
 export function handleFormatShortcut(
   event: React.KeyboardEvent<HTMLTextAreaElement>,
@@ -169,10 +253,15 @@ type FormatToolbarProps = {
   onChange: (value: string) => void;
   perLine?: boolean;
   className?: string;
+  /**
+   * Кнопки нумерации, списка и маршрута. Нужны там, где в тексте можно писать несколько строк с разной формой
+   * (текст рядом с картинкой); в самих списках и заметках они ни к чему.
+   */
+  blockTools?: boolean;
 };
 
 /** Панель кнопок форматирования. Нажатие не забирает фокус у поля, поэтому выделение остаётся на месте. */
-export function FormatToolbar({ getTextarea, onChange, perLine, className }: FormatToolbarProps) {
+export function FormatToolbar({ getTextarea, onChange, perLine, className, blockTools }: FormatToolbarProps) {
   return (
     <div
       role="toolbar"
@@ -196,6 +285,53 @@ export function FormatToolbar({ getTextarea, onChange, perLine, className }: For
           <Icon />
         </Button>
       ))}
+      {blockTools && (
+        <>
+          <span aria-hidden="true" className="mx-0.5 h-4 w-px bg-border" />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            title="Нумерованный список: каждая строка станет шагом 1, 2, 3…"
+            aria-label="Нумерованный список"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              const element = getTextarea();
+              if (element) toggleListLines(element, "ordered", onChange);
+            }}
+          >
+            <ListOrdered />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            title="Маркированный список"
+            aria-label="Маркированный список"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              const element = getTextarea();
+              if (element) toggleListLines(element, "bullet", onChange);
+            }}
+          >
+            <List />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            title="Маршрут по меню: Телефон > Whaash"
+            aria-label="Маршрут по меню"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              const element = getTextarea();
+              if (element) insertRoute(element, onChange);
+            }}
+          >
+            <Route />
+          </Button>
+        </>
+      )}
     </div>
   );
 }
@@ -204,15 +340,21 @@ type RichTextareaProps = Omit<ComponentProps<typeof Textarea>, "onChange" | "val
   value: string;
   onValueChange: (value: string) => void;
   perLine?: boolean;
+  blockTools?: boolean;
 };
 
 /** Поле ввода с панелью форматирования и сочетаниями клавиш. */
-export function RichTextarea({ value, onValueChange, perLine, onKeyDown, ...props }: RichTextareaProps) {
+export function RichTextarea({ value, onValueChange, perLine, blockTools, onKeyDown, ...props }: RichTextareaProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
   return (
     <div className="flex flex-col gap-1.5">
-      <FormatToolbar getTextarea={() => ref.current} onChange={onValueChange} perLine={perLine} />
+      <FormatToolbar
+        getTextarea={() => ref.current}
+        onChange={onValueChange}
+        perLine={perLine}
+        blockTools={blockTools}
+      />
       <Textarea
         {...props}
         ref={ref}

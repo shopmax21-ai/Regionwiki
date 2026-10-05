@@ -7,6 +7,7 @@ import {
   type Job,
   jobs as seedJobs,
 } from "@/app/(main)/dashboard/jobs/_data/jobs";
+import { isInsideWorld, placeCategoryIds } from "@/app/(main)/dashboard/map/_components/map-data";
 import { getPool } from "@/lib/db/pool";
 
 import type { JobInput } from "./validate";
@@ -126,6 +127,28 @@ function toBlocks(value: unknown): GuideBlock[] | undefined {
             caption: optionalString(block.caption),
           },
         ];
+      }
+      case "map": {
+        const rawPlaces = Array.isArray(block.places) ? block.places : [];
+        const places = rawPlaces.flatMap((rawPlace) => {
+          if (!rawPlace || typeof rawPlace !== "object") return [];
+          const place = rawPlace as Record<string, unknown>;
+          const name = typeof place.name === "string" ? place.name : "";
+          if (!name || typeof place.x !== "number" || typeof place.y !== "number") return [];
+          if (!isInsideWorld({ x: place.x, y: place.y })) return [];
+          const category = placeCategoryIds.find((item) => item === place.category) ?? "other";
+          return [
+            {
+              name,
+              x: place.x,
+              y: place.y,
+              category,
+              icon: optionalString(place.icon),
+              description: optionalString(place.description),
+            },
+          ];
+        });
+        return places.length > 0 ? [{ type: "map", title: optionalString(block.title), places }] : [];
       }
       default:
         return [];

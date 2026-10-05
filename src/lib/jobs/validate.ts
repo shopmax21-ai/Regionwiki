@@ -1,6 +1,13 @@
 import { z } from "zod";
 
 import { JOB_LIMITS, RESERVED_JOB_SLUGS } from "@/app/(main)/dashboard/jobs/_data/jobs";
+import {
+  isPlaceIconImage,
+  isPlaceIconPreset,
+  MAP_WORLD,
+  PLACE_LIMITS,
+  placeCategoryIds,
+} from "@/app/(main)/dashboard/map/_components/map-data";
 import { SLUG_PATTERN } from "@/app/(main)/dashboard/jobs/_data/slug";
 
 const line = z.string().trim().min(1).max(JOB_LIMITS.item, "Один из пунктов слишком длинный");
@@ -14,6 +21,35 @@ const imageSrc = z
   .regex(/^(\/(?!\/)|https:\/\/)/, "Картинка: путь вида /api/jobs/images/... или ссылка https://");
 
 const blockText = z.string().trim().min(1, "Один из блоков пустой").max(JOB_LIMITS.blockText, "Текст блока слишком длинный");
+
+const mapCoordinate = (label: string, min: number, max: number) =>
+  z
+    .number({ error: `Укажите координату ${label} у места на карте` })
+    .min(min, `Координата ${label} вне карты`)
+    .max(max, `Координата ${label} вне карты`);
+
+const mapPlaceSchema = z.object({
+  name: z.string().trim().min(1, "У места на карте нет названия").max(JOB_LIMITS.placeName, "Название места слишком длинное"),
+  x: mapCoordinate("X", MAP_WORLD.minX, MAP_WORLD.maxX),
+  y: mapCoordinate("Y", MAP_WORLD.minY, MAP_WORLD.maxY),
+  category: z.enum(placeCategoryIds, { error: "Выберите категорию места" }),
+  icon: z
+    .string()
+    .trim()
+    .max(PLACE_LIMITS.icon, "Ссылка на иконку слишком длинная")
+    .refine(
+      (value) => value === "" || isPlaceIconPreset(value) || isPlaceIconImage(value),
+      "Иконка: выберите готовую или загрузите свою картинку",
+    )
+    .optional()
+    .transform((value) => (value ? value : undefined)),
+  description: z
+    .string()
+    .trim()
+    .max(JOB_LIMITS.placeDescription, "Описание места слишком длинное")
+    .optional()
+    .transform((value) => (value ? value : undefined)),
+});
 
 const blockSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("heading"), text: blockText.max(JOB_LIMITS.sectionTitle, "Заголовок слишком длинный") }),
@@ -66,6 +102,19 @@ const blockSchema = z.discriminatedUnion("type", [
       .max(JOB_LIMITS.caption, "Подпись к картинке слишком длинная")
       .optional()
       .transform((value) => (value ? value : undefined)),
+  }),
+  z.object({
+    type: z.literal("map"),
+    title: z
+      .string()
+      .trim()
+      .max(JOB_LIMITS.mapTitle, "Заголовок карты слишком длинный")
+      .optional()
+      .transform((value) => (value ? value : undefined)),
+    places: z
+      .array(mapPlaceSchema)
+      .min(1, "На карте должно быть хотя бы одно место")
+      .max(JOB_LIMITS.mapPlaces, `Не больше ${JOB_LIMITS.mapPlaces} мест на одной карте`),
   }),
 ]);
 

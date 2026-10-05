@@ -7,11 +7,12 @@ import { IMAGE_MAX_BYTES, ImageStoreError, saveImage } from "@/lib/jobs/images";
 export const dynamic = "force-dynamic";
 
 /**
- * Загрузить картинку для гайда или предмета. Нужно право «Редактирование работ и гайдов» или «Редактирование предметов».
+ * Загрузить картинку для гайда, предмета или иконки метки на карте.
+ * Нужно право «Редактирование работ и гайдов», «Редактирование предметов» или «Редактирование карты».
  * Принимает multipart-форму с полем file.
  */
 export async function POST(request: NextRequest) {
-  const admin = (await getAdmin("jobs.edit")) ?? (await getAdmin("items.edit"));
+  const admin = (await getAdmin("jobs.edit")) ?? (await getAdmin("items.edit")) ?? (await getAdmin("map.edit"));
   if (!admin) return NextResponse.json({ error: "Недостаточно прав для загрузки картинок" }, { status: 403 });
 
   // Запрос должен прийти с этого же сайта, а не со страницы чужого сайта

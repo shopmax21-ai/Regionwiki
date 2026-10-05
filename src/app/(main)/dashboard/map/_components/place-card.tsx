@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useTransition } from "react";
 
-import { cn } from "cn";
 import { Check, Copy, Pencil, Trash2, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 import { deletePlaceAction } from "../_actions";
 import { getCategory, type MapPlace } from "./map-data";
+import { MarkerBadge } from "./place-icons";
 
 interface PlaceCardProps {
   place: MapPlace;
@@ -29,7 +29,6 @@ type CopyState = "idle" | "done" | "failed";
  */
 export function PlaceCard({ place, onClose, canEdit = false, onEdit, onDeleted }: PlaceCardProps) {
   const category = getCategory(place.category);
-  const Icon = category.icon;
   const coordinates = `${Math.round(place.x)}, ${Math.round(place.y)}`;
 
   const [copyState, setCopyState] = useState<CopyState>("idle");
@@ -75,9 +74,7 @@ export function PlaceCard({ place, onClose, canEdit = false, onEdit, onDeleted }
     >
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-start gap-3">
-          <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-lg", category.dotClass)}>
-            <Icon aria-hidden="true" className="size-5" />
-          </span>
+          <MarkerBadge category={place.category} icon={place.icon} size="xl" className="rounded-lg" />
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <h2 className="font-medium text-base leading-tight">{place.name}</h2>
             <Badge variant="secondary">{category.label}</Badge>
