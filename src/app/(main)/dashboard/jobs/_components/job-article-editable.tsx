@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button";
 
 import { updateJobAction } from "../_actions";
 import type { GuideBlock, Job } from "../_data/jobs";
-import { editorBlocksFromJob, toGuideBlocks } from "./editor-model";
 import { DropOverlay } from "./drop-overlay";
+import { editorBlocksFromJob, toGuideBlocks } from "./editor-model";
 import { GuideCanvas } from "./guide-canvas";
 import { GuideTemplatesDialog } from "./guide-templates-dialog";
 import { JobArticleView } from "./job-article-view";
@@ -185,9 +185,7 @@ function InlineEditing({
               {error}
             </span>
           ) : (
-            <span className="text-muted-foreground">
-              {statusText}
-            </span>
+            <span className="text-muted-foreground">{statusText}</span>
           )}
         </div>
         <div className="flex items-center gap-2">

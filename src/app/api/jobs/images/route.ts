@@ -1,22 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { getAdmin } from "@/lib/auth/admin";
-import { isSameOrigin } from "@/lib/auth/request";
 import { IMAGE_MAX_BYTES, ImageStoreError, saveImage } from "@/lib/jobs/images";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Загрузить картинку для гайда, предмета или иконки метки на карте.
- * Нужно право «Редактирование работ и гайдов», «Редактирование предметов» или «Редактирование карты».
+ * Загрузить картинку для гайда, предмета или транспорта. Нужно право «Редактирование работ и гайдов», «Редактирование предметов» или «Редактирование транспорта».
  * Принимает multipart-форму с полем file.
  */
 export async function POST(request: NextRequest) {
-  const admin = (await getAdmin("jobs.edit")) ?? (await getAdmin("items.edit")) ?? (await getAdmin("map.edit"));
+  const admin = (await getAdmin("jobs.edit")) ?? (await getAdmin("items.edit")) ?? (await getAdmin("transport.edit"));
   if (!admin) return NextResponse.json({ error: "Недостаточно прав для загрузки картинок" }, { status: 403 });
 
   // Запрос должен прийти с этого же сайта, а не со страницы чужого сайта
-  if (!isSameOrigin(request)) {
+  const origin = request.headers.get("origin");
+  if (origin && origin !== request.nextUrl.origin) {
     return NextResponse.json({ error: "Запрос с другого сайта отклонён" }, { status: 403 });
   }
 
@@ -39,7 +38,8 @@ export async function POST(request: NextRequest) {
       if (error.code === "type") {
         return NextResponse.json({ error: "Подходят только PNG, JPEG, WebP и GIF" }, { status: 415 });
       }
-      if (error.code === "size") return NextResponse.json({ error: "Картинка больше 5 МБ, уменьшите её" }, { status: 413 });
+      if (error.code === "size")
+        return NextResponse.json({ error: "Картинка больше 5 МБ, уменьшите её" }, { status: 413 });
       if (error.code === "empty") return NextResponse.json({ error: "Файл пустой" }, { status: 400 });
     }
     console.error("[jobs] Не удалось сохранить картинку", error);
