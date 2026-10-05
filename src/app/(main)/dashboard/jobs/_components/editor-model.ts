@@ -26,9 +26,46 @@ export type EditorBlock =
       uploading?: boolean;
       error?: string;
     }
-  | { id: string; type: "slider"; slides: EditorSlide[] };
+  | { id: string; type: "slider"; slides: EditorSlide[] }
+  | {
+      id: string;
+      type: "textImage";
+      /** Сторона, на которой стоит картинка */
+      side: "left" | "right";
+      text: string;
+      src: string;
+      caption: string;
+      /** Адрес в памяти браузера, пока картинка загружается */
+      local?: string;
+      uploading?: boolean;
+      error?: string;
+    }
+  | { id: string; type: "map"; title: string; places: EditorMapPlace[] };
 
-export type BlockKind = "heading" | "text" | "bullets" | "steps" | "tip" | "info" | "warning" | "image" | "slider";
+/** Место на карте в редакторе: id нужен только клиенту, остальное совпадает с GuideMapPlace. */
+export type EditorMapPlace = {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  category: string;
+  /** Пустая строка — иконка категории */
+  icon: string;
+  description: string;
+};
+
+export type BlockKind =
+  | "heading"
+  | "text"
+  | "bullets"
+  | "steps"
+  | "tip"
+  | "info"
+  | "warning"
+  | "image"
+  | "slider"
+  | "textImage"
+  | "map";
 
 export type FormState = {
   title: string;
@@ -74,6 +111,10 @@ export function createBlock(kind: BlockKind): EditorBlock {
       return { id, type: "image", src: "", caption: "" };
     case "slider":
       return { id, type: "slider", slides: [] };
+    case "textImage":
+      return { id, type: "textImage", side: "right", text: "", src: "", caption: "" };
+    case "map":
+      return { id, type: "map", title: "", places: [] };
   }
 }
 
@@ -144,6 +185,30 @@ export function toEditorBlocks(blocks: readonly GuideBlock[]): EditorBlock[] {
           type: "slider",
           slides: block.slides.map((slide) => ({ id: newId(), src: slide.src, caption: slide.caption ?? "" })),
         };
+      case "textImage":
+        return {
+          id,
+          type: "textImage",
+          side: block.side,
+          text: block.text,
+          src: block.src ?? "",
+          caption: block.caption ?? "",
+        };
+      case "map":
+        return {
+          id,
+          type: "map",
+          title: block.title ?? "",
+          places: block.places.map((place) => ({
+            id: newId(),
+            name: place.name,
+            x: place.x,
+            y: place.y,
+            category: place.category,
+            icon: place.icon ?? "",
+            description: place.description ?? "",
+          })),
+        };
       default:
         return { id, ...block };
     }
@@ -184,6 +249,42 @@ export function toGuideBlocks(blocks: readonly EditorBlock[], options: { preview
           return [{ src, caption: caption || undefined }];
         });
         return slides.length > 0 ? [{ type: "slider", slides }] : [];
+      }
+      case "textImage": {
+        const src = block.src || (options.preview ? (block.local ?? "") : "");
+        const text = block.text.trim();
+        if (!src && !text) return [];
+        const caption = block.caption.trim();
+        return [
+          {
+            type: "textImage",
+            side: block.side,
+            text,
+            src: src || undefined,
+            caption: src && caption ? caption : undefined,
+          },
+        ];
+      }
+      case "map": {
+        const places = block.places.flatMap((place) => {
+          const name = place.name.trim();
+          if (!name) return [];
+          const icon = place.icon.trim();
+          const description = place.description.trim();
+          return [
+            {
+              name,
+              x: place.x,
+              y: place.y,
+              category: place.category,
+              icon: icon || undefined,
+              description: description || undefined,
+            },
+          ];
+        });
+        if (places.length === 0) return [];
+        const title = block.title.trim();
+        return [{ type: "map", title: title || undefined, places }];
       }
     }
   });

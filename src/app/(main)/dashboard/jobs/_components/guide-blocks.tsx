@@ -1,27 +1,178 @@
 import { cn } from "cn";
-import { Info, Lightbulb, TriangleAlert } from "lucide-react";
+import { ChevronRight, Info, Lightbulb, TriangleAlert } from "lucide-react";
 
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 import type { CalloutVariant, GuideBlock } from "../_data/jobs";
+import { GuideMap } from "./guide-map";
 
-/** Выделение **жирным** внутри текста блока. Больше никакой разметки нет, чтобы чужой текст не мог сломать страницу. */
+/**
+ * Знаки форматирования в тексте: **жирный**, *курсив*, __подчёркнутый__, ~~зачёркнутый~~, ==выделение==,
+ * `команда` и маршрут [[Телефон > Whaash]]. Больше никакой разметки нет, чтобы чужой текст не мог сломать страницу.
+ */
+const INLINE =
+  /\[\[([^\]\n]+?)\]\]|`([^`\n]+?)`|\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|==(.+?)==|\*([^*\s](?:[^*]*[^*\s])?)\*/g;
+
+function renderInline(text: string, depth = 0): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
+  let last = 0;
+  let key = 0;
+  const push = (node: React.ReactNode) => nodes.push(<span key={key++}>{node}</span>);
+  const nested = (value: string) => (depth < 3 ? renderInline(value, depth + 1) : value);
+
+  for (const match of text.matchAll(INLINE)) {
+    const index = match.index ?? 0;
+    if (index > last) push(text.slice(last, index));
+    last = index + match[0].length;
+
+    const [, route, code, bold, underline, strike, highlight, italic] = match;
+    if (route !== undefined) {
+      const steps = route
+        .split(">")
+        .map((step) => step.trim())
+        .filter(Boolean);
+      push(
+        <span className="inline-flex flex-wrap items-center gap-0.5 align-middle">
+          {steps.map((step, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: шаги маршрута не переставляются
+            <span key={i} className="inline-flex items-center gap-0.5">
+              {i > 0 && <ChevronRight className="size-3 text-muted-foreground" aria-hidden="true" />}
+              <span className="rounded-md border bg-muted px-1.5 py-0.5 font-medium text-xs">{step}</span>
+            </span>
+          ))}
+        </span>,
+      );
+    } else if (code !== undefined) {
+      push(<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em]">{code}</code>);
+    } else if (bold !== undefined) {
+      push(<strong className="font-semibold">{nested(bold)}</strong>);
+    } else if (underline !== undefined) {
+      push(<u className="underline-offset-2">{nested(underline)}</u>);
+    } else if (strike !== undefined) {
+      push(<s>{nested(strike)}</s>);
+    } else if (highlight !== undefined) {
+      push(<mark className="rounded-sm bg-amber-400/30 px-0.5 text-inherit">{nested(highlight)}</mark>);
+    } else if (italic !== undefined) {
+      push(<em>{nested(italic)}</em>);
+    }
+  }
+  if (last < text.length) push(text.slice(last));
+  return nodes;
+}
+
 export function InlineText({ text }: { text: string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return <>{renderInline(text)}</>;
+}
+
+/** Нумерованные шаги: номер в плашке, как в блоке «Шаги». */
+function StepList({ items }: { items: readonly string[] }) {
   return (
-    <>
-      {parts.map((part, index) =>
-        part.length > 4 && part.startsWith("**") && part.endsWith("**") ? (
-          // biome-ignore lint/suspicious/noArrayIndexKey: куски текста не переставляются
-          <strong key={index} className="font-semibold">
-            {part.slice(2, -2)}
-          </strong>
-        ) : (
-          // biome-ignore lint/suspicious/noArrayIndexKey: куски текста не переставляются
-          <span key={index}>{part}</span>
-        ),
-      )}
-    </>
+    <ol className="flex flex-col gap-3">
+      {items.map((item, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: пункты могут повторяться, порядок не меняется
+        <li key={`${index}-${item}`} className="flex items-start gap-3">
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 font-semibold text-primary text-xs">
+            {index + 1}
+          </span>
+          <span className="pt-0.5">
+            <InlineText text={item} />
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function BulletList({ items }: { items: readonly string[] }) {
+  return (
+    <ul className="flex list-disc flex-col gap-1.5 pl-5 marker:text-muted-foreground">
+      {items.map((item, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: пункты могут повторяться, порядок не меняется
+        <li key={`${index}-${item}`}>
+          <InlineText text={item} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+type RichPart =
+  | { kind: "heading"; text: string }
+  | { kind: "ordered"; items: string[] }
+  | { kind: "bullet"; items: string[] }
+  | { kind: "paragraph"; text: string };
+
+const HEADING_LINE = /^#{2,3}\s+(.+)$/;
+const ORDERED_LINE = /^\d{1,3}[.)]\s+(.+)$/;
+const BULLET_LINE = /^[-•]\s+(.+)$/;
+
+/** Разбирает текст по строкам: «## » — подзаголовок, «1. » — шаг, «- » — пункт, остальное — абзацы. */
+function parseRich(text: string): RichPart[] {
+  const parts: RichPart[] = [];
+  let paragraph: string[] = [];
+
+  const flush = () => {
+    if (paragraph.length > 0) parts.push({ kind: "paragraph", text: paragraph.join("\n") });
+    paragraph = [];
+  };
+
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (!line) {
+      flush();
+      continue;
+    }
+    const heading = HEADING_LINE.exec(line);
+    const ordered = ORDERED_LINE.exec(line);
+    const bullet = BULLET_LINE.exec(line);
+    if (heading?.[1]) {
+      flush();
+      parts.push({ kind: "heading", text: heading[1] });
+    } else if (ordered?.[1] || bullet?.[1]) {
+      flush();
+      const kind = ordered ? "ordered" : "bullet";
+      const item = (ordered ?? bullet)?.[1] ?? "";
+      const previous = parts.at(-1);
+      if (previous && previous.kind === kind) previous.items.push(item);
+      else parts.push({ kind, items: [item] });
+    } else {
+      paragraph.push(line);
+    }
+  }
+  flush();
+  return parts;
+}
+
+/** Текст блока с нумерацией, списками, подзаголовками и маршрутами: так он выглядит на странице. */
+export function RichBlocks({ text }: { text: string }) {
+  const parts = parseRich(text);
+  return (
+    <div className="flex flex-col gap-3">
+      {parts.map((part, index) => {
+        switch (part.kind) {
+          case "heading":
+            // biome-ignore lint/suspicious/noArrayIndexKey: части текста не переставляются
+            return (
+              <h3 key={index} className="font-semibold text-base tracking-tight">
+                <InlineText text={part.text} />
+              </h3>
+            );
+          case "ordered":
+            // biome-ignore lint/suspicious/noArrayIndexKey: части текста не переставляются
+            return <StepList key={index} items={part.items} />;
+          case "bullet":
+            // biome-ignore lint/suspicious/noArrayIndexKey: части текста не переставляются
+            return <BulletList key={index} items={part.items} />;
+          case "paragraph":
+            return (
+              // biome-ignore lint/suspicious/noArrayIndexKey: части текста не переставляются
+              <p key={index} className="whitespace-pre-line">
+                <InlineText text={part.text} />
+              </p>
+            );
+        }
+      })}
+    </div>
   );
 }
 
@@ -39,6 +190,21 @@ export const calloutStyle: Record<CalloutVariant, { box: string; icon: string; I
   },
 };
 
+function ImageFigure({ src, caption }: { src: string; caption?: string }) {
+  return (
+    <figure className="flex flex-col gap-2">
+      {/* biome-ignore lint/performance/noImgElement: размеры загруженной картинки заранее неизвестны, next/image здесь не подходит */}
+      <img
+        src={src}
+        alt={caption ?? ""}
+        loading="lazy"
+        className="max-h-[560px] w-full rounded-xl border bg-muted/30 object-contain"
+      />
+      {caption && <figcaption className="text-center text-muted-foreground text-xs">{caption}</figcaption>}
+    </figure>
+  );
+}
+
 export function BlockView({ block }: { block: Exclude<GuideBlock, { type: "heading" }> }) {
   switch (block.type) {
     case "text":
@@ -49,30 +215,7 @@ export function BlockView({ block }: { block: Exclude<GuideBlock, { type: "headi
       );
 
     case "list":
-      return block.ordered ? (
-        <ol className="flex flex-col gap-3">
-          {block.items.map((item, index) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: пункты могут повторяться, порядок не меняется
-            <li key={`${index}-${item}`} className="flex items-start gap-3">
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/10 font-semibold text-primary text-xs">
-                {index + 1}
-              </span>
-              <span className="pt-0.5">
-                <InlineText text={item} />
-              </span>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <ul className="flex list-disc flex-col gap-1.5 pl-5 marker:text-muted-foreground">
-          {block.items.map((item, index) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: пункты могут повторяться, порядок не меняется
-            <li key={`${index}-${item}`}>
-              <InlineText text={item} />
-            </li>
-          ))}
-        </ul>
-      );
+      return block.ordered ? <StepList items={block.items} /> : <BulletList items={block.items} />;
 
     case "callout": {
       const { box, icon, Icon } = calloutStyle[block.variant];
@@ -87,20 +230,7 @@ export function BlockView({ block }: { block: Exclude<GuideBlock, { type: "headi
     }
 
     case "image":
-      return (
-        <figure className="flex flex-col gap-2">
-          {/* biome-ignore lint/performance/noImgElement: размеры загруженной картинки заранее неизвестны, next/image здесь не подходит */}
-          <img
-            src={block.src}
-            alt={block.caption ?? ""}
-            loading="lazy"
-            className="max-h-[560px] w-full rounded-xl border bg-muted/30 object-contain"
-          />
-          {block.caption && (
-            <figcaption className="text-center text-muted-foreground text-xs">{block.caption}</figcaption>
-          )}
-        </figure>
-      );
+      return <ImageFigure src={block.src} caption={block.caption} />;
 
     case "slider":
       return (
@@ -133,6 +263,26 @@ export function BlockView({ block }: { block: Exclude<GuideBlock, { type: "headi
           </Carousel>
         </div>
       );
+
+    case "textImage": {
+      if (!block.src) return <RichBlocks text={block.text} />;
+      if (!block.text) return <ImageFigure src={block.src} caption={block.caption} />;
+      return (
+        <div
+          className={cn("flex flex-col gap-4 sm:items-start", block.side === "left" ? "sm:flex-row" : "sm:flex-row-reverse")}
+        >
+          <div className="w-full shrink-0 sm:w-[38%] sm:max-w-sm">
+            <ImageFigure src={block.src} caption={block.caption} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <RichBlocks text={block.text} />
+          </div>
+        </div>
+      );
+    }
+
+    case "map":
+      return <GuideMap title={block.title} places={block.places} />;
   }
 }
 

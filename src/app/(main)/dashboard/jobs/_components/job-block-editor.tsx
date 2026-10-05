@@ -17,6 +17,9 @@ import {
   List,
   ListOrdered,
   LoaderCircle,
+  MapPinned,
+  PanelLeft,
+  PanelRight,
   Plus,
   Trash2,
   TriangleAlert,
@@ -38,6 +41,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { calloutVariants, JOB_LIMITS } from "../_data/jobs";
 import type { BlockKind, EditorBlock, EditorSlide } from "./editor-model";
+import { RichTextarea } from "./format-toolbar";
+import { MapBody } from "./guide-map-editor";
 import { IMAGE_ACCEPT } from "./upload-image";
 
 export type BlockActions = {
@@ -67,6 +72,8 @@ const kindMeta: { kind: BlockKind; label: string; hint: string; icon: typeof Typ
   { kind: "info", label: "Заметка", hint: "Справка или уточнение", icon: Info },
   { kind: "image", label: "Картинка", hint: "Перетащите файл или нажмите Ctrl+V", icon: ImagePlus },
   { kind: "slider", label: "Слайдер", hint: "Несколько изображений с переключением", icon: Images },
+  { kind: "textImage", label: "Текст с картинкой", hint: "Объяснение и скриншот рядом", icon: PanelRight },
+  { kind: "map", label: "Карта", hint: "Места на карте штата", icon: MapPinned },
 ];
 
 const typeLabel = (block: EditorBlock) => {
@@ -86,6 +93,10 @@ const typeLabel = (block: EditorBlock) => {
       return { label: "Картинка", icon: ImagePlus };
     case "slider":
       return { label: "Слайдер", icon: Blocks };
+    case "textImage":
+      return { label: "Текст с картинкой", icon: PanelRight };
+    case "map":
+      return { label: "Карта", icon: MapPinned };
   }
 };
 
@@ -155,9 +166,12 @@ export function InsertSlot({ afterId, actions }: { afterId: string | null; actio
 export function ImageBody({
   block,
   actions,
+  compact,
 }: {
-  block: Extract<EditorBlock, { type: "image" }>;
+  block: Extract<EditorBlock, { type: "image" | "textImage" }>;
   actions: BlockActions;
+  /** Узкий вариант для картинки рядом с текстом: меньше превью, подпись и «Заменить» друг под другом */
+  compact?: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const shown = block.src || block.local;
@@ -180,7 +194,8 @@ export function ImageBody({
       {shown ? (
         <div className="relative overflow-hidden rounded-lg border bg-muted/30">
           {/* biome-ignore lint/performance/noImgElement: размеры загружаемой картинки заранее неизвестны */}
-          <img src={shown} alt="" className={cn("mx-auto max-h-80 object-contain", block.uploading && "opacity-50")} />
+          <img src={shown} alt="" className={cn("mx-auto object-contain", compact ? "max-h-52" : "max-h-80", block.uploading && "opacity-50")}
+          />
           {block.uploading && (
             <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm">
               <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> Загрузка…
@@ -191,11 +206,16 @@ export function ImageBody({
         <button
           type="button"
           onClick={() => input.current?.click()}
-          className="flex flex-col items-center gap-1.5 rounded-lg border border-dashed px-4 py-8 text-center text-muted-foreground text-sm transition-colors hover:border-primary/60 hover:bg-muted/40 hover:text-foreground"
+          className={cn(
+            "flex flex-col items-center gap-1.5 rounded-lg border border-dashed px-4 text-center text-muted-foreground text-sm transition-colors hover:border-primary/60 hover:bg-muted/40 hover:text-foreground",
+            compact ? "py-6" : "py-8",
+          )}
         >
           <ImagePlus className="size-6" aria-hidden="true" />
-          <span>Перетащите картинку сюда или вставьте её через Ctrl+V</span>
-          <span className="text-xs">или нажмите, чтобы выбрать файл · PNG, JPEG, WebP, GIF до 5 МБ</span>
+          <span>{compact ? "Добавьте картинку" : "Перетащите картинку сюда или вставьте её через Ctrl+V"}</span>
+          <span className="text-xs">
+            {compact ? "Нажмите, перетащите файл или Ctrl+V" : "или нажмите, чтобы выбрать файл · PNG, JPEG, WebP, GIF до 5 МБ"}
+          </span>
         </button>
       )}
 
@@ -206,7 +226,7 @@ export function ImageBody({
       )}
 
       {shown && (
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className={cn("flex flex-col gap-2", !compact && "sm:flex-row")}>
           <Input
             value={block.caption}
             maxLength={JOB_LIMITS.caption}
@@ -220,13 +240,44 @@ export function ImageBody({
             variant="outline"
             size="sm"
             disabled={block.uploading}
-            className="shrink-0 self-start sm:self-center"
+            className={cn("shrink-0 self-start", !compact && "sm:self-center")}
             onClick={() => input.current?.click()}
           >
             <ImagePlus data-icon="inline-start" /> Заменить
           </Button>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Выбор стороны, на которой стоит картинка рядом с текстом. */
+export function SideToggle({
+  block,
+  actions,
+}: {
+  block: Extract<EditorBlock, { type: "textImage" }>;
+  actions: BlockActions;
+}) {
+  const options = [
+    { side: "left", label: "Картинка слева", icon: PanelLeft },
+    { side: "right", label: "Картинка справа", icon: PanelRight },
+  ] as const;
+
+  return (
+    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Сторона картинки">
+      {options.map(({ side, label, icon: Icon }) => (
+        <Button
+          key={side}
+          type="button"
+          size="xs"
+          variant={block.side === side ? "default" : "outline"}
+          aria-pressed={block.side === side}
+          onClick={() => actions.update(block.id, { side })}
+        >
+          <Icon data-icon="inline-start" /> {label}
+        </Button>
+      ))}
     </div>
   );
 }
@@ -431,6 +482,26 @@ function BlockBody({ block, actions }: { block: EditorBlock; actions: BlockActio
 
     case "slider":
       return <SliderBody block={block} actions={actions} />;
+
+    case "textImage":
+      return (
+        <div className="flex flex-col gap-3">
+          <SideToggle block={block} actions={actions} />
+          <ImageBody block={block} actions={actions} compact />
+          <RichTextarea
+            blockTools
+            value={block.text}
+            maxLength={JOB_LIMITS.blockText}
+            onValueChange={(text) => actions.update(block.id, { text })}
+            placeholder="Объяснение рядом с картинкой"
+            aria-label="Текст рядом с картинкой"
+            className="min-h-24"
+          />
+        </div>
+      );
+
+    case "map":
+      return <MapBody block={block} actions={actions} />;
   }
 }
 
@@ -446,7 +517,7 @@ function BlockCard({
   actions: BlockActions;
 }) {
   const { label, icon: Icon } = typeLabel(block);
-  const busy = block.type === "image" && block.uploading;
+  const busy = (block.type === "image" || block.type === "textImage") && block.uploading;
   const sliderBusy = block.type === "slider" && block.slides.some((slide) => slide.uploading);
 
   return (
