@@ -22,6 +22,7 @@ export const PROTECTED_PATHS: readonly string[] = [
   "/dashboard/access",
   "/dashboard/roles",
   "/dashboard/replies",
+  "/dashboard/punishments",
   ...ADMIN_ONLY_PATHS,
 ];
 
@@ -38,6 +39,10 @@ export const PATH_PERMISSIONS: Readonly<Record<string, string>> = {
   "/dashboard/roles": "permissions.view",
   "/dashboard/replies": "replies.view",
   "/dashboard/academy/results": "academy.results",
+  // Вложенные страницы раньше корневой: проверка идёт по порядку и берёт первое совпадение
+  "/dashboard/punishments/all": "punishments.all",
+  "/dashboard/punishments/review": "punishments.review",
+  "/dashboard/punishments": "punishments.request",
 };
 
 export const isAdminOnlyPath = (pathname: string) =>

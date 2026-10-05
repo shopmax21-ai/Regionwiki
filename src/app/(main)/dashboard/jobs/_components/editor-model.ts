@@ -1,11 +1,4 @@
-import {
-  type CalloutVariant,
-  type GuideBlock,
-  type GuideMapPlace,
-  type Job,
-  type JobKind,
-  jobBlocks,
-} from "../_data/jobs";
+import { type CalloutVariant, type GuideBlock, type Job, type JobKind, jobBlocks } from "../_data/jobs";
 
 /** Слайд в редакторе: id нужен только клиенту, local/uploading/error — только на время загрузки. */
 export type EditorSlide = {
@@ -15,16 +8,6 @@ export type EditorSlide = {
   local?: string;
   uploading?: boolean;
   error?: string;
-};
-
-export type EditorMapPlace = {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  category: string;
-  icon: string;
-  description: string;
 };
 
 /** Блок в редакторе: у каждого есть id для React, у списков текст вместо массива, у медиа — состояние загрузки. */
@@ -44,7 +27,6 @@ export type EditorBlock =
       error?: string;
     }
   | { id: string; type: "slider"; slides: EditorSlide[] };
-  
 
 export type BlockKind = "heading" | "text" | "bullets" | "steps" | "tip" | "info" | "warning" | "image" | "slider";
 

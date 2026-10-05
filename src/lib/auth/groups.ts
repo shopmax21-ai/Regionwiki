@@ -53,6 +53,9 @@ export type Permission =
   | "academy.edit"
   | "academy.results"
   | "calendar.manage"
+  | "punishments.request"
+  | "punishments.review"
+  | "punishments.all"
   | "permissions.view"
   | "permissions.edit";
 
@@ -137,6 +140,28 @@ export const permissionDefs: readonly PermissionDef[] = [
     locked: true,
   },
   {
+    key: "punishments.request",
+    label: "Заявки на наказание",
+    description:
+      "Раздел «Заявка на наказание»: подавать заявки (статик, время, пункты правил, доказательства) и видеть статус своих заявок.",
+    category: "Наказания",
+  },
+  {
+    key: "punishments.review",
+    label: "Рассмотрение заявок на наказание",
+    description:
+      "Раздел «Рассмотрение заявок»: брать заявки хелперов в работу, одобрять и отклонять, выдавать наказания. Такие администраторы получают уведомления о новых заявках в Telegram.",
+    category: "Наказания",
+  },
+  {
+    key: "punishments.all",
+    label: "Все наказания и история",
+    description:
+      "Раздел «Все наказания»: заявки на рассмотрении, выданные и отклонённые наказания и история всех действий. Только Гл.Администратор.",
+    category: "Наказания",
+    locked: true,
+  },
+  {
     key: "permissions.view",
     label: "Просмотр прав",
     description: "Открывает раздел «Роли и права» только для чтения.",
@@ -164,8 +189,8 @@ export const isToggleablePermission = (value: unknown): value is Permission =>
 
 /** Права по умолчанию. Применяются, пока Гл.Администратор ничего не менял. */
 export const defaultPermissions: Record<EditableGroup, readonly Permission[]> = {
-  helper: ["users.view", "replies.view", "permissions.view"],
-  junior: ["users.view", "access.decide", "replies.view", "permissions.view"],
+  helper: ["users.view", "replies.view", "punishments.request", "permissions.view"],
+  junior: ["users.view", "access.decide", "replies.view", "punishments.review", "permissions.view"],
   admin: [
     "users.view",
     "access.decide",
@@ -176,6 +201,7 @@ export const defaultPermissions: Record<EditableGroup, readonly Permission[]> = 
     "replies.edit",
     "jobs.edit",
     "academy.edit",
+    "punishments.review",
     "permissions.view",
   ],
 };
