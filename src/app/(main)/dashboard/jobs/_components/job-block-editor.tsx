@@ -17,18 +17,14 @@ import {
   List,
   ListOrdered,
   LoaderCircle,
-  MapPinned,
-  PanelLeft,
-  PanelRight,
   Plus,
   Trash2,
   TriangleAlert,
   Type,
 } from "lucide-react";
 
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,11 +34,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 import { calloutVariants, JOB_LIMITS } from "../_data/jobs";
-import { RichTextarea } from "./format-toolbar";
-import { MapBody } from "./guide-map-editor";
-import { type BlockKind, type EditorBlock, type EditorSlide } from "./editor-model";
+import type { BlockKind, EditorBlock, EditorSlide } from "./editor-model";
 import { IMAGE_ACCEPT } from "./upload-image";
 
 export type BlockActions = {
@@ -72,11 +67,7 @@ const kindMeta: { kind: BlockKind; label: string; hint: string; icon: typeof Typ
   { kind: "info", label: "Заметка", hint: "Справка или уточнение", icon: Info },
   { kind: "image", label: "Картинка", hint: "Перетащите файл или нажмите Ctrl+V", icon: ImagePlus },
   { kind: "slider", label: "Слайдер", hint: "Несколько изображений с переключением", icon: Images },
-  { kind: "textImageRight", label: "Текст и картинка справа", hint: "Объяснение со скриншотом сбоку", icon: PanelRight },
-  { kind: "textImageLeft", label: "Текст и картинка слева", hint: "Объяснение со скриншотом сбоку", icon: PanelLeft },
-  { kind: "map", label: "Карта с местами", hint: "Интерактивная карта с отмеченными точками", icon: MapPinned },
 ];
-
 
 const typeLabel = (block: EditorBlock) => {
   switch (block.type) {
@@ -95,10 +86,6 @@ const typeLabel = (block: EditorBlock) => {
       return { label: "Картинка", icon: ImagePlus };
     case "slider":
       return { label: "Слайдер", icon: Blocks };
-    case "textImage":
-      return { label: "Текст с картинкой", icon: block.side === "left" ? PanelLeft : PanelRight };
-    case "map":
-      return { label: "Карта", icon: MapPinned };
   }
 };
 
@@ -114,7 +101,12 @@ export function AddBlockMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
-      <DropdownMenuContent align="end" side="top" sideOffset={8} className="max-h-[min(70svh,560px)] w-80 overflow-y-auto">
+      <DropdownMenuContent
+        align="end"
+        side="top"
+        sideOffset={8}
+        className="max-h-[min(70svh,560px)] w-80 overflow-y-auto"
+      >
         <DropdownMenuLabel className="flex items-center gap-2">
           <Blocks className="size-4" /> Добавить блок
         </DropdownMenuLabel>
@@ -145,10 +137,7 @@ export function InsertSlot({ afterId, actions }: { afterId: string | null; actio
   return (
     <div className="group/slot relative flex h-5 items-center justify-center">
       <div className="absolute inset-x-0 top-1/2 h-px bg-border opacity-0 transition-opacity group-hover/slot:opacity-100 group-focus-within/slot:opacity-100" />
-      <AddBlockMenu
-        onAdd={(kind) => actions.insert(kind, afterId)}
-        onTemplates={() => actions.openTemplates(afterId)}
-      >
+      <AddBlockMenu onAdd={(kind) => actions.insert(kind, afterId)} onTemplates={() => actions.openTemplates(afterId)}>
         <Button
           type="button"
           variant="outline"
@@ -163,47 +152,12 @@ export function InsertSlot({ afterId, actions }: { afterId: string | null; actio
   );
 }
 
-type ImageLikeBlock = Extract<EditorBlock, { type: "image" | "textImage" }>;
-
-/** Выбор стороны, с которой стоит картинка в блоке «Текст с картинкой». */
-export function SideToggle({
-  block,
-  actions,
-}: {
-  block: Extract<EditorBlock, { type: "textImage" }>;
-  actions: BlockActions;
-}) {
-  return (
-    <ToggleGroup
-      type="single"
-      variant="outline"
-      size="sm"
-      value={block.side}
-      onValueChange={(value) => {
-        if (value === "left" || value === "right") actions.update(block.id, { side: value });
-      }}
-      aria-label="Сторона картинки"
-      className="w-fit"
-    >
-      <ToggleGroupItem value="left" aria-label="Картинка слева">
-        <PanelLeft /> Картинка слева
-      </ToggleGroupItem>
-      <ToggleGroupItem value="right" aria-label="Картинка справа">
-        <PanelRight /> Картинка справа
-      </ToggleGroupItem>
-    </ToggleGroup>
-  );
-}
-
 export function ImageBody({
   block,
   actions,
-  compact,
 }: {
-  block: ImageLikeBlock;
+  block: Extract<EditorBlock, { type: "image" }>;
   actions: BlockActions;
-  /** Узкий вариант для колонки рядом с текстом */
-  compact?: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const shown = block.src || block.local;
@@ -241,9 +195,7 @@ export function ImageBody({
         >
           <ImagePlus className="size-6" aria-hidden="true" />
           <span>Перетащите картинку сюда или вставьте её через Ctrl+V</span>
-          <span className="text-xs">
-            {compact ? "или нажмите, чтобы выбрать файл" : "или нажмите, чтобы выбрать файл · PNG, JPEG, WebP, GIF до 5 МБ"}
-          </span>
+          <span className="text-xs">или нажмите, чтобы выбрать файл · PNG, JPEG, WebP, GIF до 5 МБ</span>
         </button>
       )}
 
@@ -254,7 +206,7 @@ export function ImageBody({
       )}
 
       {shown && (
-        <div className={cn("flex flex-col gap-2", !compact && "sm:flex-row")}>
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Input
             value={block.caption}
             maxLength={JOB_LIMITS.caption}
@@ -268,7 +220,7 @@ export function ImageBody({
             variant="outline"
             size="sm"
             disabled={block.uploading}
-            className={cn("shrink-0 self-start", !compact && "sm:self-center")}
+            className="shrink-0 self-start sm:self-center"
             onClick={() => input.current?.click()}
           >
             <ImagePlus data-icon="inline-start" /> Заменить
@@ -279,7 +231,13 @@ export function ImageBody({
   );
 }
 
-export function SliderBody({ block, actions }: { block: Extract<EditorBlock, { type: "slider" }>; actions: BlockActions }) {
+export function SliderBody({
+  block,
+  actions,
+}: {
+  block: Extract<EditorBlock, { type: "slider" }>;
+  actions: BlockActions;
+}) {
   const input = useRef<HTMLInputElement>(null);
   const hasSlides = block.slides.length > 0;
 
@@ -313,7 +271,9 @@ export function SliderBody({ block, actions }: { block: Extract<EditorBlock, { t
                         className={cn("mx-auto max-h-64 object-contain", slide.uploading && "opacity-50")}
                       />
                     ) : (
-                      <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">Загрузите изображение</div>
+                      <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+                        Загрузите изображение
+                      </div>
                     )}
                     {slide.uploading && (
                       <div className="absolute inset-0 flex items-center justify-center gap-2 bg-background/60 text-sm">
@@ -345,7 +305,10 @@ export function SliderBody({ block, actions }: { block: Extract<EditorBlock, { t
 
       <div className="flex flex-col gap-2">
         {block.slides.map((slide, index) => (
-          <div key={slide.id} className="grid gap-2 rounded-lg border p-2 sm:grid-cols-[56px_minmax(0,1fr)_auto] sm:items-center">
+          <div
+            key={slide.id}
+            className="grid gap-2 rounded-lg border p-2 sm:grid-cols-[56px_minmax(0,1fr)_auto] sm:items-center"
+          >
             <div className="size-14 overflow-hidden rounded-md border bg-muted/30">
               {slide.src || slide.local ? (
                 // biome-ignore lint/performance/noImgElement: thumbnail uses uploaded/local image URL
@@ -408,11 +371,11 @@ function BlockBody({ block, actions }: { block: EditorBlock; actions: BlockActio
 
     case "text":
       return (
-        <RichTextarea
+        <Textarea
           value={block.text}
           maxLength={JOB_LIMITS.blockText}
-          onValueChange={(text) => actions.update(block.id, { text })}
-          placeholder="Текст блока. Выделите слово и нажмите кнопку форматирования или Ctrl+B."
+          onChange={(event) => actions.update(block.id, { text: event.target.value })}
+          placeholder="Текст блока. Можно редактировать прямо здесь. Для жирного используйте **две звёздочки**."
           aria-label="Текст блока"
           className="min-h-24"
         />
@@ -421,16 +384,17 @@ function BlockBody({ block, actions }: { block: EditorBlock; actions: BlockActio
     case "list":
       return (
         <div className="flex flex-col gap-1.5">
-          <RichTextarea
-            perLine
+          <Textarea
             value={block.text}
             maxLength={JOB_LIMITS.blockText}
-            onValueChange={(text) => actions.update(block.id, { text })}
+            onChange={(event) => actions.update(block.id, { text: event.target.value })}
             placeholder={block.ordered ? "Шаги по порядку, каждый с новой строки" : "Пункты, каждый с новой строки"}
             aria-label={block.ordered ? "Шаги" : "Пункты списка"}
             className="min-h-24"
           />
-          <p className="text-muted-foreground text-xs">Каждая строка — отдельный пункт. {block.ordered ? "Номера появятся сами." : ""}</p>
+          <p className="text-muted-foreground text-xs">
+            Каждая строка — отдельный пункт. {block.ordered ? "Номера появятся сами." : ""}
+          </p>
         </div>
       );
 
@@ -451,10 +415,10 @@ function BlockBody({ block, actions }: { block: EditorBlock; actions: BlockActio
               </Button>
             ))}
           </div>
-          <RichTextarea
+          <Textarea
             value={block.text}
             maxLength={JOB_LIMITS.blockText}
-            onValueChange={(text) => actions.update(block.id, { text })}
+            onChange={(event) => actions.update(block.id, { text: event.target.value })}
             placeholder="Текст выделенного блока — редактируется прямо внутри карточки"
             aria-label="Текст выделенного блока"
             className="min-h-20"
@@ -467,30 +431,6 @@ function BlockBody({ block, actions }: { block: EditorBlock; actions: BlockActio
 
     case "slider":
       return <SliderBody block={block} actions={actions} />;
-
-    case "map":
-      return <MapBody block={block} actions={actions} />;
-
-    case "textImage":
-      return (
-        <div className="flex flex-col gap-3">
-          <SideToggle block={block} actions={actions} />
-          <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-            <div className={cn(block.side === "right" && "md:order-2")}>
-              <ImageBody block={block} actions={actions} compact />
-            </div>
-            <RichTextarea
-              value={block.text}
-              maxLength={JOB_LIMITS.blockText}
-              onValueChange={(text) => actions.update(block.id, { text })}
-              blockTools
-              placeholder={"Объяснение рядом с картинкой. Строки «1. шаг» станут нумерацией, «- пункт» — списком, а [[Телефон > Whaash]] — маршрутом по меню."}
-              aria-label="Текст рядом с картинкой"
-              className="min-h-32"
-            />
-          </div>
-        </div>
-      );
   }
 }
 
@@ -506,7 +446,7 @@ function BlockCard({
   actions: BlockActions;
 }) {
   const { label, icon: Icon } = typeLabel(block);
-  const busy = (block.type === "image" || block.type === "textImage") && block.uploading;
+  const busy = block.type === "image" && block.uploading;
   const sliderBusy = block.type === "slider" && block.slides.some((slide) => slide.uploading);
 
   return (
@@ -521,16 +461,44 @@ function BlockCard({
           <Icon className="size-3.5" aria-hidden="true" /> {label}
         </span>
         <div className="flex items-center gap-0.5">
-          <Button type="button" variant="ghost" size="icon-xs" aria-label={`Поднять блок «${label}» выше`} disabled={index === 0} onClick={() => actions.move(block.id, -1)}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label={`Поднять блок «${label}» выше`}
+            disabled={index === 0}
+            onClick={() => actions.move(block.id, -1)}
+          >
             <ArrowUp />
           </Button>
-          <Button type="button" variant="ghost" size="icon-xs" aria-label={`Опустить блок «${label}» ниже`} disabled={index === count - 1} onClick={() => actions.move(block.id, 1)}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label={`Опустить блок «${label}» ниже`}
+            disabled={index === count - 1}
+            onClick={() => actions.move(block.id, 1)}
+          >
             <ArrowDown />
           </Button>
-          <Button type="button" variant="ghost" size="icon-xs" aria-label={`Дублировать блок «${label}»`} disabled={busy || sliderBusy} onClick={() => actions.duplicate(block.id)}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label={`Дублировать блок «${label}»`}
+            disabled={busy || sliderBusy}
+            onClick={() => actions.duplicate(block.id)}
+          >
             <Copy />
           </Button>
-          <Button type="button" variant="ghost" size="icon-xs" aria-label={`Удалить блок «${label}»`} className="text-destructive hover:text-destructive" onClick={() => actions.remove(block.id)}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label={`Удалить блок «${label}»`}
+            className="text-destructive hover:text-destructive"
+            onClick={() => actions.remove(block.id)}
+          >
             <Trash2 />
           </Button>
         </div>
@@ -548,12 +516,7 @@ export function FloatingAddBlock({ blocks, actions }: { blocks: readonly EditorB
   return (
     <div className="fixed right-5 bottom-24 z-40 sm:right-7 sm:bottom-28">
       <AddBlockMenu onAdd={(kind) => actions.insert(kind, endId)} onTemplates={() => actions.openTemplates(endId)}>
-        <Button
-          type="button"
-          size="lg"
-          disabled={atLimit}
-          className="h-12 rounded-full px-5 shadow-lg shadow-black/10"
-        >
+        <Button type="button" size="lg" disabled={atLimit} className="h-12 rounded-full px-5 shadow-lg shadow-black/10">
           <Plus data-icon="inline-start" /> Добавить блок
         </Button>
       </AddBlockMenu>
@@ -581,7 +544,8 @@ export function JobBlockEditor({ blocks, actions }: { blocks: EditorBlock[]; act
       ))}
 
       <div className="mt-4 text-xs text-muted-foreground">
-        Контент каждого блока редактируется непосредственно внутри его карточки. Для точной вставки между блоками используйте «+» на границе.
+        Контент каждого блока редактируется непосредственно внутри его карточки. Для точной вставки между блоками
+        используйте «+» на границе.
         {atLimit && <span className="ml-1">Достигнут предел: {JOB_LIMITS.blocks} блоков.</span>}
       </div>
 

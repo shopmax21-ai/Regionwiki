@@ -52,6 +52,7 @@ export type Permission =
   | "jobs.edit"
   | "academy.edit"
   | "academy.results"
+  | "calendar.manage"
   | "permissions.view"
   | "permissions.edit";
 
@@ -125,6 +126,14 @@ export const permissionDefs: readonly PermissionDef[] = [
     description:
       "Раздел «Результаты тестов»: правильность ответов и подробный разбор по каждому пройденному тесту. Только Гл.Администратор.",
     category: "Академия",
+    locked: true,
+  },
+  {
+    key: "calendar.manage",
+    label: "Управление чужими мероприятиями",
+    description:
+      "Менять и удалять мероприятия других администраторов в разделе «Календарь». Свои мероприятия может менять каждый. Только Гл.Администратор.",
+    category: "Календарь",
     locked: true,
   },
   {

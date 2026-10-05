@@ -1,11 +1,4 @@
-import {
-  type CalloutVariant,
-  type GuideBlock,
-  type GuideMapPlace,
-  type Job,
-  type JobKind,
-  jobBlocks,
-} from "../_data/jobs";
+import { type CalloutVariant, type GuideBlock, type Job, type JobKind, jobBlocks } from "../_data/jobs";
 
 /** Слайд в редакторе: id нужен только клиенту, local/uploading/error — только на время загрузки. */
 export type EditorSlide = {
@@ -15,17 +8,6 @@ export type EditorSlide = {
   local?: string;
   uploading?: boolean;
   error?: string;
-};
-
-/** Место на карте в редакторе: id нужен только клиенту, пустые необязательные поля хранятся пустыми строками. */
-export type EditorMapPlace = {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  category: string;
-  icon: string;
-  description: string;
 };
 
 /** Блок в редакторе: у каждого есть id для React, у списков текст вместо массива, у медиа — состояние загрузки. */
@@ -44,33 +26,9 @@ export type EditorBlock =
       uploading?: boolean;
       error?: string;
     }
-  | { id: string; type: "slider"; slides: EditorSlide[] }
-  | {
-      id: string;
-      type: "textImage";
-      side: "left" | "right";
-      text: string;
-      src: string;
-      caption: string;
-      local?: string;
-      uploading?: boolean;
-      error?: string;
-    }
-  | { id: string; type: "map"; title: string; places: EditorMapPlace[] };
+  | { id: string; type: "slider"; slides: EditorSlide[] };
 
-export type BlockKind =
-  | "heading"
-  | "text"
-  | "bullets"
-  | "steps"
-  | "tip"
-  | "info"
-  | "warning"
-  | "image"
-  | "slider"
-  | "textImageRight"
-  | "textImageLeft"
-  | "map";
+export type BlockKind = "heading" | "text" | "bullets" | "steps" | "tip" | "info" | "warning" | "image" | "slider";
 
 export type FormState = {
   title: string;
@@ -84,7 +42,7 @@ export type FormState = {
   alt2: string;
 };
 
-export type GuideTemplateId = "starter" | "instruction" | "faq" | "media" | "howto-screens";
+export type GuideTemplateId = "starter" | "instruction" | "faq" | "media";
 
 export type GuideTemplate = {
   id: GuideTemplateId;
@@ -116,11 +74,6 @@ export function createBlock(kind: BlockKind): EditorBlock {
       return { id, type: "image", src: "", caption: "" };
     case "slider":
       return { id, type: "slider", slides: [] };
-    case "map":
-      return { id, type: "map", title: "", places: [] };
-    case "textImageRight":
-    case "textImageLeft":
-      return { id, type: "textImage", side: kind === "textImageLeft" ? "left" : "right", text: "", src: "", caption: "" };
   }
 }
 
@@ -160,23 +113,6 @@ export const guideTemplates: GuideTemplate[] = [
     ],
   },
   {
-    id: "howto-screens",
-    label: "Объяснение со скриншотами",
-    hint: "Текст и картинка справа или слева, для телефона и меню",
-    create: () => [
-      { ...block("heading"), text: "Как пользоваться" },
-      {
-        ...block("textImageRight"),
-        text: "Опишите, что нужно сделать на этом экране. Например: откройте приложение **«Моя работа»** и нажмите ==«Начать смену»==.",
-      },
-      {
-        ...block("textImageLeft"),
-        text: "Опишите следующий шаг: куда нажать и что должно появиться. Важные слова можно сделать *курсивом* или __подчеркнуть__.",
-      },
-      { ...block("tip"), text: "Добавьте совет: например, как быстро вернуться на главный экран." },
-    ],
-  },
-  {
     id: "media",
     label: "Медиа-секция",
     hint: "Текст и слайдер для скриншотов",
@@ -207,32 +143,6 @@ export function toEditorBlocks(blocks: readonly GuideBlock[]): EditorBlock[] {
           id,
           type: "slider",
           slides: block.slides.map((slide) => ({ id: newId(), src: slide.src, caption: slide.caption ?? "" })),
-        };
-      case "textImage":
-        return {
-          id,
-          type: "textImage",
-          side: block.side,
-          text: block.text,
-          src: block.src ?? "",
-          caption: block.caption ?? "",
-        };
-      case "map":
-        return {
-          id,
-          type: "map",
-          title: block.title ?? "",
-          places: block.places.map(
-            (place): EditorMapPlace => ({
-              id: newId(),
-              name: place.name,
-              x: place.x,
-              y: place.y,
-              category: place.category,
-              icon: place.icon ?? "",
-              description: place.description ?? "",
-            }),
-          ),
         };
       default:
         return { id, ...block };
@@ -274,31 +184,6 @@ export function toGuideBlocks(blocks: readonly EditorBlock[], options: { preview
           return [{ src, caption: caption || undefined }];
         });
         return slides.length > 0 ? [{ type: "slider", slides }] : [];
-      }
-      case "textImage": {
-        const src = block.src || (options.preview ? (block.local ?? "") : "");
-        const text = block.text.trim();
-        if (!src && !text) return [];
-        const caption = block.caption.trim();
-        return [{ type: "textImage", side: block.side, text, src: src || undefined, caption: caption || undefined }];
-      }
-      case "map": {
-        const places = block.places.flatMap((place): GuideMapPlace[] => {
-          const name = place.name.trim();
-          if (!name) return [];
-          return [
-            {
-              name,
-              x: place.x,
-              y: place.y,
-              category: place.category,
-              icon: place.icon || undefined,
-              description: place.description.trim() || undefined,
-            },
-          ];
-        });
-        if (places.length === 0) return [];
-        return [{ type: "map", title: block.title.trim() || undefined, places }];
       }
     }
   });
