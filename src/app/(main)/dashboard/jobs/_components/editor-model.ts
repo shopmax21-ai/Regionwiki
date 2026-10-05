@@ -26,7 +26,34 @@ export type EditorBlock =
       uploading?: boolean;
       error?: string;
     }
-  | { id: string; type: "slider"; slides: EditorSlide[] };
+  | { id: string; type: "slider"; slides: EditorSlide[] }
+  | {
+      id: string;
+      type: "textImage";
+      side: "left" | "right";
+      text: string;
+      src: string;
+      caption: string;
+      local?: string;
+      uploading?: boolean;
+      error?: string;
+    }
+  | {
+      id: string;
+      type: "map";
+      title: string;
+      places: EditorMapPlace[];
+    };
+
+export type EditorMapPlace = {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  category: string;
+  icon: string;
+  description: string;
+};
 
 export type BlockKind = "heading" | "text" | "bullets" | "steps" | "tip" | "info" | "warning" | "image" | "slider";
 
@@ -144,6 +171,30 @@ export function toEditorBlocks(blocks: readonly GuideBlock[]): EditorBlock[] {
           type: "slider",
           slides: block.slides.map((slide) => ({ id: newId(), src: slide.src, caption: slide.caption ?? "" })),
         };
+      case "textImage":
+        return {
+          id,
+          type: "textImage",
+          side: block.side,
+          text: block.text,
+          src: block.src ?? "",
+          caption: block.caption ?? "",
+        };
+      case "map":
+        return {
+          id,
+          type: "map",
+          title: block.title ?? "",
+          places: block.places.map((place) => ({
+            id: newId(),
+            name: place.name,
+            x: place.x,
+            y: place.y,
+            category: place.category,
+            icon: place.icon ?? "",
+            description: place.description ?? "",
+          })),
+        };
       default:
         return { id, ...block };
     }
@@ -175,6 +226,28 @@ export function toGuideBlocks(blocks: readonly EditorBlock[], options: { preview
         if (!src) return [];
         const caption = block.caption.trim();
         return [{ type: "image", src, caption: caption || undefined }];
+      }
+      case "textImage": {
+        const text = block.text.trim();
+        const src = block.src || (options.preview ? (block.local ?? "") : "");
+        if (!text && !src) return [];
+        const caption = block.caption.trim();
+        return [{ type: "textImage", side: block.side, text, src: src || undefined, caption: caption || undefined }];
+      }
+      case "map": {
+        if (block.places.length === 0) return [];
+        return [{
+          type: "map",
+          title: block.title.trim() || undefined,
+          places: block.places.map((place) => ({
+            name: place.name,
+            x: place.x,
+            y: place.y,
+            category: place.category,
+            icon: place.icon || undefined,
+            description: place.description || undefined,
+          })),
+        }];
       }
       case "slider": {
         const slides = block.slides.flatMap((slide) => {

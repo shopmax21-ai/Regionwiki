@@ -4,6 +4,7 @@ import { Info, Lightbulb, TriangleAlert } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 import type { CalloutVariant, GuideBlock } from "../_data/jobs";
+import { GuideMap } from "./guide-map";
 
 /** Выделение **жирным** внутри текста блока. Больше никакой разметки нет, чтобы чужой текст не мог сломать страницу. */
 export function InlineText({ text }: { text: string }) {
@@ -23,6 +24,72 @@ export function InlineText({ text }: { text: string }) {
       )}
     </>
   );
+}
+
+
+/** Безопасный предпросмотр расширенного текста, который хранится прямо в строке блока. */
+export function RichBlocks({ text }: { text: string }) {
+  const renderInline = (value: string) => {
+    const tokens = /(\*\*[^*]+\*\*|__[^_]+__|~~[^~]+~~|==[^=]+==|`[^`]+`|(?<!\*)\*[^*]+\*(?!\*)|\[\[[^\]]+\]\])/g;
+    return value.split(tokens).map((part, index) => {
+      const key = `${index}-${part}`;
+      if (part.startsWith("**") && part.endsWith("**")) return <strong key={key}>{part.slice(2, -2)}</strong>;
+      if (part.startsWith("__") && part.endsWith("__")) return <u key={key}>{part.slice(2, -2)}</u>;
+      if (part.startsWith("~~") && part.endsWith("~~")) return <s key={key}>{part.slice(2, -2)}</s>;
+      if (part.startsWith("==") && part.endsWith("==")) return <mark key={key} className="rounded px-0.5">{part.slice(2, -2)}</mark>;
+      if (part.startsWith("`") && part.endsWith("`")) return <code key={key} className="rounded bg-muted px-1 py-0.5 font-mono text-[0.9em]">{part.slice(1, -1)}</code>;
+      if (part.startsWith("*") && part.endsWith("*")) return <em key={key}>{part.slice(1, -1)}</em>;
+      if (part.startsWith("[[") && part.endsWith("]]")) return <span key={key} className="font-medium text-primary">{part.slice(2, -2)}</span>;
+      return <span key={key}>{part}</span>;
+    });
+  };
+
+  const rows = text.split("\n");
+  const result: React.ReactNode[] = [];
+  let i = 0;
+
+  while (i < rows.length) {
+    const trimmed = rows[i].trim();
+    if (!trimmed) {
+      result.push(<div key={`space-${i}`} className="h-2" />);
+      i += 1;
+      continue;
+    }
+
+    const ordered = /^\d{1,3}[.)]\s+(.+)$/.exec(trimmed);
+    const bullet = /^[-•]\s+(.+)$/.exec(trimmed);
+    if (ordered || bullet) {
+      const matcher = ordered ? /^\d{1,3}[.)]\s+(.+)$/ : /^[-•]\s+(.+)$/;
+      const items: string[] = [];
+      const start = i;
+      while (i < rows.length) {
+        const match = matcher.exec(rows[i].trim());
+        if (!match) break;
+        items.push(match[1]);
+        i += 1;
+      }
+      const Tag = ordered ? "ol" : "ul";
+      result.push(
+        <Tag key={`list-${start}`} className={cn("flex flex-col gap-1.5", ordered ? "list-decimal pl-5" : "list-disc pl-5")}>
+          {items.map((item, itemIndex) => <li key={`${start}-${itemIndex}`}>{renderInline(item)}</li>)}
+        </Tag>,
+      );
+      continue;
+    }
+
+    const heading = /^(#{1,3})\s+(.+)$/.exec(trimmed);
+    if (heading) {
+      const Tag = heading[1].length === 1 ? "h3" : heading[1].length === 2 ? "h4" : "h5";
+      result.push(<Tag key={`heading-${i}`} className="font-semibold">{renderInline(heading[2])}</Tag>);
+      i += 1;
+      continue;
+    }
+
+    result.push(<p key={`paragraph-${i}`} className="whitespace-pre-line">{renderInline(rows[i])}</p>);
+    i += 1;
+  }
+
+  return <div className="flex flex-col gap-2">{result}</div>;
 }
 
 export const calloutStyle: Record<CalloutVariant, { box: string; icon: string; Icon: typeof Info }> = {
@@ -101,6 +168,25 @@ export function BlockView({ block }: { block: Exclude<GuideBlock, { type: "headi
           )}
         </figure>
       );
+
+    case "textImage":
+      return (
+        <div className={cn("flex flex-col gap-4 sm:items-start", block.side === "left" ? "sm:flex-row" : "sm:flex-row-reverse")}>
+          {block.src && (
+            <figure className="w-full shrink-0 sm:w-[38%] sm:max-w-sm">
+              {/* biome-ignore lint/performance/noImgElement: размеры загруженной картинки заранее неизвестны */}
+              <img src={block.src} alt={block.caption ?? ""} loading="lazy" className="w-full rounded-xl border bg-muted/30 object-contain" />
+              {block.caption && <figcaption className="mt-2 text-center text-muted-foreground text-xs">{block.caption}</figcaption>}
+            </figure>
+          )}
+          <div className="min-w-0 flex-1">
+            <InlineText text={block.text} />
+          </div>
+        </div>
+      );
+
+    case "map":
+      return <GuideMap title={block.title} places={block.places} />;
 
     case "slider":
       return (

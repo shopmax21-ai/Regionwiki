@@ -5,6 +5,8 @@ import { useRef } from "react";
 import { cn } from "cn";
 import {
   ArrowDown,
+  ArrowLeft,
+  ArrowRight,
   ArrowUp,
   Blocks,
   Copy,
@@ -152,12 +154,47 @@ export function InsertSlot({ afterId, actions }: { afterId: string | null; actio
   );
 }
 
-export function ImageBody({
+
+/** Переключатель стороны изображения для блока «текст + картинка». */
+export function SideToggle({
   block,
   actions,
 }: {
-  block: Extract<EditorBlock, { type: "image" }>;
+  block: Extract<EditorBlock, { type: "textImage" }>;
   actions: BlockActions;
+}) {
+  return (
+    <div className="flex w-fit items-center gap-1 rounded-md border bg-background p-1" role="group" aria-label="Расположение картинки">
+      <Button
+        type="button"
+        size="sm"
+        variant={block.side === "left" ? "default" : "ghost"}
+        aria-pressed={block.side === "left"}
+        onClick={() => actions.update(block.id, { side: "left" })}
+      >
+        <ArrowLeft data-icon="inline-start" /> Слева
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant={block.side === "right" ? "default" : "ghost"}
+        aria-pressed={block.side === "right"}
+        onClick={() => actions.update(block.id, { side: "right" })}
+      >
+        Справа <ArrowRight data-icon="inline-end" />
+      </Button>
+    </div>
+  );
+}
+
+export function ImageBody({
+  block,
+  actions,
+  compact = false,
+}: {
+  block: Extract<EditorBlock, { type: "image" | "textImage" }>;
+  actions: BlockActions;
+  compact?: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const shown = block.src || block.local;
@@ -180,7 +217,11 @@ export function ImageBody({
       {shown ? (
         <div className="relative overflow-hidden rounded-lg border bg-muted/30">
           {/* biome-ignore lint/performance/noImgElement: размеры загружаемой картинки заранее неизвестны */}
-          <img src={shown} alt="" className={cn("mx-auto max-h-80 object-contain", block.uploading && "opacity-50")} />
+          <img
+            src={shown}
+            alt=""
+            className={cn("mx-auto object-contain", compact ? "max-h-48" : "max-h-80", block.uploading && "opacity-50")}
+          />
           {block.uploading && (
             <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm">
               <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> Загрузка…
