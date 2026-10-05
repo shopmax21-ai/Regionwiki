@@ -6,6 +6,7 @@ import {
   CarFront,
   ChartBar,
   CheckSquare,
+  ClipboardCheck,
   GraduationCap,
   HardHat,
   House,
@@ -89,6 +90,12 @@ function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
           title: "Академия",
           url: "/dashboard/academy",
           icon: GraduationCap,
+        },
+        {
+          id: "academy-results",
+          title: "Результаты тестов",
+          url: "/dashboard/academy/results",
+          icon: ClipboardCheck,
         },
         {
           id: "transport",
