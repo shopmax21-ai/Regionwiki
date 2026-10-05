@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { formatPrice, formatTrunk, getScrapPrice, type Vehicle, vehicleTitle } from "../_data/vehicles";
+import { VehicleDelete } from "./vehicle-delete";
 import { VehicleEditor } from "./vehicle-editor";
 import { VehicleImage } from "./vehicle-image";
 import { VehiclePaint } from "./vehicle-paint";
@@ -78,7 +79,12 @@ export function VehicleDetails({ vehicle, canEdit = false }: { vehicle: Vehicle;
         </Link>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{vehicleTitle(vehicle)}</h1>
-          {canEdit && <VehicleEditor mode="edit" vehicle={vehicle} />}
+          {canEdit && (
+            <div className="flex flex-wrap items-center gap-2">
+              <VehicleEditor mode="edit" vehicle={vehicle} />
+              <VehicleDelete code={vehicle.code} title={vehicleTitle(vehicle)} />
+            </div>
+          )}
         </div>
       </div>
 

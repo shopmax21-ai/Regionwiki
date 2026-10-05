@@ -51,7 +51,6 @@ import {
   groupDigits,
   LIMITS,
   previewVehicle,
-  slugify,
   toForm,
 } from "./vehicle-form";
 import { categoryIcons } from "./vehicle-image";
@@ -96,8 +95,6 @@ export function VehicleEditor(props: VehicleEditorProps) {
   const [saving, setSaving] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
   const [showLink, setShowLink] = useState(false);
-  // Пока код не правили руками, он собирается из названия и модели
-  const codeTouched = useRef(false);
   const initialSnapshot = useRef("");
 
   const dirty = open && snapshot(form) !== initialSnapshot.current;
@@ -113,21 +110,13 @@ export function VehicleEditor(props: VehicleEditorProps) {
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     clearError(key);
     setServerError(null);
-    setForm((prev) => {
-      const next = { ...prev, [key]: value };
-      if (!editing && !codeTouched.current && (key === "name" || key === "model")) {
-        next.code = slugify(next.name, next.model);
-        clearError("code");
-      }
-      return next;
-    });
+    setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleOpenChange = (next: boolean) => {
     if (next) {
       const initial = editing ? toForm(props.vehicle) : emptyForm();
       initialSnapshot.current = snapshot(initial);
-      codeTouched.current = false;
       setForm(initial);
       setErrors({});
       setServerError(null);
@@ -328,7 +317,7 @@ export function VehicleEditor(props: VehicleEditorProps) {
                       "Код нельзя изменить"
                     ) : (
                       <>
-                        Собирается из названия и модели, можно изменить. Адрес:{" "}
+                        Впишите вручную: латиница, цифры и дефис. Адрес:{" "}
                         <span className="text-foreground">/dashboard/transport/{form.code || "…"}</span>
                       </>
                     )
@@ -343,8 +332,6 @@ export function VehicleEditor(props: VehicleEditorProps) {
                     placeholder="superior-90g"
                     onChange={(event) => {
                       const value = event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "");
-                      // Очистили поле: код снова собирается автоматически
-                      codeTouched.current = value !== "";
                       clearError("code");
                       setForm((prev) => ({ ...prev, code: value }));
                     }}
@@ -529,15 +516,16 @@ export function VehicleEditor(props: VehicleEditorProps) {
       </Dialog>
 
       <AlertDialog open={confirmClose} onOpenChange={setConfirmClose}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
+        <AlertDialogContent className="data-[size=default]:sm:max-w-md">
+          <AlertDialogHeader className="sm:group-data-[size=default]/alert-dialog-content:place-items-start">
             <AlertDialogTitle>Закрыть без сохранения?</AlertDialogTitle>
             <AlertDialogDescription>В форме есть несохранённые изменения, они пропадут.</AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Продолжить редактирование</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col sm:flex-col sm:justify-stretch">
+            <AlertDialogCancel className="w-full">Продолжить редактирование</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
+              className="w-full"
               onClick={() => {
                 setConfirmClose(false);
                 setOpen(false);

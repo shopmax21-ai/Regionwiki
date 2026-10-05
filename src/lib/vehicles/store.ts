@@ -122,3 +122,16 @@ export async function updateVehicle(vehicle: Vehicle, userId: string): Promise<v
   if (updated === 0) throw new VehicleStoreError("not_found");
   version++;
 }
+
+export async function deleteVehicle(code: string): Promise<void> {
+  let deleted = 0;
+  try {
+    await ensureReady();
+    const result = await getPool().query("DELETE FROM vehicles WHERE code = $1", [code]);
+    deleted = result.rowCount ?? 0;
+  } catch (error) {
+    throw new VehicleStoreError("database", error);
+  }
+  if (deleted === 0) throw new VehicleStoreError("not_found");
+  version++;
+}
