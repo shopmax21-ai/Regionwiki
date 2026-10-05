@@ -47,6 +47,9 @@ export type Permission =
   | "groups.assign"
   | "transport.edit"
   | "map.edit"
+  | "punishments.request"
+  | "punishments.review"
+  | "punishments.all"
   | "items.edit"
   | "replies.view"
   | "replies.edit"
@@ -96,6 +99,24 @@ export const permissionDefs: readonly PermissionDef[] = [
     label: "Редактирование карты",
     description: "Добавлять, изменять и удалять метки на карте штата, загружать метки списком.",
     category: "Контент",
+  },
+  {
+    key: "punishments.request",
+    label: "Заявки на наказания",
+    description: "Подавать заявки на наказания и видеть свои заявки в разделе «Наказания».",
+    category: "Наказания",
+  },
+  {
+    key: "punishments.review",
+    label: "Рассмотрение заявок на наказания",
+    description: "Одобрять и отклонять заявки на наказания и получать уведомления о новых заявках.",
+    category: "Наказания",
+  },
+  {
+    key: "punishments.all",
+    label: "Все наказания",
+    description: "Видеть заявки и наказания всех администраторов, а не только свои.",
+    category: "Наказания",
   },
   {
     key: "items.edit",
@@ -171,8 +192,8 @@ export const isToggleablePermission = (value: unknown): value is Permission =>
 
 /** Права по умолчанию. Применяются, пока Гл.Администратор ничего не менял. */
 export const defaultPermissions: Record<EditableGroup, readonly Permission[]> = {
-  helper: ["users.view", "replies.view", "permissions.view"],
-  junior: ["users.view", "access.decide", "replies.view", "permissions.view"],
+  helper: ["users.view", "replies.view", "punishments.request", "permissions.view"],
+  junior: ["users.view", "access.decide", "replies.view", "punishments.request", "permissions.view"],
   admin: [
     "users.view",
     "access.decide",
@@ -184,6 +205,9 @@ export const defaultPermissions: Record<EditableGroup, readonly Permission[]> = 
     "replies.edit",
     "jobs.edit",
     "academy.edit",
+    "punishments.request",
+    "punishments.review",
+    "punishments.all",
     "permissions.view",
   ],
 };
