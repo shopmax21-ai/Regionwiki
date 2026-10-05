@@ -37,6 +37,7 @@ export const PATH_PERMISSIONS: Readonly<Record<string, string>> = {
   "/dashboard/users": "users.view",
   "/dashboard/roles": "permissions.view",
   "/dashboard/replies": "replies.view",
+  "/dashboard/academy/results": "academy.results",
 };
 
 export const isAdminOnlyPath = (pathname: string) =>
@@ -47,10 +48,10 @@ export type Viewer = { authorized: boolean; permissions: readonly string[]; isAd
 
 /** Показывать ли раздел этому посетителю в меню и поиске. */
 export function isPathVisible(pathname: string, viewer: Viewer): boolean {
-  if (isAdminOnlyPath(pathname)) return viewer.isAdmin === true;
   for (const [path, permission] of Object.entries(PATH_PERMISSIONS)) {
     if (pathname === path || pathname.startsWith(`${path}/`)) return viewer.permissions.includes(permission);
   }
+  if (isAdminOnlyPath(pathname)) return viewer.isAdmin === true;
   if (isProtectedPath(pathname)) return viewer.authorized;
   return true;
 }
