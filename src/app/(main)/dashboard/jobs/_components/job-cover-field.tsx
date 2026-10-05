@@ -14,15 +14,7 @@ import { JOB_LIMITS } from "../_data/jobs";
 import { IMAGE_ACCEPT, isImageFile, uploadImage } from "./upload-image";
 
 /** Обложка работы 16:9: файл можно выбрать, перетащить сюда или указать ссылкой. */
-export function JobCoverField({
-  id,
-  value,
-  onChange,
-}: {
-  id: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
+export function JobCoverField({ id, value, onChange }: { id: string; value: string; onChange: (value: string) => void }) {
   const input = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [over, setOver] = useState(false);
@@ -103,13 +95,7 @@ export function JobCoverField({
           placeholder="Ссылка https:// или путь /images/..."
           autoComplete="off"
         />
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          aria-label="Выбрать файл обложки"
-          onClick={() => input.current?.click()}
-        >
+        <Button type="button" variant="outline" size="icon" aria-label="Выбрать файл обложки" onClick={() => input.current?.click()}>
           <ImagePlus />
         </Button>
         {value && (

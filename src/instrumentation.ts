@@ -11,12 +11,6 @@ export async function register() {
     startRulesScheduler();
   }
 
-  // Напоминания о мероприятиях: нужна база, а отправляются они ботом (без бота ждут в очереди)
-  if (process.env.DATABASE_URL && process.env.CALENDAR_REMINDERS !== "off") {
-    const { startCalendarReminders } = await import("@/lib/calendar/reminders");
-    startCalendarReminders();
-  }
-
   const { getAuthConfig } = await import("@/lib/auth/config");
   const { checkDatabase, databaseHost } = await import("@/lib/auth/db");
   const { logAuthError } = await import("@/lib/auth/errors");

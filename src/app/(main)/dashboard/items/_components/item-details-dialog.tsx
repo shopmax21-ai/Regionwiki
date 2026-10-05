@@ -55,14 +55,7 @@ function CopyId({ id }: { id: number }) {
   };
 
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon-xs"
-      className="-mr-1.5 shrink-0"
-      onClick={copy}
-      aria-label="Скопировать ID"
-    >
+    <Button type="button" variant="ghost" size="icon-xs" className="-mr-1.5 shrink-0" onClick={copy} aria-label="Скопировать ID">
       {copied ? <Check className="text-green-500" /> : <Copy />}
     </Button>
   );

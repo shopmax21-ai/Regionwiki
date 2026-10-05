@@ -50,9 +50,7 @@ export type Permission =
   | "replies.view"
   | "replies.edit"
   | "jobs.edit"
-  | "academy.edit"
-  | "academy.results"
-  | "calendar.manage"
+  | "map.edit"
   | "permissions.view"
   | "permissions.edit";
 
@@ -115,26 +113,10 @@ export const permissionDefs: readonly PermissionDef[] = [
     category: "Контент",
   },
   {
-    key: "academy.edit",
-    label: "Редактирование тестов",
-    description: "Создавать, изменять и удалять тесты в разделе «Академия».",
-    category: "Академия",
-  },
-  {
-    key: "academy.results",
-    label: "Результаты и разбор тестов",
-    description:
-      "Раздел «Результаты тестов»: правильность ответов и подробный разбор по каждому пройденному тесту. Только Гл.Администратор.",
-    category: "Академия",
-    locked: true,
-  },
-  {
-    key: "calendar.manage",
-    label: "Управление чужими мероприятиями",
-    description:
-      "Менять и удалять мероприятия других администраторов в разделе «Календарь». Свои мероприятия может менять каждый. Только Гл.Администратор.",
-    category: "Календарь",
-    locked: true,
+    key: "map.edit",
+    label: "Редактирование карты",
+    description: "Добавлять, перемещать, изменять и удалять метки на интерактивной карте.",
+    category: "Контент",
   },
   {
     key: "permissions.view",
@@ -175,7 +157,7 @@ export const defaultPermissions: Record<EditableGroup, readonly Permission[]> = 
     "replies.view",
     "replies.edit",
     "jobs.edit",
-    "academy.edit",
+    "map.edit",
     "permissions.view",
   ],
 };

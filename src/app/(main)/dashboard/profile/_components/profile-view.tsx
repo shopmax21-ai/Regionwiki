@@ -2,10 +2,8 @@ import { CalendarClock, Fingerprint, LogIn, Monitor } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { UserStats } from "@/lib/academy/store";
 import type { DbUser, LoginEvent } from "@/lib/auth/db";
 
-import { AcademyStatsCard } from "./academy-stats-card";
 import { NotificationsCard } from "./notifications-card";
 import { ProfileAvatar } from "./profile-avatar";
 import { SecurityCard } from "./security-card";
@@ -46,13 +44,10 @@ export function ProfileView({
   user,
   events,
   canReceiveRequests,
-  academy,
 }: {
   user: DbUser;
   events: LoginEvent[];
   canReceiveRequests: boolean;
-  /** Статистика тестов Академии; только у администраторов */
-  academy: UserStats | null;
 }) {
   const stats = [
     { icon: Fingerprint, label: "Telegram ID", value: user.telegramId },
@@ -93,8 +88,6 @@ export function ProfileView({
           </Card>
         ))}
       </div>
-
-      {academy && <AcademyStatsCard stats={academy} />}
 
       {canReceiveRequests && <NotificationsCard initialEnabled={user.notifyRequests} />}
 

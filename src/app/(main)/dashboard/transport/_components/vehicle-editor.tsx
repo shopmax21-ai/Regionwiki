@@ -1,22 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useState } from "react";
 
 import { useRouter } from "next/navigation";
 
-import { ArrowLeftRight, Cpu, Flame, Link2, Pencil, Plus, Sparkles, TriangleAlert } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,135 +18,217 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 
-import {
-  type FuelType,
-  formatPrice,
-  fuelTypes,
-  vehicles as seedVehicles,
-  type Vehicle,
-  type VehicleCategory,
-  vehicleCategories,
-} from "../_data/vehicles";
-import { TagInput } from "./tag-input";
-import { VehicleCardView } from "./vehicle-card";
-import { Chip, Field, fieldId, Section } from "./vehicle-field";
-import {
-  buildPayload,
-  decimalOnly,
-  digitsOnly,
-  emptyForm,
-  type FieldErrors,
-  type FormState,
-  groupDigits,
-  LIMITS,
-  previewVehicle,
-  slugify,
-  toForm,
-} from "./vehicle-form";
-import { categoryIcons } from "./vehicle-image";
-import { VehicleImageDrop } from "./vehicle-image-drop";
-import { VehicleUpgradesEditor } from "./vehicle-upgrades-editor";
+import { type FuelType, fuelTypes, type Vehicle, type VehicleCategory, vehicleCategories } from "../_data/vehicles";
 
-/** Самые частые источники из каталога: подсказки под полем «Источники» */
-const popularSources = (() => {
-  const counts = new Map<string, number>();
-  for (const vehicle of seedVehicles)
-    for (const source of vehicle.sources) counts.set(source, (counts.get(source) ?? 0) + 1);
-  return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([source]) => source);
-})();
+type UpgradeForm = { name: string; description: string; levels: string };
 
-const features = [
-  { key: "transferable", label: "Можно передавать", icon: ArrowLeftRight },
-  { key: "driftChip", label: "Дрифт-чип", icon: Cpu },
-  { key: "nitro", label: "Нитро", icon: Flame },
-  { key: "isNew", label: "Новинка", icon: Sparkles },
-] as const;
+type FormState = {
+  code: string;
+  name: string;
+  model: string;
+  category: VehicleCategory;
+  speed: string;
+  tunedSpeed: string;
+  price: string;
+  scrapPrice: string;
+  fuel: FuelType;
+  trunkKg: string;
+  loadTons: string;
+  sources: string;
+  imageUrl: string;
+  transferable: boolean;
+  driftChip: boolean;
+  nitro: boolean;
+  isNew: boolean;
+  upgrades: UpgradeForm[];
+};
 
-/** Форма без случайных ключей строк: так можно честно сравнить «было» и «стало» */
-const snapshot = (form: FormState) => JSON.stringify(form, (key, value) => (key === "key" ? undefined : value));
+const emptyForm: FormState = {
+  code: "",
+  name: "",
+  model: "",
+  category: "Легковые",
+  speed: "",
+  tunedSpeed: "",
+  price: "",
+  scrapPrice: "",
+  fuel: "АИ-95",
+  trunkKg: "0",
+  loadTons: "",
+  sources: "",
+  imageUrl: "",
+  transferable: true,
+  driftChip: false,
+  nitro: false,
+  isNew: true,
+  upgrades: [],
+};
+
+const toForm = (vehicle: Vehicle): FormState => ({
+  code: vehicle.code,
+  name: vehicle.name,
+  model: vehicle.model,
+  category: vehicle.category,
+  speed: String(vehicle.speed),
+  tunedSpeed: String(vehicle.tunedSpeed),
+  price: String(vehicle.price),
+  scrapPrice: vehicle.scrapPrice === undefined ? "" : String(vehicle.scrapPrice),
+  fuel: vehicle.fuel,
+  trunkKg: String(vehicle.trunkKg),
+  loadTons: vehicle.loadTons === undefined ? "" : String(vehicle.loadTons),
+  sources: vehicle.sources.join("\n"),
+  imageUrl: vehicle.imageUrl ?? "",
+  transferable: vehicle.transferable,
+  driftChip: vehicle.driftChip,
+  nitro: vehicle.nitro,
+  isNew: vehicle.isNew ?? false,
+  upgrades: (vehicle.upgrades ?? []).map((upgrade) => ({
+    name: upgrade.name,
+    description: upgrade.description,
+    levels: upgrade.levels
+      .map((level) => (level.bonus ? `${level.price} | ${level.bonus}` : String(level.price)))
+      .join("\n"),
+  })),
+});
+
+/** Строки вида «382800» или «957000 | +20 км/ч» → уровни улучшения. */
+function parseLevels(text: string, upgradeName: string) {
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length === 0) throw new Error(`Улучшение «${upgradeName}»: укажите хотя бы один уровень`);
+
+  return lines.map((line) => {
+    const match = /^([\d\s_]+?)\s*(?:\|\s*(.*))?$/.exec(line);
+    const price = match ? Number(match[1].replace(/[\s_]/g, "")) : Number.NaN;
+    if (!Number.isFinite(price)) {
+      throw new Error(`Улучшение «${upgradeName}»: уровень «${line}» нужно записать как «цена» или «цена | бонус»`);
+    }
+    const bonus = match?.[2]?.trim();
+    return bonus ? { price, bonus } : { price };
+  });
+}
+
+function requiredNumber(value: string, label: string): number {
+  const number = Number(value.replace(/[\s_]/g, "").replace(",", "."));
+  if (value.trim() === "" || !Number.isFinite(number)) throw new Error(`Поле «${label}» нужно заполнить числом`);
+  return number;
+}
+
+function optionalNumber(value: string, label: string): number | undefined {
+  return value.trim() === "" ? undefined : requiredNumber(value, label);
+}
+
+function toPayload(form: FormState) {
+  const upgrades = form.upgrades.map((upgrade) => ({
+    name: upgrade.name,
+    description: upgrade.description,
+    levels: parseLevels(upgrade.levels, upgrade.name || "без названия"),
+  }));
+
+  return {
+    code: form.code,
+    name: form.name,
+    model: form.model,
+    category: form.category,
+    speed: requiredNumber(form.speed, "Скорость"),
+    tunedSpeed: requiredNumber(form.tunedSpeed, "Скорость в тюнинге"),
+    price: requiredNumber(form.price, "Гос. стоимость"),
+    scrapPrice: optionalNumber(form.scrapPrice, "Стоимость свалки"),
+    sources: form.sources
+      .split("\n")
+      .map((source) => source.trim())
+      .filter(Boolean),
+    fuel: form.fuel,
+    trunkKg: requiredNumber(form.trunkKg, "Багажник"),
+    loadTons: optionalNumber(form.loadTons, "Грузоподъёмность"),
+    transferable: form.transferable,
+    driftChip: form.driftChip,
+    nitro: form.nitro,
+    isNew: form.isNew,
+    imageUrl: form.imageUrl.trim() || undefined,
+    upgrades: upgrades.length > 0 ? upgrades : undefined,
+  };
+}
+
+function Field({
+  label,
+  hint,
+  children,
+  className,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`flex flex-col gap-1.5 ${className ?? ""}`}>
+      <Label>{label}</Label>
+      {children}
+      {hint && <p className="text-muted-foreground text-xs">{hint}</p>}
+    </div>
+  );
+}
+
+function ToggleField({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <Label className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 font-normal">
+      {label}
+      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
+    </Label>
+  );
+}
 
 type VehicleEditorProps = { mode: "create" } | { mode: "edit"; vehicle: Vehicle };
 
-/**
- * Кнопка и окно добавления или редактирования транспорта. Показывается только администраторам.
- * Слева форма по разделам, справа карточка-предпросмотр: в неё можно перетащить картинку, выбрать её по нажатию
- * или вставить через Ctrl+V.
- */
+/** Кнопка и окно добавления или редактирования транспорта. Показывается только администраторам. */
 export function VehicleEditor(props: VehicleEditorProps) {
   const router = useRouter();
   const editing = props.mode === "edit";
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<FormState>(emptyForm);
-  const [errors, setErrors] = useState<FieldErrors>({});
-  const [serverError, setServerError] = useState<string | null>(null);
+  const [form, setForm] = useState<FormState>(editing ? toForm(props.vehicle) : emptyForm);
+  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [confirmClose, setConfirmClose] = useState(false);
-  const [showLink, setShowLink] = useState(false);
-  // Пока код не правили руками, он собирается из названия и модели
-  const codeTouched = useRef(false);
-  const initialSnapshot = useRef("");
 
-  const dirty = open && snapshot(form) !== initialSnapshot.current;
-  const preview = useMemo(() => previewVehicle(form), [form]);
+  const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
 
-  const clearError = (field: string) =>
-    setErrors((current) => {
-      if (!(field in current)) return current;
-      const { [field]: _removed, ...rest } = current;
-      return rest;
-    });
-
-  const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
-    clearError(key);
-    setServerError(null);
-    setForm((prev) => {
-      const next = { ...prev, [key]: value };
-      if (!editing && !codeTouched.current && (key === "name" || key === "model")) {
-        next.code = slugify(next.name, next.model);
-        clearError("code");
-      }
-      return next;
-    });
-  };
+  const setUpgrade = (index: number, patch: Partial<UpgradeForm>) =>
+    set(
+      "upgrades",
+      form.upgrades.map((upgrade, i) => (i === index ? { ...upgrade, ...patch } : upgrade)),
+    );
 
   const handleOpenChange = (next: boolean) => {
     if (next) {
-      const initial = editing ? toForm(props.vehicle) : emptyForm();
-      initialSnapshot.current = snapshot(initial);
-      codeTouched.current = false;
-      setForm(initial);
-      setErrors({});
-      setServerError(null);
-      setShowLink(false);
-      setOpen(true);
-      return;
+      setForm(editing ? toForm(props.vehicle) : emptyForm);
+      setError(null);
     }
-    if (saving) return;
-    // Закрытие с несохранёнными правками: сначала спрашиваем
-    if (dirty) setConfirmClose(true);
-    else setOpen(false);
-  };
-
-  const focusField = (field: string) => {
-    requestAnimationFrame(() => {
-      const element = document.getElementById(fieldId(field));
-      element?.scrollIntoView({ block: "center", behavior: "smooth" });
-      element?.focus({ preventScroll: true });
-    });
+    setOpen(next);
   };
 
   const save = async () => {
-    if (saving) return;
-    setServerError(null);
-    const built = buildPayload(form, { editing });
-    if (!built.ok) {
-      setErrors(built.errors);
-      if (built.first === "imageUrl") setShowLink(true);
-      focusField(built.first);
+    setError(null);
+    let payload: ReturnType<typeof toPayload>;
+    try {
+      payload = toPayload(form);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Проверьте заполнение формы");
       return;
     }
 
@@ -165,389 +237,221 @@ export function VehicleEditor(props: VehicleEditorProps) {
       const response = await fetch(editing ? `/api/vehicles/${props.vehicle.code}` : "/api/vehicles", {
         method: editing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(built.payload),
+        body: JSON.stringify(payload),
       });
       const data = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
-        if (response.status === 409) {
-          setErrors({ code: "Такой код уже занят, измените его" });
-          focusField("code");
-        } else {
-          setServerError(data.error ?? "Не удалось сохранить");
-        }
+        setError(data.error ?? "Не удалось сохранить");
         return;
       }
       toast.success(editing ? "Изменения сохранены" : "Транспорт добавлен");
-      initialSnapshot.current = snapshot(form);
       setOpen(false);
       router.refresh();
     } catch {
-      setServerError("Нет связи с сервером, попробуйте ещё раз");
+      setError("Нет связи с сервером, попробуйте ещё раз");
     } finally {
       setSaving(false);
     }
   };
 
-  const speed = Number(form.speed);
-  const tuned = Number(form.tunedSpeed);
-  const tunedBelowBase = form.speed !== "" && form.tunedSpeed !== "" && tuned < speed;
-  const price = Number(form.price);
-  const halfPrice = Number.isFinite(price) && price > 0 ? groupDigits(String(Math.round(price / 2))) : "";
-  let saveLabel = editing ? "Сохранить" : "Добавить транспорт";
-  if (saving) saveLabel = "Сохраняем...";
-  const showLoad = form.category === "Грузовые" || form.loadTons !== "";
-
   return (
-    <>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogTrigger asChild>
-          {editing ? (
-            <Button variant="outline" size="sm">
-              <Pencil data-icon="inline-start" /> Редактировать
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        {editing ? (
+          <Button variant="outline" size="sm">
+            <Pencil data-icon="inline-start" /> Редактировать
+          </Button>
+        ) : (
+          <Button size="sm">
+            <Plus data-icon="inline-start" /> Добавить транспорт
+          </Button>
+        )}
+      </DialogTrigger>
+
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>
+            {editing ? `Редактирование: ${props.vehicle.name} ${props.vehicle.model}` : "Новый транспорт"}
+          </DialogTitle>
+          <DialogDescription>Изменения сразу появятся на сайте для всех посетителей.</DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field
+            label="Код (адрес страницы)"
+            hint={editing ? "Код нельзя изменить" : "Латиница, цифры и дефис, например genesisg90"}
+            className="sm:col-span-2"
+          >
+            <Input
+              value={form.code}
+              onChange={(e) => set("code", e.target.value)}
+              disabled={editing}
+              placeholder="genesisg90"
+            />
+          </Field>
+          <Field label="Название">
+            <Input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Superior" />
+          </Field>
+          <Field label="Модель">
+            <Input value={form.model} onChange={(e) => set("model", e.target.value)} placeholder="90G" />
+          </Field>
+          <Field label="Категория">
+            <NativeSelect
+              className="w-full"
+              value={form.category}
+              onChange={(e) => set("category", e.target.value as VehicleCategory)}
+            >
+              {vehicleCategories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
+          <Field label="Топливо">
+            <NativeSelect
+              className="w-full"
+              value={form.fuel}
+              onChange={(e) => set("fuel", e.target.value as FuelType)}
+            >
+              {fuelTypes.map((fuel) => (
+                <option key={fuel} value={fuel}>
+                  {fuel}
+                </option>
+              ))}
+            </NativeSelect>
+          </Field>
+          <Field label="Скорость, км/ч">
+            <Input inputMode="numeric" value={form.speed} onChange={(e) => set("speed", e.target.value)} />
+          </Field>
+          <Field label="Скорость в тюнинге, км/ч">
+            <Input inputMode="numeric" value={form.tunedSpeed} onChange={(e) => set("tunedSpeed", e.target.value)} />
+          </Field>
+          <Field label="Гос. стоимость, $">
+            <Input inputMode="numeric" value={form.price} onChange={(e) => set("price", e.target.value)} />
+          </Field>
+          <Field label="Стоимость свалки, $" hint="Если пусто, считается как половина гос. стоимости">
+            <Input inputMode="numeric" value={form.scrapPrice} onChange={(e) => set("scrapPrice", e.target.value)} />
+          </Field>
+          <Field label="Багажник, кг">
+            <Input inputMode="numeric" value={form.trunkKg} onChange={(e) => set("trunkKg", e.target.value)} />
+          </Field>
+          <Field label="Грузоподъёмность, т" hint="Только для грузовых">
+            <Input inputMode="decimal" value={form.loadTons} onChange={(e) => set("loadTons", e.target.value)} />
+          </Field>
+          <Field
+            label="Источники получения"
+            hint="Каждый источник с новой строки: кейс, салон, магазин"
+            className="sm:col-span-2"
+          >
+            <Textarea
+              rows={3}
+              value={form.sources}
+              onChange={(e) => set("sources", e.target.value)}
+              placeholder="Majestic Премиум"
+            />
+          </Field>
+          <Field
+            label="Картинка"
+            hint="Путь вида /images/transport/name.png или ссылка https://..."
+            className="sm:col-span-2"
+          >
+            <Input
+              value={form.imageUrl}
+              onChange={(e) => set("imageUrl", e.target.value)}
+              placeholder="/images/transport/genesis-g90.png"
+            />
+          </Field>
+          <div className="grid gap-2 sm:col-span-2 sm:grid-cols-2">
+            <ToggleField
+              label="Можно передавать"
+              checked={form.transferable}
+              onChange={(value) => set("transferable", value)}
+            />
+            <ToggleField label="Дрифт-чип" checked={form.driftChip} onChange={(value) => set("driftChip", value)} />
+            <ToggleField label="Нитро" checked={form.nitro} onChange={(value) => set("nitro", value)} />
+            <ToggleField label="Новинка" checked={form.isNew} onChange={(value) => set("isNew", value)} />
+          </div>
+        </div>
+
+        <section className="flex flex-col gap-3" aria-label="Улучшения">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="font-medium text-sm">Улучшения</h3>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => set("upgrades", [...form.upgrades, { name: "", description: "", levels: "" }])}
+            >
+              <Plus data-icon="inline-start" /> Добавить улучшение
             </Button>
-          ) : (
-            <Button size="sm">
-              <Plus data-icon="inline-start" /> Добавить транспорт
-            </Button>
-          )}
-        </DialogTrigger>
-
-        <DialogContent
-          className="max-h-[92vh] gap-5 overflow-y-auto sm:max-w-5xl"
-          onKeyDown={(event) => {
-            // Ctrl+Enter (или Cmd+Enter) сохраняет из любого поля
-            if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-              event.preventDefault();
-              void save();
-            }
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>
-              {editing ? `Редактирование: ${props.vehicle.name} ${props.vehicle.model}` : "Новый транспорт"}
-            </DialogTitle>
-            <DialogDescription>
-              Справа карточка, какой она будет в каталоге. Картинку можно перетащить прямо на неё или вставить через
-              Ctrl+V. Изменения сразу появятся на сайте для всех посетителей.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
-            <aside className="flex flex-col gap-3 lg:sticky lg:top-0 lg:order-2 lg:self-start">
-              <p className="font-medium text-muted-foreground text-xs">Предпросмотр карточки</p>
-              <VehicleCardView
-                vehicle={preview}
-                image={
-                  <VehicleImageDrop
-                    value={form.imageUrl}
-                    onChange={(url) => set("imageUrl", url)}
-                    category={form.category}
-                    alt={`${preview.name} ${preview.model}`}
-                    active={open}
-                    disabled={saving}
-                  />
-                }
-              />
-              <div className="flex flex-col gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setShowLink((value) => !value)}
-                  className="flex w-fit items-center gap-1.5 text-muted-foreground text-xs outline-none hover:text-foreground focus-visible:underline"
-                  aria-expanded={showLink}
-                >
-                  <Link2 className="size-3.5" aria-hidden="true" /> Указать ссылку на картинку
-                </button>
-                {showLink && (
-                  <Field
-                    id="imageUrl"
-                    label="Ссылка или путь"
-                    hint="Ссылка https://... или путь вида /images/transport/name.png"
-                    error={errors.imageUrl}
-                  >
-                    <Input
-                      id={fieldId("imageUrl")}
-                      value={form.imageUrl}
-                      aria-invalid={Boolean(errors.imageUrl)}
-                      onChange={(event) => set("imageUrl", event.target.value)}
-                      placeholder="https://..."
-                    />
-                  </Field>
-                )}
-              </div>
-            </aside>
-
-            <div className="flex min-w-0 flex-col gap-6 lg:order-1">
-              <Section title="Основное">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field id="name" label="Название" error={errors.name}>
-                    <Input
-                      id={fieldId("name")}
-                      value={form.name}
-                      maxLength={LIMITS.name}
-                      aria-invalid={Boolean(errors.name)}
-                      placeholder="Superior"
-                      onChange={(event) => set("name", event.target.value)}
-                    />
-                  </Field>
-                  <Field id="model" label="Модель" error={errors.model}>
-                    <Input
-                      id={fieldId("model")}
-                      value={form.model}
-                      maxLength={LIMITS.model}
-                      aria-invalid={Boolean(errors.model)}
-                      placeholder="90G"
-                      onChange={(event) => set("model", event.target.value)}
-                    />
-                  </Field>
-                </div>
-
-                <fieldset className="flex flex-col gap-1.5">
-                  <legend className="mb-1.5 font-medium text-sm">Категория</legend>
-                  <div className="flex flex-wrap gap-1.5">
-                    {vehicleCategories.map((category: VehicleCategory) => {
-                      const Icon = categoryIcons[category];
-                      return (
-                        <Chip
-                          key={category}
-                          pressed={form.category === category}
-                          onClick={() => set("category", category)}
-                        >
-                          <Icon aria-hidden="true" /> {category}
-                        </Chip>
-                      );
-                    })}
-                  </div>
-                </fieldset>
-
-                <Field
-                  id="code"
-                  label="Код (адрес страницы)"
-                  error={errors.code}
-                  hint={
-                    editing ? (
-                      "Код нельзя изменить"
-                    ) : (
-                      <>
-                        Собирается из названия и модели, можно изменить. Адрес:{" "}
-                        <span className="text-foreground">/dashboard/transport/{form.code || "…"}</span>
-                      </>
-                    )
-                  }
-                >
-                  <Input
-                    id={fieldId("code")}
-                    value={form.code}
-                    disabled={editing}
-                    maxLength={49}
-                    aria-invalid={Boolean(errors.code)}
-                    placeholder="superior-90g"
-                    onChange={(event) => {
-                      const value = event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "");
-                      // Очистили поле: код снова собирается автоматически
-                      codeTouched.current = value !== "";
-                      clearError("code");
-                      setForm((prev) => ({ ...prev, code: value }));
-                    }}
-                  />
-                </Field>
-              </Section>
-
-              <Section title="Характеристики">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field id="speed" label="Скорость, км/ч" error={errors.speed}>
-                    <Input
-                      id={fieldId("speed")}
-                      inputMode="numeric"
-                      value={form.speed}
-                      aria-invalid={Boolean(errors.speed)}
-                      onChange={(event) => set("speed", digitsOnly(event.target.value, 4))}
-                    />
-                  </Field>
-                  <Field id="tunedSpeed" label="Скорость в тюнинге, км/ч" error={errors.tunedSpeed}>
-                    <Input
-                      id={fieldId("tunedSpeed")}
-                      inputMode="numeric"
-                      value={form.tunedSpeed}
-                      aria-invalid={Boolean(errors.tunedSpeed)}
-                      onChange={(event) => set("tunedSpeed", digitsOnly(event.target.value, 4))}
-                    />
-                  </Field>
-                </div>
-                {tunedBelowBase && (
-                  <p className="flex items-center gap-1.5 text-amber-600 text-xs dark:text-amber-400">
-                    <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
-                    Скорость в тюнинге меньше обычной. Проверьте, не перепутаны ли поля.
-                  </p>
-                )}
-
-                <fieldset className="flex flex-col gap-1.5">
-                  <legend className="mb-1.5 font-medium text-sm">Топливо</legend>
-                  <div className="flex flex-wrap gap-1.5">
-                    {fuelTypes.map((fuel: FuelType) => (
-                      <Chip key={fuel} pressed={form.fuel === fuel} onClick={() => set("fuel", fuel)}>
-                        {fuel}
-                      </Chip>
-                    ))}
-                  </div>
-                </fieldset>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field id="trunkKg" label="Багажник, кг" error={errors.trunkKg}>
-                    <Input
-                      id={fieldId("trunkKg")}
-                      inputMode="numeric"
-                      value={form.trunkKg}
-                      aria-invalid={Boolean(errors.trunkKg)}
-                      onChange={(event) => set("trunkKg", digitsOnly(event.target.value, 6))}
-                    />
-                  </Field>
-                  {showLoad && (
-                    <Field id="loadTons" label="Грузоподъёмность, т" hint="Только для грузовых" error={errors.loadTons}>
-                      <Input
-                        id={fieldId("loadTons")}
-                        inputMode="decimal"
-                        value={form.loadTons}
-                        aria-invalid={Boolean(errors.loadTons)}
-                        onChange={(event) => set("loadTons", decimalOnly(event.target.value))}
-                      />
-                    </Field>
-                  )}
-                </div>
-
-                <fieldset className="flex flex-wrap gap-1.5">
-                  <legend className="sr-only">Особенности</legend>
-                  {features.map(({ key, label, icon: Icon }) => (
-                    <Chip key={key} pressed={form[key]} onClick={() => set(key, !form[key])}>
-                      <Icon aria-hidden="true" /> {label}
-                    </Chip>
-                  ))}
-                </fieldset>
-              </Section>
-
-              <Section title="Стоимость и получение">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field id="price" label="Гос. стоимость" error={errors.price}>
-                    <div className="relative">
-                      <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground text-sm">
-                        $
-                      </span>
-                      <Input
-                        id={fieldId("price")}
-                        inputMode="numeric"
-                        className="pl-6 tabular-nums"
-                        value={groupDigits(form.price)}
-                        aria-invalid={Boolean(errors.price)}
-                        onChange={(event) => set("price", digitsOnly(event.target.value, 11))}
-                      />
-                    </div>
-                  </Field>
-                  <Field
-                    id="scrapPrice"
-                    label="Стоимость свалки"
-                    hint="Если пусто, считается как половина гос. стоимости"
-                    error={errors.scrapPrice}
-                  >
-                    <div className="relative">
-                      <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground text-sm">
-                        $
-                      </span>
-                      <Input
-                        id={fieldId("scrapPrice")}
-                        inputMode="numeric"
-                        className="pl-6 tabular-nums"
-                        value={groupDigits(form.scrapPrice)}
-                        placeholder={halfPrice}
-                        aria-invalid={Boolean(errors.scrapPrice)}
-                        onChange={(event) => set("scrapPrice", digitsOnly(event.target.value, 11))}
-                      />
-                    </div>
-                  </Field>
-                </div>
-                {form.price !== "" && Number.isFinite(price) && price > 0 && (
-                  <p className="text-muted-foreground text-xs">
-                    В карточке: <span className="font-medium text-foreground">{formatPrice(price)}</span>
-                  </p>
-                )}
-
-                <Field
-                  id="sources"
-                  label="Источники получения"
-                  hint="Enter или запятая добавляют источник. Можно вставить список целиком."
-                  error={errors.sources}
-                >
-                  <TagInput
-                    id={fieldId("sources")}
-                    values={form.sources}
-                    onChange={(values) => set("sources", values)}
-                    suggestions={popularSources}
-                    placeholder="Кейс, салон, магазин..."
-                    maxItems={LIMITS.sources}
-                    maxLength={LIMITS.source}
-                    invalid={Boolean(errors.sources)}
-                  />
-                </Field>
-              </Section>
-
-              <Section
-                title="Улучшения"
-                description="У каждого улучшения свои уровни: цена установки и прирост, который он даёт."
-              >
-                <VehicleUpgradesEditor
-                  upgrades={form.upgrades}
-                  onChange={(upgrades) => set("upgrades", upgrades)}
-                  errors={errors}
-                  clearError={clearError}
-                />
-              </Section>
-            </div>
           </div>
 
-          {serverError && (
-            <p
-              role="alert"
-              className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive text-sm"
-            >
-              {serverError}
-            </p>
-          )}
-
-          <DialogFooter className="sticky bottom-0 z-10 items-center sm:justify-between">
-            <span className="hidden text-muted-foreground text-xs sm:inline">
-              <kbd className="rounded border bg-background px-1 font-sans">Ctrl</kbd>+
-              <kbd className="rounded border bg-background px-1 font-sans">Enter</kbd> — сохранить
-            </span>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row">
-              <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={saving}>
-                Отмена
-              </Button>
-              <Button onClick={save} disabled={saving}>
-                {saveLabel}
+          {form.upgrades.map((upgrade, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: у улучшений нет id, порядок задаётся списком
+            <div key={index} className="flex flex-col gap-3 rounded-lg border p-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Название">
+                  <Input
+                    value={upgrade.name}
+                    onChange={(e) => setUpgrade(index, { name: e.target.value })}
+                    placeholder="Двигатель"
+                  />
+                </Field>
+                <Field label="Описание">
+                  <Input
+                    value={upgrade.description}
+                    onChange={(e) => setUpgrade(index, { description: e.target.value })}
+                    placeholder="Увеличивает максимальную скорость"
+                  />
+                </Field>
+              </div>
+              <Field
+                label="Уровни"
+                hint="Каждый уровень с новой строки: «цена» или «цена | бонус», например 957000 | +20 км/ч"
+              >
+                <Textarea
+                  rows={4}
+                  value={upgrade.levels}
+                  onChange={(e) => setUpgrade(index, { levels: e.target.value })}
+                />
+              </Field>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-fit text-destructive"
+                onClick={() =>
+                  set(
+                    "upgrades",
+                    form.upgrades.filter((_, i) => i !== index),
+                  )
+                }
+              >
+                <Trash2 data-icon="inline-start" /> Убрать улучшение
               </Button>
             </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          ))}
+        </section>
 
-      <AlertDialog open={confirmClose} onOpenChange={setConfirmClose}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Закрыть без сохранения?</AlertDialogTitle>
-            <AlertDialogDescription>В форме есть несохранённые изменения, они пропадут.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Продолжить редактирование</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={() => {
-                setConfirmClose(false);
-                setOpen(false);
-              }}
-            >
-              Закрыть без сохранения
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+        {error && (
+          <p
+            role="alert"
+            className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+          >
+            {error}
+          </p>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
+            Отмена
+          </Button>
+          <Button onClick={save} disabled={saving}>
+            {saving ? "Сохраняем..." : "Сохранить"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -19,7 +19,6 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { createJobAction, updateJobAction } from "../_actions";
 import { JOB_LIMITS, type Job, type JobKind, jobKinds } from "../_data/jobs";
 import { slugify } from "../_data/slug";
-import { DropOverlay } from "./drop-overlay";
 import {
   draftJob,
   type EditorBlock,
@@ -33,6 +32,7 @@ import { GuideCanvas } from "./guide-canvas";
 import { GuideTemplatesDialog } from "./guide-templates-dialog";
 import { JobArticleView } from "./job-article-view";
 import { JobBlockEditor } from "./job-block-editor";
+import { DropOverlay } from "./drop-overlay";
 import { JobCoverField } from "./job-cover-field";
 import { useGuideBlocks } from "./use-guide-blocks";
 
@@ -66,17 +66,8 @@ export function JobEditorPage(props: JobEditorPageProps) {
   );
   const [view, setView] = useState<View>("edit");
   const [contentMode, setContentMode] = useState<ContentMode>("cards");
-  const {
-    blocks,
-    actions,
-    insertBlocks,
-    uploading,
-    uploadFailed,
-    dragging,
-    trackFocus,
-    templatesTarget,
-    closeTemplates,
-  } = useGuideBlocks(() => (job ? editorBlocksFromJob(job) : []), view !== "preview");
+  const { blocks, actions, insertBlocks, uploading, uploadFailed, dragging, trackFocus, templatesTarget, closeTemplates } =
+    useGuideBlocks(() => (job ? editorBlocksFromJob(job) : []), view !== "preview");
   // Пока адрес не правили руками, он строится из названия
   const [slugTouched, setSlugTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,8 +75,7 @@ export function JobEditorPage(props: JobEditorPageProps) {
 
   const dirty = snapshot(form, blocks) !== baseline;
 
-  const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
-    setForm((prev) => ({ ...prev, [key]: value }));
+  const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((prev) => ({ ...prev, [key]: value }));
 
   const altOptions = useMemo(
     () => props.allJobs.filter((item) => item.slug !== currentSlug),
@@ -178,8 +168,7 @@ export function JobEditorPage(props: JobEditorPageProps) {
             href={backHref}
             prefetch={false}
             onClick={(event) => {
-              if (dirty && !window.confirm("Есть несохранённые изменения. Выйти без сохранения?"))
-                event.preventDefault();
+              if (dirty && !window.confirm("Есть несохранённые изменения. Выйти без сохранения?")) event.preventDefault();
             }}
             className="inline-flex items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground"
           >
@@ -213,15 +202,18 @@ export function JobEditorPage(props: JobEditorPageProps) {
             {editing ? `Редактирование: ${job?.title}` : "Новая работа"}
           </h1>
           <p className="mt-1 text-muted-foreground text-sm">
-            Собирайте гайд из блоков. Картинку можно перетащить в окно или вставить через Ctrl+V — она сразу загрузится.
-            Изменения увидят все посетители раздела после сохранения.
+            Собирайте гайд из блоков. Картинку можно перетащить в окно или вставить через Ctrl+V — она сразу
+            загрузится. Изменения увидят все посетители раздела после сохранения.
           </p>
         </div>
       </header>
 
       <div className={cn("grid items-start gap-6", view === "split" ? "lg:grid-cols-2" : "grid-cols-1")}>
         {showEditor && (
-          <div className="flex min-w-0 flex-col gap-6" onFocusCapture={trackFocus}>
+          <div
+            className="flex min-w-0 flex-col gap-6"
+            onFocusCapture={trackFocus}
+          >
             <section className="flex flex-col gap-4 rounded-xl border bg-card p-4 shadow-xs" aria-label="Основное">
               <h2 className="font-semibold text-base">Основное</h2>
 
@@ -414,8 +406,7 @@ export function JobEditorPage(props: JobEditorPageProps) {
               href={backHref}
               prefetch={false}
               onClick={(event) => {
-                if (dirty && !window.confirm("Есть несохранённые изменения. Выйти без сохранения?"))
-                  event.preventDefault();
+                if (dirty && !window.confirm("Есть несохранённые изменения. Выйти без сохранения?")) event.preventDefault();
               }}
             >
               Отмена

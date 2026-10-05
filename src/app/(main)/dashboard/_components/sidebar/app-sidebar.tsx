@@ -61,11 +61,7 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <Link prefetch={false} href="/dashboard/default">
-                <RegionMarkOutline
-                  id={markId}
-                  strokeWidth={1.5}
-                  className="size-5! group-data-[collapsible=icon]:size-4!"
-                />
+                <RegionMarkOutline id={markId} strokeWidth={1.5} className="size-5! group-data-[collapsible=icon]:size-4!" />
                 <span className="font-semibold text-base">{APP_CONFIG.name}</span>
               </Link>
             </SidebarMenuButton>
