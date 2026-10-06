@@ -93,7 +93,7 @@ function ChangeBody({ change }: { change: RuleChange }) {
   if (change.type === "changed" && change.before !== undefined && change.after !== undefined) {
     const diff = diffWords(change.before, change.after);
     return (
-      <div className="grid gap-2 md:grid-cols-2">
+      <div className="grid min-w-0 gap-2 md:grid-cols-2">
         <Side label="Было" tone="before">
           <DiffText parts={diff.before} tone="before" />
         </Side>
@@ -199,11 +199,11 @@ export function ChangelogFeed({ entries }: { entries: ChangelogEntry[] }) {
           Изменений выбранного типа нет.
         </div>
       ) : (
-        <ol className="flex flex-col gap-8 border-l pl-6">
+        <ol className="flex min-w-0 flex-col gap-8 border-l pl-6">
           {days.map(([date, items]) => {
             const total = items.reduce((sum, item) => sum + item.changes.length, 0);
             return (
-              <li key={date} className="relative flex flex-col gap-3">
+              <li key={date} className="relative flex min-w-0 flex-col gap-3">
                 <span
                   className="absolute top-2 left-[calc(-1.5rem-6.5px)] size-3 rounded-full border-2 border-background bg-primary"
                   aria-hidden="true"
@@ -215,12 +215,12 @@ export function ChangelogFeed({ entries }: { entries: ChangelogEntry[] }) {
 
                 <div className="flex flex-col gap-3">
                   {items.map(({ entry, changes }, entryIndex) => (
-                    <Card key={`${entry.date}-${entry.slug}-${entryIndex}`}>
-                      <CardHeader>
-                        <CardTitle className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <Card key={`${entry.date}-${entry.slug}-${entryIndex}`} className="min-w-0">
+                      <CardHeader className="min-w-0">
+                        <CardTitle className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                           <Link
                             href={articleHref(entry.group, entry.slug)}
-                            className="inline-flex items-center gap-1.5 rounded-md outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+                            className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
                           >
                             {entry.title}
                             <ArrowUpRight className="size-4 text-muted-foreground" aria-hidden="true" />
@@ -230,9 +230,9 @@ export function ChangelogFeed({ entries }: { entries: ChangelogEntry[] }) {
                           </Badge>
                         </CardTitle>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="min-w-0">
                         {changes.length > 0 ? (
-                          <ul className="flex flex-col gap-5">
+                          <ul className="flex min-w-0 flex-col gap-5">
                             {changes.map((change, changeIndex) => (
                               <ChangeItem
                                 key={`${change.type}-${change.number}-${changeIndex}`}
