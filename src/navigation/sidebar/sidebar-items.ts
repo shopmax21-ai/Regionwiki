@@ -1,7 +1,6 @@
 import {
   BookOpen,
   BookText,
-  Brain,
   BriefcaseBusiness,
   Calendar,
   CarFront,
@@ -11,7 +10,6 @@ import {
   Gavel,
   GraduationCap,
   HardHat,
-  History,
   House,
   Kanban,
   LayoutDashboard,
@@ -27,7 +25,6 @@ import {
   SquareArrowUpRight,
   UserRound,
   Users,
-  UsersRound,
 } from "lucide-react";
 
 import { isPathVisible, type Viewer } from "@/lib/auth/protected-paths";
@@ -251,12 +248,6 @@ function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
           icon: UserRound,
         },
         {
-          id: "staff",
-          title: "Администрация",
-          url: "/dashboard/staff",
-          icon: UsersRound,
-        },
-        {
           id: "access",
           title: "Заявки на доступ",
           url: "/dashboard/access",
@@ -274,26 +265,12 @@ function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
           url: "/dashboard/roles",
           icon: Lock,
         },
-        {
-          id: "audit",
-          title: "Аудит действий",
-          url: "/dashboard/audit",
-          icon: History,
-        },
       ],
     },
     {
       id: 7,
       label: "Разное",
       items: [
-        {
-          id: "ai",
-          title: "AI Помощник",
-          url: "/dashboard/ai-helper",
-          icon: Brain,
-          badge: "soon",
-          disabled: true,
-        },
         {
           id: "others",
           title: "Другое",
