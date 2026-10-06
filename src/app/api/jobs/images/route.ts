@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { getAdmin } from "@/lib/auth/admin";
+import { isSameOrigin } from "@/lib/auth/request";
 import { IMAGE_MAX_BYTES, ImageStoreError, saveImage } from "@/lib/jobs/images";
 
 export const dynamic = "force-dynamic";
@@ -19,8 +20,7 @@ export async function POST(request: NextRequest) {
   if (!admin) return NextResponse.json({ error: "Недостаточно прав для загрузки картинок" }, { status: 403 });
 
   // Запрос должен прийти с этого же сайта, а не со страницы чужого сайта
-  const origin = request.headers.get("origin");
-  if (origin && origin !== request.nextUrl.origin) {
+  if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "Запрос с другого сайта отклонён" }, { status: 403 });
   }
 
