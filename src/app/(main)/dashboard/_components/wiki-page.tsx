@@ -431,7 +431,7 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
                     <Link
                       href={article.href}
                       prefetch={false}
-                      className="group flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/60"
+                      className="group flex min-w-0 items-center gap-3 overflow-hidden rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/60"
                     >
                       {article.tag && (
                         <span className="flex h-8 min-w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 px-2 font-bold text-primary text-xs">
@@ -444,7 +444,9 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
                           {article.group} · {plural(article.ruleCount, ["пункт", "пункта", "пунктов"])}
                         </span>
                       </span>
-                      <span className="shrink-0 text-muted-foreground text-xs tabular-nums">{article.updatedAt}</span>
+                      <span className="max-w-20 shrink-0 truncate text-muted-foreground text-xs tabular-nums sm:max-w-none">
+                        {article.updatedAt}
+                      </span>
                       <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-foreground" />
                     </Link>
                   </li>
