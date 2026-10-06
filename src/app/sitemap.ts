@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 
-const SITE_URL = "https://studio-admin.arhamkhnz.com";
+import { APP_CONFIG } from "@/config/app-config";
+
+const SITE_URL = APP_CONFIG.siteUrl;
 
 const PUBLIC_ROUTES = [
   "/",

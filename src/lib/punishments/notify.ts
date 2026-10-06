@@ -3,6 +3,8 @@ import { getGroupPermissions, listAdmins, listUserOverrides } from "@/lib/auth/d
 import { effectivePermissions } from "@/lib/auth/groups";
 import { sendMessage } from "@/lib/auth/telegram";
 
+import { durationText, kindText, type MuteChannel, type PunishmentKind } from "./types";
+
 const escapeHtml = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 /**
@@ -40,7 +42,10 @@ export type NewRequestInfo = {
   requesterId: string;
   requesterName: string;
   staticId: string;
-  minutes: number;
+  kind: PunishmentKind;
+  muteChannel: MuteChannel | null;
+  duration: number;
+  forum: string;
   rules: string[];
   evidenceCount: number;
 };
@@ -52,8 +57,10 @@ export function newRequestText(info: NewRequestInfo): string {
     "",
     `👤 Хелпер: ${escapeHtml(info.requesterName)}`,
     `🆔 Статик: <code>${escapeHtml(info.staticId)}</code>`,
-    `⏱ Время: ${info.minutes} мин`,
+    `🔨 Наказание: ${escapeHtml(kindText(info))}`,
+    `⏱ Срок: ${escapeHtml(durationText(info))}`,
     `📜 Пункты: ${info.rules.map(escapeHtml).join(", ")}`,
+    ...(info.forum ? [`💬 Жалоба: ${escapeHtml(info.forum)}`] : []),
     `📎 Доказательства: ${evidence}`,
     "",
     "Откройте раздел «Рассмотрение наказаний» на сайте и возьмите заявку в работу. Её увидит только тот, кто возьмёт.",

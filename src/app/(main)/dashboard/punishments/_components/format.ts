@@ -1,3 +1,5 @@
+import { isDaysKind, type PunishmentRequest } from "@/lib/punishments/types";
+
 const MSK = "Europe/Moscow";
 const dateTime = new Intl.DateTimeFormat("ru-RU", {
   day: "2-digit",
@@ -27,3 +29,7 @@ export const minutesText = (minutes: number) => {
   const m = minutes % 60;
   return m === 0 ? `${minutes} мин (${h} ч)` : `${minutes} мин (${h} ч ${m} мин)`;
 };
+
+/** Срок наказания с единицей: минуты (с часами) для деморгана и мута, дни для бана и хардбана. */
+export const durationLabel = (request: Pick<PunishmentRequest, "kind" | "duration">) =>
+  isDaysKind(request.kind) ? `${request.duration} дн.` : minutesText(request.duration);

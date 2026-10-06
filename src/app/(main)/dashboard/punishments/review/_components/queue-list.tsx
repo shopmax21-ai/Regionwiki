@@ -11,10 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { QueueItem } from "@/lib/punishments/types";
+import { kindText, type QueueItem } from "@/lib/punishments/types";
 
 import { claimRequestAction } from "../../_actions";
-import { ago, minutesText } from "../../_components/format";
+import { ago, durationLabel } from "../../_components/format";
 import { RuleChips } from "../../_components/status-badge";
 
 /**
@@ -54,13 +54,14 @@ export function QueueList({ items, now }: { items: QueueItem[]; now: number }) {
         <p className="px-4 py-8 text-center text-muted-foreground text-sm">Новых заявок нет.</p>
       ) : (
         <div className="overflow-x-auto">
-          <Table className="min-w-[680px]">
+          <Table className="min-w-[780px]">
             <TableHeader>
               <TableRow>
                 <TableHead className="pl-4">№</TableHead>
                 <TableHead>Хелпер</TableHead>
                 <TableHead>Статик</TableHead>
-                <TableHead>Время</TableHead>
+                <TableHead>Наказание</TableHead>
+                <TableHead>Срок</TableHead>
                 <TableHead>Пункты</TableHead>
                 <TableHead>Подана</TableHead>
                 <TableHead className="pr-4 text-right" />
@@ -72,10 +73,12 @@ export function QueueList({ items, now }: { items: QueueItem[]; now: number }) {
                   <TableCell className="pl-4 text-muted-foreground tabular-nums">{item.number}</TableCell>
                   <TableCell className="max-w-40 truncate">{item.requesterName}</TableCell>
                   <TableCell className="font-medium tabular-nums">{item.staticId}</TableCell>
-                  <TableCell className="whitespace-nowrap">{minutesText(item.minutes)}</TableCell>
+                  <TableCell className="whitespace-nowrap">{kindText(item)}</TableCell>
+                  <TableCell className="whitespace-nowrap">{durationLabel(item)}</TableCell>
                   <TableCell>
                     <div className="flex flex-col items-start gap-1">
                       <RuleChips rules={item.rules} />
+                      {item.forum && <span className="text-muted-foreground text-xs">Жалоба: {item.forum}</span>}
                       {item.evidenceCount > 0 ? (
                         <Badge variant="secondary">
                           <Paperclip data-icon="inline-start" />С доказательствами

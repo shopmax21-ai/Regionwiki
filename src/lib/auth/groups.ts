@@ -46,6 +46,8 @@ export type Permission =
   | "access.decide"
   | "groups.assign"
   | "transport.edit"
+  | "business.edit"
+  | "realty.edit"
   | "map.edit"
   | "punishments.request"
   | "punishments.review"
@@ -92,6 +94,18 @@ export const permissionDefs: readonly PermissionDef[] = [
     key: "transport.edit",
     label: "Редактирование транспорта",
     description: "Добавлять транспорт и менять его характеристики.",
+    category: "Контент",
+  },
+  {
+    key: "business.edit",
+    label: "Редактирование бизнесов",
+    description: "Добавлять, изменять и удалять бизнесы.",
+    category: "Контент",
+  },
+  {
+    key: "realty.edit",
+    label: "Редактирование недвижимости",
+    description: "Добавлять, изменять и удалять объекты недвижимости.",
     category: "Контент",
   },
   {

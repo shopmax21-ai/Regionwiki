@@ -11,21 +11,41 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { type EvidenceItem, PUNISHMENT_LIMITS as L } from "@/lib/punishments/types";
+import {
+  type EvidenceItem,
+  isDaysKind,
+  KIND_LABELS,
+  PUNISHMENT_LIMITS as L,
+  MUTE_CHANNEL_LABELS,
+  MUTE_CHANNELS,
+  type MuteChannel,
+  PUNISHMENT_KINDS,
+  type PunishmentKind,
+} from "@/lib/punishments/types";
 
 import { createRequestAction } from "../_actions";
 import { EvidenceField } from "./evidence-field";
 import { RulePicker } from "./rule-picker";
 
 const QUICK_MINUTES = [15, 30, 60, 120, 180, 300];
+const QUICK_DAYS = [1, 3, 7, 14, 30, 60];
 
-type Errors = Partial<Record<"staticId" | "minutes" | "rules", string>>;
+const PILL =
+  "rounded-full border px-2.5 py-0.5 text-xs outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring aria-pressed:border-primary aria-pressed:bg-primary/10";
 
-/** Форма заявки на наказание для хелпера: статик, время, пункты правил, доказательства (необязательно). */
+type Errors = Partial<Record<"staticId" | "duration" | "rules" | "forum", string>>;
+
+/**
+ * Форма заявки на наказание для хелпера: вид наказания (деморган, мут, бан, хардбан), статик, срок (минуты или дни),
+ * пункты правил, жалоба на форуме и доказательства (необязательно).
+ */
 export function RequestForm() {
   const router = useRouter();
   const [staticId, setStaticId] = useState("");
-  const [minutes, setMinutes] = useState("");
+  const [kind, setKind] = useState<PunishmentKind>("jail");
+  const [muteChannel, setMuteChannel] = useState<MuteChannel>("chat");
+  const [duration, setDuration] = useState("");
+  const [forum, setForum] = useState("");
   const [rules, setRules] = useState<string[]>([]);
   const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
   const [errors, setErrors] = useState<Errors>({});
@@ -34,12 +54,25 @@ export function RequestForm() {
 
   const clear = (key: keyof Errors) => setErrors((current) => ({ ...current, [key]: undefined }));
 
+  const days = isDaysKind(kind);
+  const unit = days ? "дней" : "минут";
+  const min = days ? L.minDays : L.minMinutes;
+  const max = days ? L.maxDays : L.maxMinutes;
+
+  const changeKind = (value: PunishmentKind) => {
+    // Минуты и дни несравнимы: при смене единицы срок вводится заново
+    if (isDaysKind(value) !== days) setDuration("");
+    clear("duration");
+    setKind(value);
+  };
+
   const submit = () => {
     const next: Errors = {};
     if (staticId === "") next.staticId = "Введите статик игрока";
-    const time = Number(minutes);
-    if (minutes === "") next.minutes = "Укажите время наказания";
-    else if (time < L.minMinutes || time > L.maxMinutes) next.minutes = `От ${L.minMinutes} до ${L.maxMinutes} мин`;
+    const time = Number(duration);
+    if (duration === "") next.duration = "Укажите срок наказания";
+    else if (time < min || time > max) next.duration = `От ${min} до ${max} ${days ? "дн." : "мин"}`;
+    if (forum.trim().length > L.forumMax) next.forum = `Не длиннее ${L.forumMax} символов`;
     if (rules.length === 0) next.rules = "Выберите хотя бы один пункт правил";
     setErrors(next);
     setServerError(null);
@@ -47,14 +80,23 @@ export function RequestForm() {
 
     startTransition(async () => {
       try {
-        const result = await createRequestAction({ staticId, minutes: time, rules, evidence });
+        const result = await createRequestAction({
+          staticId,
+          kind,
+          muteChannel: kind === "mute" ? muteChannel : null,
+          duration: time,
+          forum,
+          rules,
+          evidence,
+        });
         if (!result.ok) {
           setServerError(result.error);
           return;
         }
         toast.success("Заявка отправлена. Администраторы получили уведомление.");
         setStaticId("");
-        setMinutes("");
+        setDuration("");
+        setForum("");
         setRules([]);
         setEvidence([]);
         router.refresh();
@@ -73,6 +115,41 @@ export function RequestForm() {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
+        <div className="flex flex-col gap-1.5">
+          <Label>Наказание</Label>
+          <div className="flex flex-wrap gap-1.5">
+            {PUNISHMENT_KINDS.map((value) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={kind === value}
+                disabled={pending}
+                onClick={() => changeKind(value)}
+                className={PILL}
+              >
+                {KIND_LABELS[value]}
+              </button>
+            ))}
+          </div>
+          {kind === "mute" && (
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              <span className="text-muted-foreground text-xs">Тип мута:</span>
+              {MUTE_CHANNELS.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={muteChannel === value}
+                  disabled={pending}
+                  onClick={() => setMuteChannel(value)}
+                  className={PILL}
+                >
+                  {MUTE_CHANNEL_LABELS[value]} ({value})
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="pun-static">Статик игрока</Label>
           <Input
@@ -95,39 +172,39 @@ export function RequestForm() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="pun-minutes">Время наказания, минут</Label>
+          <Label htmlFor="pun-duration">Срок наказания, {unit}</Label>
           <Input
-            id="pun-minutes"
+            id="pun-duration"
             inputMode="numeric"
-            value={minutes}
+            value={duration}
             disabled={pending}
-            aria-invalid={Boolean(errors.minutes)}
-            placeholder="60"
+            aria-invalid={Boolean(errors.duration)}
+            placeholder={days ? "7" : "60"}
             onChange={(event) => {
-              clear("minutes");
-              setMinutes(event.target.value.replace(/\D/g, "").slice(0, 5));
+              clear("duration");
+              setDuration(event.target.value.replace(/\D/g, "").slice(0, days ? 4 : 5));
             }}
           />
           <div className="flex flex-wrap gap-1.5">
-            {QUICK_MINUTES.map((value) => (
+            {(days ? QUICK_DAYS : QUICK_MINUTES).map((value) => (
               <button
                 key={value}
                 type="button"
                 disabled={pending}
-                aria-pressed={minutes === String(value)}
+                aria-pressed={duration === String(value)}
                 onClick={() => {
-                  clear("minutes");
-                  setMinutes(String(value));
+                  clear("duration");
+                  setDuration(String(value));
                 }}
-                className="rounded-full border px-2.5 py-0.5 text-xs outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring aria-pressed:border-primary aria-pressed:bg-primary/10"
+                className={PILL}
               >
                 {value}
               </button>
             ))}
           </div>
-          {errors.minutes && (
+          {errors.duration && (
             <p role="alert" className="text-destructive text-xs">
-              {errors.minutes}
+              {errors.duration}
             </p>
           )}
         </div>
@@ -146,6 +223,31 @@ export function RequestForm() {
           {errors.rules && (
             <p role="alert" className="text-destructive text-xs">
               {errors.rules}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="pun-forum">Жалоба на форуме</Label>
+          <Input
+            id="pun-forum"
+            value={forum}
+            disabled={pending}
+            maxLength={L.forumMax}
+            aria-invalid={Boolean(errors.forum)}
+            placeholder="Garik-0018"
+            autoComplete="off"
+            onChange={(event) => {
+              clear("forum");
+              setForum(event.target.value.replace(/[\r\n]/g, ""));
+            }}
+          />
+          <p className="text-muted-foreground text-xs">
+            Необязательно. Название жалобы добавится в конец команды, администратор сможет его поправить.
+          </p>
+          {errors.forum && (
+            <p role="alert" className="text-destructive text-xs">
+              {errors.forum}
             </p>
           )}
         </div>

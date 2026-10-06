@@ -1,5 +1,5 @@
 import {
-  businesses,
+  type Business,
   businessTitle,
   formatPrice as formatBusinessPrice,
 } from "@/app/(main)/dashboard/business/_data/businesses";
@@ -7,7 +7,7 @@ import { type Job, jobKinds, jobText } from "@/app/(main)/dashboard/jobs/_data/j
 import type { MapPlace } from "@/app/(main)/dashboard/map/_components/map-data";
 import {
   formatPrice as formatRealtyPrice,
-  realties,
+  type Realty,
   realtyTitle,
 } from "@/app/(main)/dashboard/real-estate/_data/realties";
 import { terms } from "@/app/(main)/dashboard/rp-terms/_data/terms";
@@ -19,7 +19,9 @@ import {
   vehicleTitle,
 } from "@/app/(main)/dashboard/transport/_data/vehicles";
 import { isPathVisible } from "@/lib/auth/protected-paths";
+import { getBusinessesVersion, listBusinesses } from "@/lib/businesses/store";
 import { getJobsVersion, listJobs } from "@/lib/jobs/store";
+import { getRealtiesVersion, listRealties } from "@/lib/realties/store";
 import { getRulesVersion } from "@/lib/rules/store";
 import { getMapPlacesVersion, listMapPlaces } from "@/lib/map/store";
 import { getVehiclesVersion, listVehicles } from "@/lib/vehicles/store";
@@ -161,7 +163,7 @@ function buildVehicles(vehicles: Vehicle[]): IndexEntry[] {
   );
 }
 
-function buildBusinesses(): IndexEntry[] {
+function buildBusinesses(businesses: Business[]): IndexEntry[] {
   return businesses.map((business) => {
     const title = businessTitle(business);
     return entry(
@@ -177,7 +179,7 @@ function buildBusinesses(): IndexEntry[] {
   });
 }
 
-function buildRealties(): IndexEntry[] {
+function buildRealties(realties: Realty[]): IndexEntry[] {
   return realties.map((realty) => {
     const title = realtyTitle(realty);
     return entry(
@@ -222,6 +224,8 @@ let jobCache: { version: number; at: number; entries: IndexEntry[] } | null = nu
 let rulesCache: { version: string; entries: IndexEntry[] } | null = null;
 let vehicleCache: { version: number; at: number; entries: IndexEntry[] } | null = null;
 let placeCache: { version: number; at: number; entries: IndexEntry[] } | null = null;
+let businessCache: { version: number; at: number; entries: IndexEntry[] } | null = null;
+let realtyCache: { version: number; at: number; entries: IndexEntry[] } | null = null;
 
 const VEHICLE_CACHE_MS = 60_000;
 
@@ -243,6 +247,27 @@ async function getVehicleEntries(): Promise<IndexEntry[]> {
   const { vehicles } = await listVehicles();
   vehicleCache = { version, at: Date.now(), entries: buildVehicles(vehicles) };
   return vehicleCache.entries;
+}
+
+// Бизнесы и недвижимость тоже лежат в базе и меняются администрацией: индекс обновляется после любой записи и раз в минуту.
+async function getBusinessEntries(): Promise<IndexEntry[]> {
+  const version = getBusinessesVersion();
+  if (businessCache && businessCache.version === version && Date.now() - businessCache.at < VEHICLE_CACHE_MS) {
+    return businessCache.entries;
+  }
+  const { businesses } = await listBusinesses();
+  businessCache = { version, at: Date.now(), entries: buildBusinesses(businesses) };
+  return businessCache.entries;
+}
+
+async function getRealtyEntries(): Promise<IndexEntry[]> {
+  const version = getRealtiesVersion();
+  if (realtyCache && realtyCache.version === version && Date.now() - realtyCache.at < VEHICLE_CACHE_MS) {
+    return realtyCache.entries;
+  }
+  const { realties } = await listRealties();
+  realtyCache = { version, at: Date.now(), entries: buildRealties(realties) };
+  return realtyCache.entries;
 }
 
 // Метки карты лежат в базе и меняются администрацией, поэтому их записи тоже обновляются отдельно.
@@ -267,7 +292,7 @@ async function getRuleEntries(): Promise<IndexEntry[]> {
 async function getIndex(): Promise<IndexEntry[]> {
   cache ??= {
     sections: buildSections(),
-    after: [...buildBusinesses(), ...buildRealties(), ...buildTerms()],
+    after: buildTerms(),
   };
   return [
     ...cache.sections,
@@ -275,6 +300,8 @@ async function getIndex(): Promise<IndexEntry[]> {
     ...(await getJobEntries()),
     ...(await getVehicleEntries()),
     ...(await getPlaceEntries()),
+    ...(await getBusinessEntries()),
+    ...(await getRealtyEntries()),
     ...cache.after,
   ];
 }

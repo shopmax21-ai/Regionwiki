@@ -24,7 +24,38 @@ export type Business = {
   price: number;
   /** Путь к фото: локальный (/images/business/...) или внешний URL */
   imageUrl?: string;
+  /** Где бизнес находится на карте штата (игровые координаты, как у меток карты) */
+  location?: { x: number; y: number };
 };
+
+/** Короткие латинские имена типов: из них и номера собирается код бизнеса для адресов API («shop-5»). */
+export const categorySlugs: Record<BusinessCategory, string> = {
+  "Магазин 24/7": "shop",
+  Заправка: "gas",
+  Банкомат: "atm",
+  "Оружейный магазин": "gun",
+  "Магазин одежды": "clothes",
+  Автосалон: "dealer",
+  "Тату-салон": "tattoo",
+  "Тюнинг салон": "tuning",
+  Барбершоп: "barber",
+  Автомойка: "wash",
+  Автомастерские: "garage",
+};
+
+export const businessCode = (business: Pick<Business, "category" | "id">) =>
+  `${categorySlugs[business.category]}-${business.id}`;
+
+/** Ссылка на карту штата с этим местом: карта откроется уже приближенной, с меткой. */
+export function businessMapHref(business: Business): string | null {
+  if (!business.location) return null;
+  const params = new URLSearchParams({
+    x: String(business.location.x),
+    y: String(business.location.y),
+    name: businessTitle(business),
+  });
+  return `/dashboard/map?${params.toString()}`;
+}
 
 export const businessTitle = (business: Business) => `${business.category} #${business.id}`;
 

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Pencil, Plus, Trash2, Wand2, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { ruleGroups } from "@/app/(main)/dashboard/rules/_components/rules-meta";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -50,6 +51,8 @@ type FormState = {
   questions: QuestionForm[];
   questionCount: string;
   groups: RuleGroupKey[];
+  /** Отдельные разделы ОП (адреса статей); работают, когда ОП целиком не выбрано */
+  articles: string[];
 };
 
 let keySeq = 0;
@@ -74,6 +77,7 @@ const emptyForm = (): FormState => ({
   questions: [emptyQuestion()],
   questionCount: "10",
   groups: [...RULE_GROUP_KEYS],
+  articles: [],
 });
 
 const formFromTest = (test: AcademyTest): FormState => ({
@@ -96,6 +100,7 @@ const formFromTest = (test: AcademyTest): FormState => ({
       : [emptyQuestion()],
   questionCount: String(test.rules?.questionCount ?? 10),
   groups: test.rules?.groups ?? [...RULE_GROUP_KEYS],
+  articles: test.rules?.articles ?? [],
 });
 
 /** Куда сдвигается индекс правильного ответа после удаления варианта removed. */
@@ -127,7 +132,10 @@ function buildPayload(form: FormState): Built {
   if (form.kind === "rules") {
     const questionCount = toInt(form.questionCount);
     if (Number.isNaN(questionCount)) return { ok: false, error: "Укажите количество вопросов" };
-    return { ok: true, payload: { ...common, kind: "rules", rules: { questionCount, groups: form.groups } } };
+    return {
+      ok: true,
+      payload: { ...common, kind: "rules", rules: { questionCount, groups: form.groups, articles: form.articles } },
+    };
   }
 
   const questions: { text: string; answers: string[]; correct: number; explanation: string }[] = [];
@@ -181,6 +189,12 @@ export function TestEditor(props: TestEditorProps) {
 
   const toggleGroup = (group: RuleGroupKey, checked: boolean) =>
     set("groups", checked ? [...new Set([...form.groups, group])] : form.groups.filter((item) => item !== group));
+
+  const toggleArticle = (slug: string, checked: boolean) =>
+    set("articles", checked ? [...new Set([...form.articles, slug])] : form.articles.filter((item) => item !== slug));
+
+  // Когда ОП выбрано целиком, отдельные разделы уже входят в него
+  const generalWhole = form.groups.includes("general");
 
   const submit = () => {
     const built = buildPayload(form);
@@ -365,6 +379,27 @@ export function TestEditor(props: TestEditorProps) {
                   {RULE_GROUP_LABELS[group]}
                 </Label>
               ))}
+              <div className="flex flex-col gap-2 rounded-lg border border-dashed p-3">
+                <span className="font-medium text-sm">Отдельные разделы ОП</span>
+                <span className="text-muted-foreground text-xs">
+                  Можно выбрать статьи вместо «Основных правил» целиком.
+                </span>
+                {ruleGroups.general.articles.map((article) => (
+                  <Label
+                    key={article.slug}
+                    htmlFor={id(`article-${article.slug}`)}
+                    className="flex items-start gap-2 font-normal text-sm"
+                  >
+                    <Checkbox
+                      id={id(`article-${article.slug}`)}
+                      checked={form.articles.includes(article.slug)}
+                      disabled={generalWhole}
+                      onCheckedChange={(checked) => toggleArticle(article.slug, checked === true)}
+                    />
+                    <span>{article.title}</span>
+                  </Label>
+                ))}
+              </div>
             </div>
             <p className="text-muted-foreground text-xs leading-5">
               Вопросы про наказания, разделы и принадлежность пунктов к статьям собираются из актуального текста правил,

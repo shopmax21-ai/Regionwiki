@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { Users, Warehouse } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -5,10 +7,19 @@ import { Card } from "@/components/ui/card";
 import { formatPrice, type Realty, realtyTitle } from "../_data/realties";
 import { RealtyImage } from "./realty-image";
 
-export function RealtyCard({ realty }: { realty: Realty }) {
+type RealtyCardProps = {
+  realty: Realty;
+  /** Свой блок вместо фото: в редакторе сюда ставится поле загрузки картинки */
+  image?: ReactNode;
+  /** Кнопки редактирования и удаления: показываются в углу фото */
+  actions?: ReactNode;
+};
+
+export function RealtyCard({ realty, image, actions }: RealtyCardProps) {
   return (
-    <Card className="group/realty h-full gap-0 py-0 transition-shadow hover:ring-primary/50">
-      <RealtyImage realty={realty} />
+    <Card className="group/realty relative h-full gap-0 py-0 transition-shadow hover:ring-primary/50">
+      {image ?? <RealtyImage realty={realty} />}
+      {actions && <div className="absolute top-2 right-2 z-10 flex gap-1">{actions}</div>}
 
       <div className="flex items-center justify-between gap-3 px-4 py-3">
         <h2 className="truncate font-semibold tracking-tight">{realtyTitle(realty)}</h2>

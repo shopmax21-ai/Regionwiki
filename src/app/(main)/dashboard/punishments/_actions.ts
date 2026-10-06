@@ -15,9 +15,10 @@ import {
   PunishmentStoreError,
   rejectRequest,
   releaseRequest,
+  setForum,
 } from "@/lib/punishments/store";
 import type { RulePointHit } from "@/lib/punishments/types";
-import { noteSchema, validateRequest } from "@/lib/punishments/validate";
+import { normalizeForum, noteSchema, validateRequest } from "@/lib/punishments/validate";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -68,7 +69,10 @@ export async function createRequestAction(input: unknown): Promise<ActionResult>
           requesterId: helper.id,
           requesterName: helper.name,
           staticId: result.value.staticId,
-          minutes: result.value.minutes,
+          kind: result.value.kind,
+          muteChannel: result.value.muteChannel,
+          duration: result.value.duration,
+          forum: result.value.forum,
           rules: result.value.rules,
           evidenceCount: result.value.evidence.length,
         });
@@ -151,6 +155,22 @@ export async function rejectRequestAction(id: string, note: unknown): Promise<Ac
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Некорректная причина" };
   try {
     await rejectRequest(id, admin, parsed.data);
+  } catch (error) {
+    return failure(error);
+  }
+  refresh();
+  return { ok: true };
+}
+
+/** Администратор указывает или меняет жалобу на форуме: она дописывается в конец команды. Пустая строка убирает её. */
+export async function setForumAction(id: string, forum: unknown): Promise<ActionResult> {
+  const admin = await reviewer();
+  if (!admin) return NO_ACCESS;
+  if (!validId(id)) return UNKNOWN;
+  const parsed = normalizeForum(forum);
+  if (!parsed.ok) return parsed;
+  try {
+    await setForum(id, admin, parsed.value);
   } catch (error) {
     return failure(error);
   }

@@ -69,7 +69,7 @@ export const PREFERENCE_REGISTRY = {
 
   font: definePreference({
     values: fontKeys,
-    defaultValue: "geist",
+    defaultValue: "roboto",
     persistence: "client-cookie",
     attribute: "data-font",
   }),
@@ -90,7 +90,7 @@ export const PREFERENCE_REGISTRY = {
 
   sidebar_variant: defineSSRPreference({
     values: SIDEBAR_VARIANT_VALUES,
-    defaultValue: "sidebar",
+    defaultValue: "floating",
     persistence: "client-cookie",
     attribute: "data-sidebar-variant",
   }),

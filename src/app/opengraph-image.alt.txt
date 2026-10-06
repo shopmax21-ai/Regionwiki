@@ -1,1 +1,1 @@
-Studio Admin open source admin dashboard with shadcn/ui
+Region WIKI: база знаний для игроков проекта Region
