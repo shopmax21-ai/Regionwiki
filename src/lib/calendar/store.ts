@@ -1,3 +1,5 @@
+import { getPeopleSafe } from "@/lib/auth/db";
+import { personFromName } from "@/lib/auth/person";
 import { getPool } from "@/lib/db/pool";
 
 import { type CalendarEvent, type ConflictInfo, REMINDER_LEAD_MINUTES } from "./types";
@@ -97,9 +99,16 @@ const toEvent = (row: EventRow): CalendarEvent => ({
   endsAt: new Date(row.ends_at).toISOString(),
   ownerId: row.owner_id,
   ownerName: row.owner_name,
+  owner: personFromName(row.owner_name, row.owner_id),
   notify: row.notify,
   reminded: row.reminder_sent_at !== null,
 });
+
+/** Подставляет актуальные Никнейм, Statik ID и роль организаторов одним запросом. */
+async function withOwners<T extends { owner: CalendarEvent["owner"] }>(events: T[]): Promise<T[]> {
+  const people = await getPeopleSafe(events.map((event) => event.owner.id));
+  return events.map((event) => ({ ...event, owner: people.get(event.owner.id) ?? event.owner }));
+}
 
 /**
  * Мероприятия для календаря: идущие сейчас, будущие и закончившиеся не раньше чем daysBack дней назад.
@@ -111,13 +120,13 @@ export const listEvents = (daysBack = 60) =>
       `SELECT ${COLUMNS} FROM calendar_events WHERE ends_at > now() - ($1 * interval '1 day') ORDER BY starts_at ASC`,
       [daysBack],
     );
-    return rows.map(toEvent);
+    return withOwners(rows.map(toEvent));
   });
 
 export const getEvent = (id: string) =>
   run(async () => {
     const { rows } = await getPool().query<EventRow>(`SELECT ${COLUMNS} FROM calendar_events WHERE id = $1`, [id]);
-    return rows[0] ? toEvent(rows[0]) : null;
+    return rows[0] ? (await withOwners([toEvent(rows[0])]))[0] : null;
   });
 
 /** Мероприятия других (и своих) администраторов, пересекающиеся с промежутком. excludeId нужен при правке. */
@@ -129,16 +138,15 @@ export const findConflicts = (startsAt: Date, endsAt: Date, excludeId?: string) 
        ORDER BY starts_at ASC LIMIT 10`,
       [startsAt, endsAt, excludeId ?? null],
     );
-    return rows.map((row) => {
-      const event = toEvent(row);
-      return {
-        id: event.id,
-        title: event.title,
-        startsAt: event.startsAt,
-        endsAt: event.endsAt,
-        ownerName: event.ownerName,
-      };
-    });
+    const events = await withOwners(rows.map(toEvent));
+    return events.map((event) => ({
+      id: event.id,
+      title: event.title,
+      startsAt: event.startsAt,
+      endsAt: event.endsAt,
+      ownerName: event.ownerName,
+      owner: event.owner,
+    }));
   });
 
 export const createEvent = (input: EventInput, owner: { id: string; name: string }) =>

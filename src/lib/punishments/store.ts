@@ -1,5 +1,7 @@
 import type { PoolClient } from "pg";
 
+import { getPeopleSafe } from "@/lib/auth/db";
+import { type Person, personFromName } from "@/lib/auth/person";
 import { getPool } from "@/lib/db/pool";
 
 import {
@@ -162,9 +164,11 @@ const toRequest = (row: Row): PunishmentRequest => ({
   evidence: Array.isArray(row.evidence) ? row.evidence : [],
   requesterId: row.requester_id,
   requesterName: row.requester_name,
+  requester: personFromName(row.requester_name, row.requester_id),
   status: row.status,
   assigneeId: row.assignee_id,
   assigneeName: row.assignee_name,
+  assignee: row.assignee_id && row.assignee_name ? personFromName(row.assignee_name, row.assignee_id) : null,
   claimedAt: iso(row.claimed_at),
   decisionNote: row.decision_note,
   copiedAt: iso(row.copied_at),
@@ -175,6 +179,20 @@ const toRequest = (row: Row): PunishmentRequest => ({
 const COLUMNS =
   "id, number, static_id, minutes, kind, mute_channel, forum, rules, evidence, requester_id, requester_name, status, assignee_id, assignee_name, claimed_at, decision_note, copied_at, issued_at, created_at";
 
+/**
+ * Заменяет сохранённые на момент заявки имена актуальными данными: Никнейм, Statik ID и роль берутся из профилей,
+ * поэтому правка профиля сразу видна и в старых заявках. Одним запросом на весь список.
+ */
+async function withPeople<T extends { requester: Person; assignee: Person | null }>(requests: T[]): Promise<T[]> {
+  const ids = requests.flatMap((request) => [request.requester.id, request.assignee?.id ?? ""]);
+  const people = await getPeopleSafe(ids);
+  return requests.map((request) => ({
+    ...request,
+    requester: people.get(request.requester.id) ?? request.requester,
+    assignee: request.assignee ? (people.get(request.assignee.id) ?? request.assignee) : null,
+  }));
+}
+
 /** Свои заявки хелпера: все статусы, новые сверху. */
 export const listMine = (requesterId: string, limit = 100) =>
   run(async () => {
@@ -182,7 +200,7 @@ export const listMine = (requesterId: string, limit = 100) =>
       `SELECT ${COLUMNS} FROM punishment_requests WHERE requester_id = $1 ORDER BY created_at DESC LIMIT $2`,
       [requesterId, limit],
     );
-    return rows.map(toRequest);
+    return withPeople(rows.map(toRequest));
   });
 
 /** Очередь: свободные заявки. Доказательства не отдаются, только их количество: смотреть их будет тот, кто возьмёт. */
@@ -191,8 +209,8 @@ export const listQueue = () =>
     const { rows } = await getPool().query<Row>(
       `SELECT ${COLUMNS} FROM punishment_requests WHERE status = 'pending' ORDER BY created_at ASC LIMIT 200`,
     );
-    return rows.map((row) => {
-      const request = toRequest(row);
+    const requests = await withPeople(rows.map(toRequest));
+    return requests.map((request) => {
       return {
         id: request.id,
         number: request.number,
@@ -203,6 +221,7 @@ export const listQueue = () =>
         forum: request.forum,
         rules: request.rules,
         requesterName: request.requesterName,
+        requester: request.requester,
         createdAt: request.createdAt,
         evidenceCount: request.evidence.length,
       };
@@ -217,7 +236,7 @@ export const listAssigned = (assigneeId: string) =>
        WHERE assignee_id = $1 AND status IN ('claimed', 'approved') ORDER BY claimed_at ASC`,
       [assigneeId],
     );
-    return rows.map(toRequest);
+    return withPeople(rows.map(toRequest));
   });
 
 /** Выданные этим администратором и отклонённые им наказания. */
@@ -228,7 +247,7 @@ export const listClosedBy = (assigneeId: string, limit = 100) =>
        WHERE assignee_id = $1 AND status IN ('issued', 'rejected') ORDER BY updated_at DESC LIMIT $2`,
       [assigneeId, limit],
     );
-    return rows.map(toRequest);
+    return withPeople(rows.map(toRequest));
   });
 
 export const listAll = (limit = 500) =>
@@ -237,7 +256,7 @@ export const listAll = (limit = 500) =>
       `SELECT ${COLUMNS} FROM punishment_requests ORDER BY created_at DESC LIMIT $1`,
       [limit],
     );
-    return rows.map(toRequest);
+    return withPeople(rows.map(toRequest));
   });
 
 /** Журнал действий по всем заявкам, новые сверху. */
@@ -249,15 +268,17 @@ export const listEvents = (limit = 1000) =>
       number: string;
       static_id: string;
       type: PunishmentEventType;
+      actor_id: string;
       actor_name: string;
       note: string;
       at: string | Date;
     }>(
-      `SELECT e.id, e.request_id, r.number, r.static_id, e.type, e.actor_name, e.note, e.at
+      `SELECT e.id, e.request_id, r.number, r.static_id, e.type, e.actor_id, e.actor_name, e.note, e.at
        FROM punishment_events e JOIN punishment_requests r ON r.id = e.request_id
        ORDER BY e.at DESC, e.id DESC LIMIT $1`,
       [limit],
     );
+    const people = await getPeopleSafe(rows.map((row) => row.actor_id));
     return rows.map((row) => ({
       id: Number(row.id),
       requestId: row.request_id,
@@ -265,6 +286,7 @@ export const listEvents = (limit = 1000) =>
       staticId: row.static_id,
       type: row.type,
       actorName: row.actor_name,
+      actor: people.get(row.actor_id) ?? personFromName(row.actor_name, row.actor_id),
       note: row.note,
       at: new Date(row.at).toISOString(),
     }));

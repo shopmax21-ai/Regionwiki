@@ -1,3 +1,5 @@
+import type { Person } from "@/lib/auth/person";
+
 /** Общие типы календаря мероприятий. Файл без серверного кода: его можно импортировать и в клиентских компонентах. */
 
 /** Время в проекте везде московское (GMT+3, без перехода на летнее), поэтому поля формы читаются как московское время. */
@@ -40,6 +42,8 @@ export type CalendarEvent = {
   /** Telegram ID того, кто зарегистрировал мероприятие */
   ownerId: string;
   ownerName: string;
+  /** Организатор для отображения: актуальные Никнейм, Statik ID и роль (запасной вариант: сохранённое имя) */
+  owner: Person;
   /** Напоминание в Telegram за час до начала (получает ownerId) */
   notify: boolean;
   /** Напоминание уже отправлено */
@@ -51,4 +55,4 @@ export const overlaps = (a: { startsAt: string; endsAt: string }, b: { startsAt:
   new Date(a.startsAt).getTime() < new Date(b.endsAt).getTime() &&
   new Date(b.startsAt).getTime() < new Date(a.endsAt).getTime();
 
-export type ConflictInfo = Pick<CalendarEvent, "id" | "title" | "startsAt" | "endsAt" | "ownerName">;
+export type ConflictInfo = Pick<CalendarEvent, "id" | "title" | "startsAt" | "endsAt" | "ownerName" | "owner">;

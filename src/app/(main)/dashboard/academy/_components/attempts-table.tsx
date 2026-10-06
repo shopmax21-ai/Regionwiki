@@ -2,10 +2,12 @@ import Link from "next/link";
 
 import { ChevronRight } from "lucide-react";
 
+import { PersonName } from "@/components/person-name";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateTime } from "@/lib/academy/format";
 import type { AttemptSummary } from "@/lib/academy/types";
+import { personLabel } from "@/lib/auth/person";
 
 export function PassBadge({ passed }: { passed: boolean }) {
   return passed ? (
@@ -49,7 +51,11 @@ export function AttemptsTable({ attempts, showUser = false, detailsHref, emptyTe
           {attempts.map((attempt) => (
             <TableRow key={attempt.id}>
               <TableCell className="max-w-64 truncate pl-4 font-medium">{attempt.testTitle}</TableCell>
-              {showUser && <TableCell className="max-w-48 truncate">{attempt.userName}</TableCell>}
+              {showUser && (
+                <TableCell className="max-w-56">
+                  <PersonName person={attempt.user} />
+                </TableCell>
+              )}
               <TableCell className="whitespace-nowrap text-muted-foreground text-xs tabular-nums">
                 {formatDateTime(attempt.finishedAt)}
               </TableCell>
@@ -64,7 +70,7 @@ export function AttemptsTable({ attempts, showUser = false, detailsHref, emptyTe
                   <Link
                     href={detailsHref(attempt)}
                     prefetch={false}
-                    aria-label={`Разбор: ${attempt.testTitle}, ${attempt.userName}`}
+                    aria-label={`Разбор: ${attempt.testTitle}, ${personLabel(attempt.user)}`}
                     className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
                   >
                     <ChevronRight className="size-4" />

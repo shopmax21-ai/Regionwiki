@@ -425,13 +425,13 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
                 <h2 className="font-semibold text-lg tracking-tight">Недавно обновлённые правила</h2>
                 <p className="mt-1 text-muted-foreground text-sm">Свежие изменения, которые стоит перечитать</p>
               </div>
-              <ul className="-mx-2 grid gap-1">
+              <ul className="-mx-2 grid grid-cols-[minmax(0,1fr)] gap-1">
                 {recent.map((article) => (
-                  <li key={article.href}>
+                  <li key={article.href} className="min-w-0">
                     <Link
                       href={article.href}
                       prefetch={false}
-                      className="group flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/60"
+                      className="group flex min-w-0 items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/60"
                     >
                       {article.tag && (
                         <span className="flex h-8 min-w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 px-2 font-bold text-primary text-xs">
@@ -445,14 +445,14 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
                         </span>
                       </span>
                       <span className="shrink-0 text-muted-foreground text-xs tabular-nums">{article.updatedAt}</span>
-                      <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-foreground" />
+                      <ArrowRight className="hidden size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-foreground sm:block" />
                     </Link>
                   </li>
                 ))}
               </ul>
             </section>
 
-            <aside className="relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl bg-primary p-5 text-primary-foreground sm:p-6">
+            <aside className="relative isolate flex flex-col overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground">
               <LifeBuoy
                 aria-hidden="true"
                 className="absolute -right-6 -bottom-6 -z-10 size-36 rotate-12 text-primary-foreground/10"

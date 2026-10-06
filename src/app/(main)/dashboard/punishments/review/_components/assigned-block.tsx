@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Check, CheckCheck, Copy, ExternalLink, Save, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PersonName } from "@/components/person-name";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -149,8 +150,8 @@ export function AssignedBlock({ request, now }: { request: PunishmentRequest; no
             Заявка №{request.number}
             <AdminStatusBadge status={request.status} />
           </CardTitle>
-          <span className="text-muted-foreground text-xs">
-            {request.requesterName} · подана {ago(request.createdAt, now)}
+          <span className="flex items-center gap-1 text-muted-foreground text-xs">
+            <PersonName person={request.requester} /> · подана {ago(request.createdAt, now)}
           </span>
         </div>
         <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">

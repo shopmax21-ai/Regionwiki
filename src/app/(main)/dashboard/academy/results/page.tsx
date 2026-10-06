@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ArrowLeft, X } from "lucide-react";
 import type { Metadata } from "next";
 
+import { PersonName } from "@/components/person-name";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import { formatDateTime } from "@/lib/academy/format";
 import { getOverview, listAttempts } from "@/lib/academy/store";
 import { getAdmin } from "@/lib/auth/admin";
 import { getAuthConfig } from "@/lib/auth/config";
+import { personLabel } from "@/lib/auth/person";
 
 import { AttemptsTable } from "../_components/attempts-table";
 
@@ -127,7 +129,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                           prefetch={false}
                           className="hover:text-primary hover:underline"
                         >
-                          {row.userName}
+                          <PersonName person={row.user} />
                         </Link>
                         <span className="block font-normal text-muted-foreground text-xs">
                           {formatDateTime(row.lastAt)}
@@ -199,7 +201,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
             <div className="flex flex-wrap items-center gap-2 pt-2">
               {(activeUser || userId) && (
                 <Badge variant="secondary">
-                  {activeUser?.userName ?? "Администратор"}
+                  {activeUser ? personLabel(activeUser.user) : "Администратор"}
                   <Link
                     href={href({ test: testId })}
                     prefetch={false}

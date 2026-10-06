@@ -1,3 +1,5 @@
+import type { Person } from "@/lib/auth/person";
+
 /** Общие типы заявок на наказание. Файл без серверного кода: его можно импортировать и в клиентских компонентах. */
 
 export const PUNISHMENT_LIMITS = {
@@ -65,9 +67,12 @@ export type PunishmentRequest = {
   evidence: EvidenceItem[];
   requesterId: string;
   requesterName: string;
+  /** Хелпер для отображения: актуальные Никнейм, Statik ID и роль (запасной вариант: сохранённое имя) */
+  requester: Person;
   status: PunishmentStatus;
   assigneeId: string | null;
   assigneeName: string | null;
+  assignee: Person | null;
   claimedAt: string | null;
   decisionNote: string;
   /** Администратор скопировал команду: только после этого можно подтвердить выдачу */
@@ -79,7 +84,17 @@ export type PunishmentRequest = {
 /** Заявка в очереди для всех, кто может рассматривать: без самих доказательств, только их количество. */
 export type QueueItem = Pick<
   PunishmentRequest,
-  "id" | "number" | "staticId" | "kind" | "muteChannel" | "duration" | "forum" | "rules" | "requesterName" | "createdAt"
+  | "id"
+  | "number"
+  | "staticId"
+  | "kind"
+  | "muteChannel"
+  | "duration"
+  | "forum"
+  | "rules"
+  | "requesterName"
+  | "requester"
+  | "createdAt"
 > & { evidenceCount: number };
 
 export type PunishmentEventType =
@@ -110,6 +125,7 @@ export type PunishmentEvent = {
   staticId: string;
   type: PunishmentEventType;
   actorName: string;
+  actor: Person;
   note: string;
   at: string;
 };

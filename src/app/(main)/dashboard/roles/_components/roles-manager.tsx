@@ -5,6 +5,8 @@ import { Fragment, useState } from "react";
 import { Check, Lock, Minus, Users } from "lucide-react";
 import { toast } from "sonner";
 
+import { PersonName } from "@/components/person-name";
+import { RoleIcon } from "@/components/role-icon";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -17,10 +19,11 @@ import {
   type Permission,
   permissionDefs,
 } from "@/lib/auth/groups";
+import type { Person } from "@/lib/auth/person";
 
 import { setGroupPermissionAction } from "../_actions";
 
-type Member = { name: string; username: string | null };
+type Member = Person;
 
 const categories = Array.from(new Set(permissionDefs.map((def) => def.category)));
 
@@ -91,9 +94,12 @@ export function RolesManager({
                 className={`flex flex-col gap-3 rounded-xl border p-4 ${group === myGroup ? "border-primary/60 bg-primary/5" : ""}`}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h2 className="font-semibold leading-tight">{info.label}</h2>
-                    <p className="text-muted-foreground text-xs">Уровень {info.level}</p>
+                  <div className="flex items-start gap-2">
+                    <RoleIcon group={group} className="mt-0.5 size-5" />
+                    <div>
+                      <h2 className="font-semibold leading-tight">{info.label}</h2>
+                      <p className="text-muted-foreground text-xs">Уровень {info.level}</p>
+                    </div>
                   </div>
                   {group === myGroup && <Badge variant="secondary">Ваша группа</Badge>}
                 </div>
@@ -108,11 +114,13 @@ export function RolesManager({
                     <span className="font-medium text-foreground">{list.length}</span>
                   </p>
                   {list.length > 0 && (
-                    <p className="line-clamp-2 text-muted-foreground text-xs">
-                      {list
-                        .map((member) => (member.username ? `${member.name} (@${member.username})` : member.name))
-                        .join(", ")}
-                    </p>
+                    <ul className="flex flex-col gap-1 text-xs" aria-label={`Состав: ${info.label}`}>
+                      {list.map((member) => (
+                        <li key={member.id} className="min-w-0">
+                          <PersonName person={member} />
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </div>
               </div>
@@ -129,6 +137,7 @@ export function RolesManager({
                 <TableHead className="pl-4">Право</TableHead>
                 {adminGroups.map((group) => (
                   <TableHead key={group} className="w-28 text-center">
+                    <RoleIcon group={group} className="mr-1 inline align-[-3px]" />
                     {groupInfo[group].label}
                     {group === "chief" && (
                       <Lock className="ml-1 inline size-3 align-[-1px]" aria-label="Права зафиксированы" />

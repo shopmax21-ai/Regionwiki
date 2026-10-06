@@ -7,12 +7,14 @@ import { useRouter } from "next/navigation";
 import { ExternalLink, Paperclip, Search, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PersonName } from "@/components/person-name";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { personPlainText } from "@/lib/auth/person";
 import {
   buildCommand,
   EVENT_LABELS,
@@ -76,8 +78,8 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
           matchesQuery(needle, [
             request.number,
             request.staticId,
-            request.requesterName,
-            request.assigneeName,
+            personPlainText(request.requester),
+            request.assignee ? personPlainText(request.assignee) : request.assigneeName,
             request.forum,
             kindText(request),
             request.rules.join(" "),
@@ -89,7 +91,13 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
   const feed = useMemo(
     () =>
       events.filter((event) =>
-        matchesQuery(needle, [event.number, event.staticId, event.actorName, EVENT_LABELS[event.type], event.note]),
+        matchesQuery(needle, [
+          event.number,
+          event.staticId,
+          personPlainText(event.actor),
+          EVENT_LABELS[event.type],
+          event.note,
+        ]),
       ),
     [events, needle],
   );
@@ -145,7 +153,9 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
                 <TableCell className="whitespace-nowrap tabular-nums">
                   №{event.number} · {event.staticId}
                 </TableCell>
-                <TableCell className="max-w-40 truncate">{event.actorName}</TableCell>
+                <TableCell className="max-w-56">
+                  <PersonName person={event.actor} />
+                </TableCell>
                 <TableCell className="max-w-64 truncate pr-4 text-muted-foreground text-xs">
                   {event.note || "—"}
                 </TableCell>
@@ -196,8 +206,12 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
                 <TableCell className="max-w-36 truncate text-muted-foreground text-xs">
                   {request.forum || "—"}
                 </TableCell>
-                <TableCell className="max-w-36 truncate">{request.requesterName}</TableCell>
-                <TableCell className="max-w-36 truncate">{request.assigneeName ?? "—"}</TableCell>
+                <TableCell className="max-w-56">
+                  <PersonName person={request.requester} />
+                </TableCell>
+                <TableCell className="max-w-56">
+                  {request.assignee ? <PersonName person={request.assignee} /> : "—"}
+                </TableCell>
                 <TableCell>
                   <AdminStatusBadge status={request.status} />
                 </TableCell>
@@ -215,14 +229,17 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
-          <TabsList className="h-auto flex-wrap">
-            {tabs.map((item) => (
-              <TabsTrigger key={item.value} value={item.value}>
-                {item.label} <span className="ml-1 text-muted-foreground tabular-nums">{counts[item.value]}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        {/* На узких экранах вкладки не переносятся на вторую строку, а прокручиваются в одну линию */}
+        <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="min-w-0 max-w-full">
+          <div className="max-w-full overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <TabsList className="w-max">
+              {tabs.map((item) => (
+                <TabsTrigger key={item.value} value={item.value} className="flex-none px-3">
+                  {item.label} <span className="ml-1 text-muted-foreground tabular-nums">{counts[item.value]}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
         </Tabs>
         <div className="relative w-full sm:w-72">
           <Search
@@ -248,9 +265,7 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
               <DialogTitle className="flex items-center gap-2">
                 Заявка №{opened.number} <AdminStatusBadge status={opened.status} />
               </DialogTitle>
-              <DialogDescription>
-                Подана {formatFull(opened.createdAt)} · хелпер {opened.requesterName}
-              </DialogDescription>
+              <DialogDescription>Подана {formatFull(opened.createdAt)}</DialogDescription>
             </DialogHeader>
 
             <dl className="grid gap-3 sm:grid-cols-2">
@@ -258,7 +273,16 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
               <Fact label="Наказание" value={kindText(opened)} />
               <Fact label="Срок" value={durationLabel(opened)} />
               <Fact label="Жалоба на форуме" value={opened.forum || "—"} />
-              <Fact label="Администратор" value={opened.assigneeName ?? "Пока никто не взял"} />
+              <FactNode label="Хелпер">
+                <PersonName person={opened.requester} />
+              </FactNode>
+              <FactNode label="Администратор">
+                {opened.assignee ? (
+                  <PersonName person={opened.assignee} />
+                ) : (
+                  <span className="text-muted-foreground">Пока никто не взял</span>
+                )}
+              </FactNode>
               <Fact label="Выдано" value={opened.issuedAt ? formatFull(opened.issuedAt) : "—"} />
             </dl>
             <div className="flex flex-col gap-1">
@@ -313,7 +337,7 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
                     <span className="font-medium">{EVENT_LABELS[event.type]}</span>
                     <span className="text-muted-foreground">
                       {" "}
-                      · {event.actorName} · {formatFull(event.at)}
+                      · <PersonName person={event.actor} className="align-bottom" /> · {formatFull(event.at)}
                     </span>
                     {event.note && <span className="block text-muted-foreground text-xs">{event.note}</span>}
                   </li>
@@ -344,6 +368,15 @@ function Fact({ label, value }: { label: string; value: string }) {
     <div className="flex min-w-0 flex-col gap-0.5">
       <dt className="text-muted-foreground text-xs">{label}</dt>
       <dd className="truncate font-medium text-sm">{value}</dd>
+    </div>
+  );
+}
+
+function FactNode({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <dt className="text-muted-foreground text-xs">{label}</dt>
+      <dd className="min-w-0 text-sm">{children}</dd>
     </div>
   );
 }

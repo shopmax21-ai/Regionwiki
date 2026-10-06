@@ -1,3 +1,5 @@
+import { getPeopleSafe } from "@/lib/auth/db";
+import { type Person, personFromName } from "@/lib/auth/person";
 import { getPool } from "@/lib/db/pool";
 
 import { generateRulesQuestions, RulesGenerationError } from "./generator";
@@ -323,6 +325,7 @@ const toSummary = (row: AttemptRow): AttemptSummary => ({
   testTitle: row.test_title,
   userId: row.user_id,
   userName: row.user_name,
+  user: personFromName(row.user_name, row.user_id),
   finishedAt: iso(row.finished_at ?? row.started_at),
   score: row.score ?? 0,
   total: row.total,
@@ -393,6 +396,12 @@ export type AttemptFilter = { userId?: string; testId?: string; limit?: number }
 const SUMMARY_COLUMNS =
   "id, test_id, test_title, user_id, user_name, pass_percent, status, started_at, finished_at, score, total, percent, passed";
 
+/** Подставляет актуальные Никнейм, Statik ID и роль администраторов одним запросом. */
+async function withUsers<T extends { user: Person }>(items: T[]): Promise<T[]> {
+  const people = await getPeopleSafe(items.map((item) => item.user.id));
+  return items.map((item) => ({ ...item, user: people.get(item.user.id) ?? item.user }));
+}
+
 export const listAttempts = (filter: AttemptFilter = {}) =>
   run(async () => {
     const where = ["status = 'finished'"];
@@ -411,7 +420,7 @@ export const listAttempts = (filter: AttemptFilter = {}) =>
        ORDER BY finished_at DESC LIMIT $${params.length}`,
       params,
     );
-    return rows.map(toSummary);
+    return withUsers(rows.map(toSummary));
   });
 
 /** Попытка целиком, с вопросами и правильными ответами. Показывать только тем, у кого есть право на разбор. */
@@ -421,7 +430,7 @@ export const getAttempt = (id: string) =>
       "SELECT * FROM academy_attempts WHERE id = $1 AND status = 'finished'",
       [id],
     );
-    return rows[0] ? toDetails(rows[0]) : null;
+    return rows[0] ? (await withUsers([toDetails(rows[0])]))[0] : null;
   });
 
 export type UserStats = {
@@ -462,6 +471,7 @@ export const getUserStats = (userId: string, recentLimit = 5) =>
 export type AdminResultRow = {
   userId: string;
   userName: string;
+  user: Person;
   attempts: number;
   passed: number;
   averagePercent: number;
@@ -506,11 +516,12 @@ export const getOverview = () =>
               count(*) FILTER (WHERE passed)::int AS passed, avg(percent) AS average
        FROM academy_attempts WHERE status = 'finished' GROUP BY test_id ORDER BY count(*) DESC`,
     );
-    return {
-      admins: admins.rows.map(
+    const adminRows = await withUsers(
+      admins.rows.map(
         (row): AdminResultRow => ({
           userId: row.user_id,
           userName: row.user_name,
+          user: personFromName(row.user_name, row.user_id),
           attempts: row.attempts,
           passed: row.passed,
           averagePercent: Math.round(Number(row.average)),
@@ -518,6 +529,9 @@ export const getOverview = () =>
           lastAt: iso(row.last_at),
         }),
       ),
+    );
+    return {
+      admins: adminRows,
       tests: tests.rows.map(
         (row): TestResultRow => ({
           testId: row.test_id,

@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
+import { getAdminContext } from "@/lib/auth/admin";
 import { SESSION_COOKIE } from "@/lib/auth/config";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { revokeSessions, setNotifyRequests } from "@/lib/auth/db";
+import { revokeSessions, setNotifyRequests, setUserIdentity } from "@/lib/auth/db";
+import { validateIdentity } from "@/lib/auth/identity";
 import { forgetRevocation } from "@/lib/auth/revocation";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -24,6 +26,33 @@ export async function setRequestNotifications(enabled: boolean): Promise<ActionR
   }
 
   revalidatePath("/dashboard/profile");
+  return { ok: true };
+}
+
+/**
+ * Сохранить свой Никнейм и Statik ID. Только для администраторов: на сайте они показываются вместо имени из Telegram
+ * («иконка роли Никнейм иконка ID Статик»). Пустое поле очищает значение.
+ */
+export async function saveIdentity(input: unknown): Promise<ActionResult> {
+  const admin = await getAdminContext();
+  if (!admin) return { ok: false, error: "Никнейм и Statik ID указывают администраторы" };
+
+  const fields = (typeof input === "object" && input !== null ? input : {}) as {
+    nickname?: unknown;
+    staticId?: unknown;
+  };
+  const parsed = validateIdentity(fields);
+  if (!parsed.ok) return parsed;
+
+  try {
+    await setUserIdentity(admin.id, parsed.value.nickname, parsed.value.staticId);
+  } catch (error) {
+    console.error("[profile] Не удалось сохранить Никнейм и Statik ID", error);
+    return { ok: false, error: "База данных недоступна, попробуйте позже" };
+  }
+
+  // Имя показывается в боковом меню и во всех разделах, поэтому обновляем весь дашборд
+  revalidatePath("/dashboard", "layout");
   return { ok: true };
 }
 

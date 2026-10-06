@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Paperclip } from "lucide-react";
 import { toast } from "sonner";
 
+import { PersonName } from "@/components/person-name";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,7 +72,9 @@ export function QueueList({ items, now }: { items: QueueItem[]; now: number }) {
               {items.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="pl-4 text-muted-foreground tabular-nums">{item.number}</TableCell>
-                  <TableCell className="max-w-40 truncate">{item.requesterName}</TableCell>
+                  <TableCell className="max-w-56">
+                    <PersonName person={item.requester} />
+                  </TableCell>
                   <TableCell className="font-medium tabular-nums">{item.staticId}</TableCell>
                   <TableCell className="whitespace-nowrap">{kindText(item)}</TableCell>
                   <TableCell className="whitespace-nowrap">{durationLabel(item)}</TableCell>

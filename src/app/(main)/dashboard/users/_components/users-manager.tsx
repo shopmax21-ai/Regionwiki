@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 
-import { Check, KeyRound, MoreHorizontal, Search, ShieldCheck, ShieldOff, X } from "lucide-react";
+import { Check, KeyRound, MoreHorizontal, Search, ShieldOff, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { PersonName } from "@/components/person-name";
+import { groupIconComponent, RoleBadge } from "@/components/role-icon";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +37,7 @@ import {
   type Permission,
   type PermissionOverride,
 } from "@/lib/auth/groups";
+import { personLabel } from "@/lib/auth/person";
 import { getInitials } from "@/lib/utils";
 
 import {
@@ -44,7 +47,7 @@ import {
   changeUserStatus,
   resetUserPermissions,
 } from "../_actions";
-import type { Me, UserItem } from "../_lib";
+import { type Me, type UserItem, userPerson } from "../_lib";
 import { UserAccessSheet } from "./user-access-sheet";
 
 type Filter = "all" | "pending" | "approved" | "rejected" | "admin";
@@ -99,12 +102,16 @@ function UserIdentity({ user }: { user: UserItem }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
       <Avatar className="size-9">
-        <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+        <AvatarFallback>{getInitials(personLabel(user))}</AvatarFallback>
       </Avatar>
       <div className="min-w-0 leading-tight">
-        <p className="truncate font-medium text-sm">{user.name}</p>
+        <p className="truncate text-sm">
+          {/* Роль в этой строке уже показана бейджем в колонке «Группа»: иконку слева не дублируем в таблице */}
+          <PersonName person={userPerson(user)} showRole={false} />
+        </p>
         <p className="truncate text-muted-foreground text-xs">
-          {user.username ? `@${user.username} · ` : ""}ID {user.telegramId}
+          {user.nickname ? `${user.name} · ` : ""}
+          {user.username ? `@${user.username} · ` : ""}Telegram ID {user.telegramId}
         </p>
       </div>
     </div>
@@ -145,7 +152,9 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
     return items.filter(
       (user) =>
         matchesFilter(user, filter) &&
-        `${user.name} ${user.username ?? ""} ${user.telegramId}`.toLowerCase().includes(needle),
+        `${user.name} ${user.nickname ?? ""} ${user.staticId ?? ""} ${user.username ?? ""} ${user.telegramId}`
+          .toLowerCase()
+          .includes(needle),
     );
   }, [filter, query, items]);
 
@@ -270,7 +279,7 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
         list.push({
           action: { type: "group", group },
           label: `Назначить: ${groupInfo[group].label}`,
-          icon: ShieldCheck,
+          icon: groupIconComponent(group),
         });
       }
       if (user.adminGroup)
@@ -362,11 +371,7 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
                     <Badge variant={statusVariant[user.status]}>{statusLabel[user.status]}</Badge>
                   </TableCell>
                   <TableCell>
-                    {user.adminGroup ? (
-                      <Badge variant="secondary">{groupInfo[user.adminGroup].label}</Badge>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">Участник</span>
-                    )}
+                    <RoleBadge group={user.adminGroup} />
                   </TableCell>
                   <TableCell className="hidden text-muted-foreground text-sm md:table-cell">
                     {/* Дата форматируется в часовом поясе браузера, поэтому сервер и клиент могут отличаться */}

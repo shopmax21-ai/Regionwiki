@@ -1,5 +1,6 @@
 import { Bell, BellOff, MapPin } from "lucide-react";
 
+import { PersonName } from "@/components/person-name";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatRange, relativeTo } from "@/lib/calendar/format";
 import { type CalendarEvent, type EventStatus, STATUS_LABELS, statusOf } from "@/lib/calendar/types";
@@ -64,8 +65,8 @@ export function EventList({ events, now, meId, onOpen, onNotifyChanged }: EventL
                       </span>
                       <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-muted-foreground text-xs">
                         <span>{formatRange(event.startsAt, event.endsAt)}</span>
-                        <span>
-                          {event.ownerName}
+                        <span className="flex min-w-0 items-center gap-1">
+                          <PersonName person={event.owner} />
                           {mine ? " (вы)" : ""}
                         </span>
                         {event.location && (

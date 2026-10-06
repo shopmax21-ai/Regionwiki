@@ -1,3 +1,5 @@
+import type { Person } from "@/lib/auth/person";
+
 /** Общие типы Академии. Файл без серверного кода: его можно импортировать и в клиентских компонентах. */
 
 export const DIFFICULTIES = ["Легкий", "Средний", "Сложный"] as const;
@@ -46,13 +48,7 @@ export type QuestionDef = {
 /** Настройки автогенерации: сколько вопросов и из каких правил. */
 export type RulesConfig = {
   questionCount: number;
-  /** Правила целиком: «Основные правила» (ОП) и «Правила государственных структур» (ПГО) */
   groups: RuleGroupKey[];
-  /**
-   * Отдельные разделы ОП (статьи вроде «Правила ограблений и похищений») по их адресам.
-   * Вопросы берутся и из них, если ОП целиком не выбрано. У старых тестов поля нет.
-   */
-  articles?: string[];
 };
 
 export type AcademyTest = {
@@ -102,6 +98,8 @@ export type AttemptSummary = {
   testTitle: string;
   userId: string;
   userName: string;
+  /** Администратор для отображения: актуальные Никнейм, Statik ID и роль (запасной вариант: сохранённое имя) */
+  user: Person;
   finishedAt: string;
   score: number;
   total: number;

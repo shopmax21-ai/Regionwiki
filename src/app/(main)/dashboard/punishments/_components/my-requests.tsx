@@ -1,7 +1,9 @@
 import { Paperclip } from "lucide-react";
 
+import { PersonName } from "@/components/person-name";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { personFromName } from "@/lib/auth/person";
 import { kindText, type PunishmentRequest } from "@/lib/punishments/types";
 
 import { durationLabel, formatFull, formatShort } from "./format";
@@ -59,16 +61,24 @@ export function MyRequests({ requests }: { requests: PunishmentRequest[] }) {
                     <div className="flex flex-col items-start gap-1">
                       <HelperStatusBadge status={request.status} />
                       {(request.status === "claimed" || request.status === "approved") && request.assigneeName && (
-                        <span className="text-muted-foreground text-xs">Рассматривает: {request.assigneeName}</span>
+                        <span className="flex items-center gap-1 text-muted-foreground text-xs">
+                          Рассматривает:{" "}
+                          <PersonName person={request.assignee ?? personFromName(request.assigneeName)} />
+                        </span>
                       )}
                       {request.status === "issued" && request.assigneeName && request.issuedAt && (
-                        <span className="text-muted-foreground text-xs">
-                          Выдал {request.assigneeName}, {formatFull(request.issuedAt)}
+                        <span className="flex flex-wrap items-center gap-x-1 text-muted-foreground text-xs">
+                          Выдал <PersonName person={request.assignee ?? personFromName(request.assigneeName)} />,{" "}
+                          {formatFull(request.issuedAt)}
                         </span>
                       )}
                       {request.status === "rejected" && (
-                        <span className="text-muted-foreground text-xs">
-                          {request.assigneeName ? `${request.assigneeName}: ` : ""}
+                        <span className="flex flex-wrap items-center gap-x-1 text-muted-foreground text-xs">
+                          {request.assignee && (
+                            <>
+                              <PersonName person={request.assignee} />:
+                            </>
+                          )}
                           {request.decisionNote || "причина не указана"}
                         </span>
                       )}

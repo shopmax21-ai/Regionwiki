@@ -1,3 +1,4 @@
+import { PersonName } from "@/components/person-name";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { kindText, type PunishmentRequest } from "@/lib/punishments/types";
@@ -43,7 +44,9 @@ export function ClosedTable({ requests }: { requests: PunishmentRequest[] }) {
                       {request.forum && <span className="text-muted-foreground text-xs">Жалоба: {request.forum}</span>}
                     </div>
                   </TableCell>
-                  <TableCell className="max-w-40 truncate">{request.requesterName}</TableCell>
+                  <TableCell className="max-w-56">
+                    <PersonName person={request.requester} />
+                  </TableCell>
                   <TableCell>
                     <AdminStatusBadge status={request.status} />
                   </TableCell>
