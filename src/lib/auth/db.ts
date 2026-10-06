@@ -89,6 +89,8 @@ function ensureSchema(): Promise<void> {
     // Игровой профиль администратора: Никнейм и Statik ID. Показываются на сайте вместо имени из Telegram.
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS nickname text`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS static_id text`;
+    // Фон блока профиля: адрес загруженной картинки (/api/jobs/images/<хеш>)
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_background text`;
     // Администраторы, назначенные до появления групп, становятся Гл.Администраторами
     await sql`UPDATE users SET admin_group = 'chief' WHERE role = 'admin' AND admin_group IS NULL`;
     await sql`CREATE TABLE IF NOT EXISTS group_permissions (
@@ -135,6 +137,8 @@ export type DbUser = {
   nickname: string | null;
   /** Statik ID администратора (не указан: null) */
   staticId: string | null;
+  /** Фон блока профиля: адрес картинки или null */
+  profileBackground: string | null;
   createdAt: Date;
   decidedAt: Date | null;
   lastLoginAt: Date | null;
@@ -151,11 +155,18 @@ type UserRow = {
   notify_requests: boolean;
   nickname: string | null;
   static_id: string | null;
+  profile_background: string | null;
   created_at: string;
   decided_at: string | null;
   last_login_at: string | null;
   login_count: number;
 };
+
+/** Фоном может быть только картинка из нашего хранилища: другой адрес в базе не показываем. */
+export const PROFILE_BACKGROUND_PATTERN = /^\/api\/jobs\/images\/[a-f0-9]{64}$/;
+
+const safeBackground = (value: string | null | undefined): string | null =>
+  value && PROFILE_BACKGROUND_PATTERN.test(value) ? value : null;
 
 const toUser = (row: UserRow): DbUser => ({
   telegramId: row.telegram_id,
@@ -167,6 +178,7 @@ const toUser = (row: UserRow): DbUser => ({
   notifyRequests: row.notify_requests !== false,
   nickname: row.nickname ?? null,
   staticId: row.static_id ?? null,
+  profileBackground: safeBackground(row.profile_background),
   createdAt: new Date(row.created_at),
   decidedAt: row.decided_at ? new Date(row.decided_at) : null,
   lastLoginAt: row.last_login_at ? new Date(row.last_login_at) : null,
@@ -466,6 +478,13 @@ export async function setUserIdentity(
   const rows = await sql`UPDATE users SET nickname = ${nickname}, static_id = ${staticId}
     WHERE telegram_id = ${telegramId} RETURNING *`;
   return rows[0] ? toUser(rows[0] as UserRow) : null;
+}
+
+/** Сохранить фон блока профиля. null убирает фон. */
+export async function setUserBackground(telegramId: string, url: string | null): Promise<void> {
+  if (url !== null && !PROFILE_BACKGROUND_PATTERN.test(url)) throw new Error("Недопустимый адрес фона");
+  await ensureSchema();
+  await sql`UPDATE users SET profile_background = ${url} WHERE telegram_id = ${telegramId}`;
 }
 
 /** Группа человека с учётом TELEGRAM_ADMIN_IDS: оттуда всегда Гл.Администраторы, как и при проверке прав. */

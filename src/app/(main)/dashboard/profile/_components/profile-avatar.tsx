@@ -15,13 +15,19 @@ function hintFor(reason: string | null, status: number): string {
   return reason ? `Фото не загрузилось: ${reason}` : "Фото не загрузилось.";
 }
 
-/** Аватар из Telegram. Если фото не пришло, под именем показывается причина, а не просто инициалы. */
-export function ProfileAvatar({ name }: { name: string }) {
+/**
+ * Аватар из Telegram. Если фото не пришло, под именем показывается причина, а не просто инициалы.
+ * userId — Telegram ID другого администратора: его фото отдаётся только администрации, а подсказки про
+ * настройки приватности (они для владельца профиля) не показываются.
+ */
+export function ProfileAvatar({ name, userId }: { name: string; userId?: string }) {
   const [hint, setHint] = useState<string | null>(null);
+  const src = userId ? `/api/auth/avatar?id=${encodeURIComponent(userId)}` : "/api/auth/avatar";
 
   const explain = async () => {
+    if (userId) return;
     try {
-      const response = await fetch("/api/auth/avatar", { cache: "no-store" });
+      const response = await fetch(src, { cache: "no-store" });
       if (response.ok) return;
       const reason = response.headers.get("x-avatar-reason");
       setHint(hintFor(reason ? decodeURIComponent(reason) : null, response.status));
@@ -34,7 +40,7 @@ export function ProfileAvatar({ name }: { name: string }) {
     <>
       <Avatar className="size-16 rounded-xl">
         <AvatarImage
-          src="/api/auth/avatar"
+          src={src}
           alt={name}
           onLoadingStatusChange={(status) => {
             if (status === "error") void explain();

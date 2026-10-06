@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { getAdminContext } from "@/lib/auth/admin";
 import { getAuthConfig, SESSION_COOKIE, TELEGRAM_API_URL } from "@/lib/auth/config";
+import { getUser, groupOfUser } from "@/lib/auth/db";
 import { readSessionToken } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
@@ -94,19 +96,37 @@ export async function GET(request: NextRequest) {
   const user = config && token ? await readSessionToken(token, config.secret) : null;
   if (!config || !user) return new NextResponse(null, { status: 401 });
 
-  const cached = cache.get(user.id);
+  // ?id=... — фото другого администратора для его профиля. Отдаётся только администрации, и только для администраторов:
+  // по этому адресу нельзя запросить фото обычного участника.
+  let targetId = user.id;
+  const requested = request.nextUrl.searchParams.get("id");
+  if (requested && requested !== user.id) {
+    if (!/^\d{1,20}$/.test(requested)) return new NextResponse(null, { status: 400 });
+    try {
+      if (!(await getAdminContext())) return new NextResponse(null, { status: 403 });
+      const target = await getUser(requested);
+      if (!target || !groupOfUser(target)) return new NextResponse(null, { status: 404 });
+    } catch {
+      return new NextResponse(null, { status: 503 });
+    }
+    targetId = requested;
+  }
+
+  const cached = cache.get(targetId);
   if (cached && Date.now() - cached.at < (cached.image ? HIT_TTL_MS : MISS_TTL_MS)) {
     return respond(cached);
   }
 
   try {
-    const entry = await download(config.botToken, user.id);
-    if (!entry.image) console.warn(`[auth] avatar ${user.id}: ${entry.reason}`);
-    remember(user.id, entry);
+    const entry = await download(config.botToken, targetId);
+    if (!entry.image) console.warn(`[auth] avatar ${targetId}: ${entry.reason}`);
+    remember(targetId, entry);
     return respond(entry);
   } catch (error) {
     // Токен бота входит в URL запроса, поэтому в лог идёт только тип ошибки.
-    console.error(`[auth] avatar ${user.id}: запрос к Telegram не удался (${error instanceof Error ? error.name : "ошибка"})`);
+    console.error(
+      `[auth] avatar ${targetId}: запрос к Telegram не удался (${error instanceof Error ? error.name : "ошибка"})`,
+    );
     return new NextResponse(null, { status: 502, headers: { "X-Avatar-Reason": "telegram-unreachable" } });
   }
 }
@@ -115,7 +135,10 @@ function respond(entry: Cached): NextResponse {
   if (!entry.image) {
     return new NextResponse(null, {
       status: 404,
-      headers: { "X-Avatar-Reason": encodeURIComponent(entry.reason ?? "no-photo"), "Cache-Control": "private, max-age=300" },
+      headers: {
+        "X-Avatar-Reason": encodeURIComponent(entry.reason ?? "no-photo"),
+        "Cache-Control": "private, max-age=300",
+      },
     });
   }
   return new NextResponse(entry.image.bytes, {

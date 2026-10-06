@@ -14,6 +14,7 @@ export const ADMIN_ONLY_PATHS: readonly string[] = [
   "/dashboard/tasks",
   "/dashboard/chat",
   "/dashboard/kanban",
+  "/dashboard/staff",
 ];
 
 export const PROTECTED_PATHS: readonly string[] = [

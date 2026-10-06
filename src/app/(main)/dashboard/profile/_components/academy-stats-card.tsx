@@ -8,8 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { formatDateTime } from "@/lib/academy/format";
 import type { UserStats } from "@/lib/academy/store";
 
-/** Статистика администратора по тестам Академии. Показывается в его профиле и только ему. */
-export function AcademyStatsCard({ stats }: { stats: UserStats }) {
+/** Статистика администратора по тестам Академии. Показывается в его профиле и остальной администрации. */
+export function AcademyStatsCard({
+  stats,
+  own = true,
+}: {
+  stats: UserStats /** false: статистика другого администратора */;
+  own?: boolean;
+}) {
   const tiles = [
     { label: "Пройдено тестов", value: String(stats.attempts) },
     { label: "Сдано", value: stats.attempts > 0 ? `${stats.passed} из ${stats.attempts}` : "—" },
@@ -26,7 +32,11 @@ export function AcademyStatsCard({ stats }: { stats: UserStats }) {
             Академия
           </CardTitle>
           <CardDescription>
-            {stats.lastAt ? `Последний тест: ${formatDateTime(stats.lastAt)}` : "Вы ещё не проходили тесты."}
+            {stats.lastAt
+              ? `Последний тест: ${formatDateTime(stats.lastAt)}`
+              : own
+                ? "Вы ещё не проходили тесты."
+                : "Тесты ещё не пройдены."}
           </CardDescription>
         </div>
         <Link href="/dashboard/academy" prefetch={false} className={buttonVariants({ variant: "outline", size: "sm" })}>
