@@ -87,7 +87,6 @@ export function NavUser({
   }
 
   const person = personOf(user);
-  const roleLabel = user.role === "admin" ? "Администратор" : "Участник";
 
   return (
     <SidebarMenu>
@@ -108,9 +107,10 @@ export function NavUser({
               )}
               <UserAvatar user={user} className="relative z-10 h-8 w-8 rounded-lg" />
               <div className="relative z-10 grid flex-1 text-left text-sm leading-tight">
-                <PersonName person={person} />
-                <span className="truncate text-muted-foreground text-xs">
-                  {user.username ? `@${user.username}` : roleLabel}
+                <PersonName person={person} showRole={false} />
+                <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground text-xs">
+                  {user.username && <span className="truncate">@{user.username}</span>}
+                  <RoleBadge group={user.group} className="h-4 shrink-0 px-1.5 text-[10px]" />
                 </span>
               </div>
               <EllipsisVertical className="relative z-10 ml-auto size-4" />
