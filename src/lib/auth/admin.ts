@@ -8,7 +8,7 @@ import { type AdminGroup, effectivePermissions, groupLevel, type Permission } fr
 export type AdminContext = {
   id: string;
   name: string;
-  /** Игровой никнейм и Statik ID из профиля (если указаны) */
+  /** Игровой никнейм и Static ID из профиля (если указаны) */
   nickname: string | null;
   staticId: string | null;
   group: AdminGroup;

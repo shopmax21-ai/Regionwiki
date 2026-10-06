@@ -104,7 +104,7 @@ export type AttemptSummary = {
   testTitle: string;
   userId: string;
   userName: string;
-  /** Администратор для отображения: актуальные Никнейм, Statik ID и роль (запасной вариант: сохранённое имя) */
+  /** Администратор для отображения: актуальные Никнейм, Static ID и роль (запасной вариант: сохранённое имя) */
   user: Person;
   finishedAt: string;
   score: number;

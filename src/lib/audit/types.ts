@@ -37,7 +37,7 @@ export const isAuditSeverity = (value: unknown): value is AuditSeverity =>
 export type AuditEntry = {
   id: string;
   at: string;
-  /** Кто сделал: актуальные Никнейм, Statik ID и роль (запасной вариант: сохранённое имя) */
+  /** Кто сделал: актуальные Никнейм, Static ID и роль (запасной вариант: сохранённое имя) */
   actor: Person;
   category: AuditCategory;
   /** Код действия, например «item.deleted» */

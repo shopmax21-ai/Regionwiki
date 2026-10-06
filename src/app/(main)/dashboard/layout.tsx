@@ -28,7 +28,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
   const jobLinks = jobs.map((job) => ({ slug: job.slug, title: job.title }));
   const authorized = session?.status === "approved";
   const { isAdmin, permissions } = authorized ? await getViewerAccess() : { isAdmin: false, permissions: [] };
-  // Группа, Никнейм и Statik ID берутся из базы: в сессии только имя из Telegram
+  // Группа, Никнейм и Static ID берутся из базы: в сессии только имя из Telegram
   const me = session ? (await getPeopleSafe([session.id])).get(session.id) : undefined;
   const user = session
     ? {

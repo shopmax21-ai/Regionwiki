@@ -67,7 +67,7 @@ export type PunishmentRequest = {
   evidence: EvidenceItem[];
   requesterId: string;
   requesterName: string;
-  /** Хелпер для отображения: актуальные Никнейм, Statik ID и роль (запасной вариант: сохранённое имя) */
+  /** Хелпер для отображения: актуальные Никнейм, Static ID и роль (запасной вариант: сохранённое имя) */
   requester: Person;
   status: PunishmentStatus;
   assigneeId: string | null;

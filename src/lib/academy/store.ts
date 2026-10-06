@@ -396,7 +396,7 @@ export type AttemptFilter = { userId?: string; testId?: string; limit?: number }
 const SUMMARY_COLUMNS =
   "id, test_id, test_title, user_id, user_name, pass_percent, status, started_at, finished_at, score, total, percent, passed";
 
-/** Подставляет актуальные Никнейм, Statik ID и роль администраторов одним запросом. */
+/** Подставляет актуальные Никнейм, Static ID и роль администраторов одним запросом. */
 async function withUsers<T extends { user: Person }>(items: T[]): Promise<T[]> {
   const people = await getPeopleSafe(items.map((item) => item.user.id));
   return items.map((item) => ({ ...item, user: people.get(item.user.id) ?? item.user }));

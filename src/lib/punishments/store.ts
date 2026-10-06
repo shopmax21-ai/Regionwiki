@@ -180,7 +180,7 @@ const COLUMNS =
   "id, number, static_id, minutes, kind, mute_channel, forum, rules, evidence, requester_id, requester_name, status, assignee_id, assignee_name, claimed_at, decision_note, copied_at, issued_at, created_at";
 
 /**
- * Заменяет сохранённые на момент заявки имена актуальными данными: Никнейм, Statik ID и роль берутся из профилей,
+ * Заменяет сохранённые на момент заявки имена актуальными данными: Никнейм, Static ID и роль берутся из профилей,
  * поэтому правка профиля сразу видна и в старых заявках. Одним запросом на весь список.
  */
 async function withPeople<T extends { requester: Person; assignee: Person | null }>(requests: T[]): Promise<T[]> {

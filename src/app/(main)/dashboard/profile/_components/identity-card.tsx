@@ -37,7 +37,7 @@ type IdentityCardProps = {
 };
 
 /**
- * Игровой профиль администратора: Никнейм и Statik ID. Если указаны, на сайте вместо имени из Telegram показывается
+ * Игровой профиль администратора: Никнейм и Static ID. Если указаны, на сайте вместо имени из Telegram показывается
  * «иконка роли Никнейм иконка ID Статик». Ниже живой предпросмотр того, как это будет выглядеть.
  * Сам администратор указывает их один раз, дальше меняет только вышестоящий.
  */
@@ -102,8 +102,8 @@ export function IdentityCard({ person, mode }: IdentityCardProps) {
         <CardTitle>Игровой профиль</CardTitle>
         <CardDescription>
           {own
-            ? "Никнейм и Statik ID показываются на сайте рядом с иконкой вашей роли: в заявках на наказания, календаре, результатах тестов и списках администрации. Указать их можно один раз."
-            : "Вы стоите выше этого администратора, поэтому можете исправить его Никнейм и Statik ID. Пустые поля очищают значение."}
+            ? "Никнейм и Static ID показываются на сайте рядом с иконкой вашей роли: в заявках на наказания, календаре, результатах тестов и списках администрации. Указать их можно один раз."
+            : "Вы стоите выше этого администратора, поэтому можете исправить его Никнейм и Static ID. Пустые поля очищают значение."}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
@@ -124,7 +124,7 @@ export function IdentityCard({ person, mode }: IdentityCardProps) {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="profile-static">Statik ID</Label>
+            <Label htmlFor="profile-static">Static ID</Label>
             <Input
               id="profile-static"
               inputMode="numeric"
@@ -181,7 +181,7 @@ export function IdentityCard({ person, mode }: IdentityCardProps) {
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Сохранить Никнейм и Statik ID?</AlertDialogTitle>
+            <AlertDialogTitle>Сохранить Никнейм и Static ID?</AlertDialogTitle>
             <AlertDialogDescription>
               Указать их можно только один раз. Потом исправить их сможет лишь вышестоящий администратор. Проверьте,
               что всё написано верно.

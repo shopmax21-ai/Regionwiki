@@ -125,7 +125,7 @@ const toEvent = (row: EventRow): CalendarEvent => ({
   reminded: row.reminder_sent_at !== null,
 });
 
-/** Подставляет актуальные Никнейм, Statik ID и роль организаторов одним запросом. */
+/** Подставляет актуальные Никнейм, Static ID и роль организаторов одним запросом. */
 async function withOwners<T extends { owner: CalendarEvent["owner"] }>(events: T[]): Promise<T[]> {
   const people = await getPeopleSafe(events.map((event) => event.owner.id));
   return events.map((event) => ({ ...event, owner: people.get(event.owner.id) ?? event.owner }));

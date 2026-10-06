@@ -87,7 +87,7 @@ function ensureSchema(): Promise<void> {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS notify_requests boolean NOT NULL DEFAULT true`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS notify_calendar boolean NOT NULL DEFAULT false`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS sessions_valid_after timestamptz`;
-    // Игровой профиль администратора: Никнейм и Statik ID. Показываются на сайте вместо имени из Telegram.
+    // Игровой профиль администратора: Никнейм и Static ID. Показываются на сайте вместо имени из Telegram.
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS nickname text`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS static_id text`;
     // Фон блока профиля: адрес загруженной картинки (/api/jobs/images/<хеш>)
@@ -138,7 +138,7 @@ export type DbUser = {
   notifyCalendar: boolean;
   /** Игровой никнейм администратора (не указан: null) */
   nickname: string | null;
-  /** Statik ID администратора (не указан: null) */
+  /** Static ID администратора (не указан: null) */
   staticId: string | null;
   /** Фон блока профиля: адрес картинки или null */
   profileBackground: string | null;
@@ -483,9 +483,9 @@ export async function clearUserOverrides(telegramId: string): Promise<void> {
   await sql`DELETE FROM user_permissions WHERE telegram_id = ${telegramId}`;
 }
 
-/* ---------- Никнейм и Statik ID ---------- */
+/* ---------- Никнейм и Static ID ---------- */
 
-/** Сохранить Никнейм и Statik ID. null очищает поле. */
+/** Сохранить Никнейм и Static ID. null очищает поле. */
 export async function setUserIdentity(
   telegramId: string,
   nickname: string | null,
@@ -498,7 +498,7 @@ export async function setUserIdentity(
 }
 
 /**
- * Первое указание Никнейма и Statik ID самим администратором. Условие в запросе гарантирует «один раз» даже при
+ * Первое указание Никнейма и Static ID самим администратором. Условие в запросе гарантирует «один раз» даже при
  * двух одновременных отправках: если поля уже заполнены, строка не обновится и вернётся null.
  */
 export async function setUserIdentityOnce(

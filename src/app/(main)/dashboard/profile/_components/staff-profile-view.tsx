@@ -26,7 +26,7 @@ export function StaffProfileView({
   group: AdminGroup;
   /** Статистика тестов Академии; null, если её не удалось загрузить */
   academy: UserStats | null;
-  /** Посетитель стоит выше по группе: может исправить Никнейм и Statik ID этого администратора */
+  /** Посетитель стоит выше по группе: может исправить Никнейм и Static ID этого администратора */
   canEditIdentity: boolean;
 }) {
   const person = toPerson(user);

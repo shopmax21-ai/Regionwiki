@@ -38,15 +38,15 @@ export async function setRequestNotifications(enabled: boolean): Promise<ActionR
 }
 
 /**
- * Указать свои Никнейм и Statik ID. Только для администраторов и только один раз: на сайте они показываются вместо
+ * Указать свои Никнейм и Static ID. Только для администраторов и только один раз: на сайте они показываются вместо
  * имени из Telegram («иконка роли Никнейм иконка ID Статик»). Потом их меняет только вышестоящий администратор
  * (saveStaffIdentity).
  */
 export async function saveIdentity(input: unknown): Promise<ActionResult> {
   const admin = await getAdminContext();
-  if (!admin) return { ok: false, error: "Никнейм и Statik ID указывают администраторы" };
+  if (!admin) return { ok: false, error: "Никнейм и Static ID указывают администраторы" };
   if (identityLocked(admin)) {
-    return { ok: false, error: "Никнейм и Statik ID уже указаны. Изменить их может только вышестоящий администратор" };
+    return { ok: false, error: "Никнейм и Static ID уже указаны. Изменить их может только вышестоящий администратор" };
   }
 
   const fields = (typeof input === "object" && input !== null ? input : {}) as {
@@ -59,10 +59,10 @@ export async function saveIdentity(input: unknown): Promise<ActionResult> {
   try {
     const saved = await setUserIdentityOnce(admin.id, parsed.value.nickname, parsed.value.staticId);
     if (!saved) {
-      return { ok: false, error: "Никнейм и Statik ID уже указаны. Изменить их может только вышестоящий администратор" };
+      return { ok: false, error: "Никнейм и Static ID уже указаны. Изменить их может только вышестоящий администратор" };
     }
   } catch (error) {
-    console.error("[profile] Не удалось сохранить Никнейм и Statik ID", error);
+    console.error("[profile] Не удалось сохранить Никнейм и Static ID", error);
     return { ok: false, error: "База данных недоступна, попробуйте позже" };
   }
 
@@ -72,7 +72,7 @@ export async function saveIdentity(input: unknown): Promise<ActionResult> {
 }
 
 /**
- * Изменить Никнейм и Statik ID другого администратора. Доступно только тому, кто стоит выше него по группе.
+ * Изменить Никнейм и Static ID другого администратора. Доступно только тому, кто стоит выше него по группе.
  * Пустое поле очищает значение: если очистить оба, человек сможет указать их заново.
  */
 export async function saveStaffIdentity(targetId: unknown, input: unknown): Promise<ActionResult> {
@@ -99,7 +99,7 @@ export async function saveStaffIdentity(targetId: unknown, input: unknown): Prom
     }
     await setUserIdentity(targetId, parsed.value.nickname, parsed.value.staticId);
   } catch (error) {
-    console.error("[profile] Не удалось сохранить Никнейм и Statik ID администратора", error);
+    console.error("[profile] Не удалось сохранить Никнейм и Static ID администратора", error);
     return { ok: false, error: "База данных недоступна, попробуйте позже" };
   }
 

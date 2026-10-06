@@ -1,4 +1,4 @@
-/** Никнейм и Statik ID администратора. Файл без серверного кода: можно импортировать и в клиентских компонентах. */
+/** Никнейм и Static ID администратора. Файл без серверного кода: можно импортировать и в клиентских компонентах. */
 
 export const IDENTITY_LIMITS = {
   nicknameMin: 2,
@@ -42,14 +42,14 @@ export function validateIdentity(input: {
   }
 
   if (staticId !== "" && !new RegExp(`^\\d{1,${IDENTITY_LIMITS.staticMaxDigits}}$`).test(staticId)) {
-    return { ok: false, error: `Statik ID состоит из цифр, не больше ${IDENTITY_LIMITS.staticMaxDigits}` };
+    return { ok: false, error: `Static ID состоит из цифр, не больше ${IDENTITY_LIMITS.staticMaxDigits}` };
   }
 
   return { ok: true, value: { nickname: nickname || null, staticId: staticId || null } };
 }
 
 /**
- * Никнейм и Statik ID указываются один раз. Дальше их меняет только вышестоящий администратор.
+ * Никнейм и Static ID указываются один раз. Дальше их меняет только вышестоящий администратор.
  * Признак «уже указано» — любое из двух полей заполнено.
  */
 export const identityLocked = (value: { nickname: string | null; staticId: string | null }): boolean =>
@@ -63,6 +63,6 @@ export function validateFirstIdentity(input: {
   const parsed = validateIdentity(input);
   if (!parsed.ok) return parsed;
   const { nickname, staticId } = parsed.value;
-  if (!nickname || !staticId) return { ok: false, error: "Укажите и Никнейм, и Statik ID" };
+  if (!nickname || !staticId) return { ok: false, error: "Укажите и Никнейм, и Static ID" };
   return { ok: true, value: { nickname, staticId } };
 }
