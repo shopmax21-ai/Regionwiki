@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 
+import { actorOf, recordContentChange } from "@/lib/audit/store";
 import { getAdmin } from "@/lib/auth/admin";
-import { createReply, deleteReply, ReplyStoreError, updateReply } from "@/lib/replies/store";
+import { createReply, deleteReply, listReplies, ReplyStoreError, updateReply } from "@/lib/replies/store";
 import { validateReply } from "@/lib/replies/validate";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -28,6 +29,7 @@ export async function createReplyAction(input: unknown): Promise<ActionResult> {
 
   try {
     await createReply(result.reply, admin.id);
+    await recordContentChange(actorOf(admin), "reply", "created", { label: result.reply.title });
   } catch (error) {
     return failure(error);
   }
@@ -45,6 +47,7 @@ export async function updateReplyAction(id: string, input: unknown): Promise<Act
 
   try {
     await updateReply(id, result.reply, admin.id);
+    await recordContentChange(actorOf(admin), "reply", "updated", { id, label: result.reply.title });
   } catch (error) {
     return failure(error);
   }
@@ -58,7 +61,11 @@ export async function deleteReplyAction(id: string): Promise<ActionResult> {
   if (typeof id !== "string" || id.length === 0 || id.length > 64) return { ok: false, error: "Неизвестный ответ" };
 
   try {
+    const title = await listReplies()
+      .then(({ replies }) => replies.find((reply) => reply.id === id)?.title)
+      .catch(() => undefined);
     await deleteReply(id);
+    await recordContentChange(actorOf(admin), "reply", "deleted", { id, label: title ?? id });
   } catch (error) {
     return failure(error);
   }

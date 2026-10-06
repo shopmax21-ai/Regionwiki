@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 
+import { actorOf, recordAudit } from "@/lib/audit/store";
 import { getAdmin } from "@/lib/auth/admin";
 import { setGroupPermission } from "@/lib/auth/db";
-import { isEditableGroup, isToggleablePermission } from "@/lib/auth/groups";
+import { groupInfo, isEditableGroup, isToggleablePermission, permissionDefs } from "@/lib/auth/groups";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -26,6 +27,16 @@ export async function setGroupPermissionAction(
     console.error("[roles] Не удалось сохранить право", error);
     return { ok: false, error: "База данных недоступна, попробуйте позже" };
   }
+
+  const permissionName = permissionDefs.find((def) => def.key === permission)?.label ?? permission;
+  await recordAudit(actorOf(admin), {
+    category: "roles",
+    action: enabled ? "group_permission.enabled" : "group_permission.disabled",
+    severity: "critical",
+    summary: `Право «${permissionName}» ${enabled ? "включено" : "выключено"} у группы «${groupInfo[group].label}»`,
+    target: { type: "group", id: group, label: groupInfo[group].label },
+    details: { Право: permissionName, Группа: groupInfo[group].label, Стало: enabled ? "включено" : "выключено" },
+  });
 
   // Меню и страницы зависят от прав, поэтому сбрасываем весь кабинет
   revalidatePath("/dashboard", "layout");

@@ -1,10 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { recordAudit } from "@/lib/audit/store";
 import { canUserDecideAccess } from "@/lib/auth/admin";
 import { generateCode, hashCode, hashToken, isAttemptToken } from "@/lib/auth/attempt";
 import { getAuthConfig } from "@/lib/auth/config";
-import { bindAttempt, decideUser } from "@/lib/auth/db";
+import { bindAttempt, decideUser, getUser } from "@/lib/auth/db";
 import { authErrorResponse } from "@/lib/auth/errors";
+import { personPlainText } from "@/lib/auth/person";
 import {
   answerCallback,
   codeMessage,
@@ -104,6 +106,21 @@ async function handleUpdate(request: NextRequest) {
       await answerCallback(config, callback.id, "Заявка не найдена");
       return NextResponse.json({ ok: true });
     }
+
+    // Решение из бота попадает в журнал так же, как решение на сайте
+    const decider = await getUser(adminId).catch(() => null);
+    const label = personPlainText(user);
+    await recordAudit(
+      { id: adminId, name: decider ? personPlainText(decider) : displayName(callback.from) },
+      {
+        category: "access",
+        action: approved ? "access.approved" : "access.rejected",
+        severity: "important",
+        summary: `${approved ? "Одобрен" : "Отклонён"} доступ: ${label}`,
+        target: { type: "user", id: user.telegramId, label },
+        details: { Источник: "кнопка в Telegram" },
+      },
+    );
 
     await answerCallback(config, callback.id, approved ? "Доступ одобрен" : "Заявка отклонена");
     if (callback.message) {

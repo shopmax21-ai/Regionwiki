@@ -1,7 +1,13 @@
 import { getAuthConfig } from "@/lib/auth/config";
 import { sendMessage } from "@/lib/auth/telegram";
 
-import { claimDueReminders, type DueReminder, releaseReminder } from "./store";
+import {
+  claimDueReminders,
+  claimTrackingReminders,
+  type DueReminder,
+  releaseReminder,
+  releaseTrackingReminder,
+} from "./store";
 import { MSK_ZONE } from "./types";
 
 /** Раз в сколько проверяем, не пора ли напомнить. Напоминание приходит с точностью до этой минуты. */
@@ -23,7 +29,8 @@ function leadText(startsAt: string, now: number): string {
   return `через ${minutes} ${word}`;
 }
 
-export function reminderText(event: DueReminder, now: number = Date.now()): string {
+/** tracked: напоминание подписчику, который следит за календарём (а не автору мероприятия) */
+export function reminderText(event: DueReminder, now: number = Date.now(), tracked = false): string {
   const lines = [
     `⏰ <b>Мероприятие ${leadText(event.startsAt, now)}</b>`,
     "",
@@ -31,7 +38,12 @@ export function reminderText(event: DueReminder, now: number = Date.now()): stri
     `🕒 ${time.format(new Date(event.startsAt))}–${time.format(new Date(event.endsAt))} (МСК)`,
   ];
   if (event.location) lines.push(`📍 ${escapeHtml(event.location)}`);
-  lines.push("", "Отключить напоминание можно в разделе «Календарь» на сайте.");
+  lines.push(
+    "",
+    tracked
+      ? "Вы следите за календарём. Выключить это можно в разделе «Календарь» на сайте."
+      : "Отключить напоминание можно в разделе «Календарь» на сайте.",
+  );
   return lines.join("\n");
 }
 
@@ -50,6 +62,22 @@ export async function sendDueReminders(): Promise<number> {
       await releaseReminder(event.id).catch((error) =>
         console.error("[calendar] Не удалось вернуть напоминание", error),
       );
+  }
+
+  // Подписчикам («Следить за календарём»): напоминание о чужих мероприятиях. Сбой здесь не мешает напоминаниям авторам.
+  try {
+    for (const event of await claimTrackingReminders()) {
+      const delivered = await sendMessage(config, event.recipientId, reminderText(event, Date.now(), true)).catch(
+        () => false,
+      );
+      if (delivered) sent++;
+      else
+        await releaseTrackingReminder(event.id, event.recipientId).catch((error) =>
+          console.error("[calendar] Не удалось вернуть напоминание подписчику", error),
+        );
+    }
+  } catch (error) {
+    console.error("[calendar] Сбой напоминаний подписчикам", error);
   }
   return sent;
 }

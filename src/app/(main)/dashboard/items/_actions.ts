@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 
+import { actorOf, recordContentChange } from "@/lib/audit/store";
 import { getAdmin } from "@/lib/auth/admin";
-import { createItem, deleteItem, ItemStoreError, updateItem } from "@/lib/items/store";
+import { createItem, deleteItem, ItemStoreError, listItems, updateItem } from "@/lib/items/store";
 import { validateItem } from "@/lib/items/validate";
 
 import type { Item } from "./_data/items";
@@ -36,6 +37,7 @@ export async function createItemAction(input: unknown): Promise<ItemActionResult
 
   try {
     const item = await createItem(result.item, admin.id);
+    await recordContentChange(actorOf(admin), "item", "created", { id: item.id, label: item.name });
     refresh();
     return { ok: true, item };
   } catch (error) {
@@ -54,6 +56,7 @@ export async function updateItemAction(id: number, input: unknown): Promise<Item
 
   try {
     const item = await updateItem(id, result.item, admin.id);
+    await recordContentChange(actorOf(admin), "item", "updated", { id: item.id, label: item.name });
     refresh();
     return { ok: true, item };
   } catch (error) {
@@ -67,7 +70,12 @@ export async function deleteItemAction(id: number): Promise<ItemDeleteResult> {
   if (badId(id)) return { ok: false, error: "Неизвестный предмет" };
 
   try {
+    // Название запоминаем до удаления: после него его уже не найти
+    const name = await listItems()
+      .then(({ items }) => items.find((item) => item.id === id)?.name)
+      .catch(() => undefined);
     await deleteItem(id);
+    await recordContentChange(actorOf(admin), "item", "deleted", { id, label: name ?? `№${id}` });
     refresh();
     return { ok: true };
   } catch (error) {

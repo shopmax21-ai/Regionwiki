@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { actorOf, recordContentChange } from "@/lib/audit/store";
 import { getAdmin } from "@/lib/auth/admin";
-import { deleteRealty, RealtyStoreError, updateRealty } from "@/lib/realties/store";
+import { deleteRealty, listRealties, RealtyStoreError, updateRealty } from "@/lib/realties/store";
 import { validateRealty } from "@/lib/realties/validate";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   try {
     await updateRealty(result.realty, admin.id);
+    await recordContentChange(actorOf(admin), "realty", "updated", {
+      id,
+      label: `${result.realty.category} №${result.realty.id}`,
+    });
   } catch (error) {
     if (error instanceof RealtyStoreError && error.code === "not_found") {
       return NextResponse.json(NOT_FOUND, { status: 404 });
@@ -47,7 +52,14 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   const { id } = await params;
 
   try {
+    const found = await listRealties()
+      .then(({ realties }) => realties.find((realty) => String(realty.id) === id))
+      .catch(() => undefined);
     await deleteRealty(id);
+    await recordContentChange(actorOf(admin), "realty", "deleted", {
+      id,
+      label: found ? `${found.category} №${found.id}` : `№${id}`,
+    });
   } catch (error) {
     if (error instanceof RealtyStoreError && error.code === "not_found") {
       return NextResponse.json(NOT_FOUND, { status: 404 });

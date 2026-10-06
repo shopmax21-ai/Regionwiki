@@ -1,8 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { businessCode } from "@/app/(main)/dashboard/business/_data/businesses";
+import { actorOf, recordContentChange } from "@/lib/audit/store";
 import { getAdmin } from "@/lib/auth/admin";
-import { BusinessStoreError, deleteBusiness, updateBusiness } from "@/lib/businesses/store";
+import { BusinessStoreError, deleteBusiness, listBusinesses, updateBusiness } from "@/lib/businesses/store";
 import { validateBusiness } from "@/lib/businesses/validate";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   try {
     await updateBusiness(result.business, admin.id);
+    await recordContentChange(actorOf(admin), "business", "updated", {
+      id: code,
+      label: `${result.business.category} №${result.business.id}`,
+    });
   } catch (error) {
     if (error instanceof BusinessStoreError && error.code === "not_found") {
       return NextResponse.json(NOT_FOUND, { status: 404 });
@@ -48,7 +53,14 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   const { code } = await params;
 
   try {
+    const found = await listBusinesses()
+      .then(({ businesses }) => businesses.find((business) => businessCode(business) === code))
+      .catch(() => undefined);
     await deleteBusiness(code);
+    await recordContentChange(actorOf(admin), "business", "deleted", {
+      id: code,
+      label: found ? `${found.category} №${found.id}` : code,
+    });
   } catch (error) {
     if (error instanceof BusinessStoreError && error.code === "not_found") {
       return NextResponse.json(NOT_FOUND, { status: 404 });

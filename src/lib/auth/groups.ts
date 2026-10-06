@@ -59,6 +59,7 @@ export type Permission =
   | "academy.edit"
   | "academy.results"
   | "calendar.manage"
+  | "audit.view"
   | "permissions.view"
   | "permissions.edit";
 
@@ -176,6 +177,14 @@ export const permissionDefs: readonly PermissionDef[] = [
     description:
       "Менять и удалять мероприятия других администраторов в разделе «Календарь». Свои мероприятия может менять каждый. Только Гл.Администратор.",
     category: "Календарь",
+    locked: true,
+  },
+  {
+    key: "audit.view",
+    label: "Аудит действий администрации",
+    description:
+      "Раздел «Аудит действий»: журнал значимых изменений (доступ, группы и права, правки и удаление контента, решения по наказаниям). Только Гл.Администратор.",
+    category: "Аудит",
     locked: true,
   },
   {

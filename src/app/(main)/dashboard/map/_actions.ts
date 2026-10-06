@@ -2,11 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 
+import { actorOf, recordAudit, recordContentChange } from "@/lib/audit/store";
 import { getAdmin } from "@/lib/auth/admin";
 import {
   createMapPlace,
   createMapPlaces,
   deleteMapPlace,
+  listMapPlaces,
   MapStoreError,
   updateMapPlace,
 } from "@/lib/map/store";
@@ -39,6 +41,7 @@ export async function createPlaceAction(input: unknown): Promise<PlaceActionResu
 
   try {
     const id = await createMapPlace(result.place, admin.id);
+    await recordContentChange(actorOf(admin), "place", "created", { id, label: result.place.name });
     revalidatePath("/dashboard/map");
     return { ok: true, id };
   } catch (error) {
@@ -56,6 +59,7 @@ export async function updatePlaceAction(id: string, input: unknown): Promise<Pla
 
   try {
     await updateMapPlace(id, result.place, admin.id);
+    await recordContentChange(actorOf(admin), "place", "updated", { id, label: result.place.name });
     revalidatePath("/dashboard/map");
     return { ok: true, id };
   } catch (error) {
@@ -69,7 +73,11 @@ export async function deletePlaceAction(id: string): Promise<PlaceActionResult> 
   if (!isValidId(id)) return UNKNOWN;
 
   try {
+    const name = await listMapPlaces()
+      .then(({ places }) => places.find((place) => place.id === id)?.name)
+      .catch(() => undefined);
     await deleteMapPlace(id);
+    await recordContentChange(actorOf(admin), "place", "deleted", { id, label: name ?? id });
     revalidatePath("/dashboard/map");
     return { ok: true, id };
   } catch (error) {
@@ -101,7 +109,17 @@ export async function importPlacesAction(input: unknown): Promise<ImportActionRe
 
   try {
     const { added, skipped } = await createMapPlaces(places, admin.id);
-    if (added > 0) revalidatePath("/dashboard/map");
+    if (added > 0) {
+      await recordAudit(actorOf(admin), {
+        category: "content",
+        action: "place.imported",
+        severity: "normal",
+        summary: `Метки на карте загружены списком: добавлено ${added}`,
+        target: { type: "place" },
+        details: { Добавлено: String(added), Пропущено: String(skipped) },
+      });
+      revalidatePath("/dashboard/map");
+    }
     return { ok: true, added, skipped };
   } catch (error) {
     return failure(error);

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { EVENT_LIMITS as L } from "./types";
+import { DEFAULT_EVENT_COLOR, isEventColor, EVENT_LIMITS as L } from "./types";
 
 const instant = z
   .string()
@@ -14,6 +14,11 @@ const eventSchema = z
     location: z.string().trim().max(L.location, "Место слишком длинное").default(""),
     startsAt: instant,
     endsAt: instant,
+    color: z
+      .string()
+      .refine(isEventColor, "Выберите цвет мероприятия")
+      .transform((value) => value.toLowerCase())
+      .default(DEFAULT_EVENT_COLOR),
     notify: z.boolean().default(true),
     /** Сохранить, несмотря на пересечение с другими мероприятиями */
     force: z.boolean().default(false),
@@ -34,6 +39,7 @@ export type EventInput = {
   location: string;
   startsAt: Date;
   endsAt: Date;
+  color: string;
   notify: boolean;
   force: boolean;
 };

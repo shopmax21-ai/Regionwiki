@@ -14,6 +14,34 @@ export const EVENT_LIMITS = {
   maxDurationHours: 24 * 7,
 } as const;
 
+/** Цвета мероприятий в календаре. Первый — цвет по умолчанию. Свой оттенок тоже можно выбрать (любой #RRGGBB). */
+export const EVENT_COLORS = [
+  { value: "#3b82f6", label: "Синий" },
+  { value: "#6366f1", label: "Индиго" },
+  { value: "#8b5cf6", label: "Фиолетовый" },
+  { value: "#ec4899", label: "Розовый" },
+  { value: "#ef4444", label: "Красный" },
+  { value: "#f97316", label: "Оранжевый" },
+  { value: "#eab308", label: "Жёлтый" },
+  { value: "#22c55e", label: "Зелёный" },
+  { value: "#14b8a6", label: "Бирюзовый" },
+  { value: "#64748b", label: "Серый" },
+] as const;
+
+export const DEFAULT_EVENT_COLOR: string = EVENT_COLORS[0].value;
+
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+export const isEventColor = (value: unknown): value is string => typeof value === "string" && HEX_COLOR.test(value);
+
+/** Цвет текста на плашке мероприятия: чёрный на светлых цветах и белый на тёмных (по яркости цвета). */
+export function readableTextOn(hex: string): string {
+  if (!isEventColor(hex)) return "#ffffff";
+  const channel = (start: number) => Number.parseInt(hex.slice(start, start + 2), 16);
+  const luminance = (0.299 * channel(1) + 0.587 * channel(3) + 0.114 * channel(5)) / 255;
+  return luminance > 0.6 ? "#111827" : "#ffffff";
+}
+
 /** За сколько до начала приходит напоминание в Telegram */
 export const REMINDER_LEAD_MINUTES = 60;
 
@@ -44,6 +72,8 @@ export type CalendarEvent = {
   ownerName: string;
   /** Организатор для отображения: актуальные Никнейм, Statik ID и роль (запасной вариант: сохранённое имя) */
   owner: Person;
+  /** Цвет мероприятия в календаре (#RRGGBB) */
+  color: string;
   /** Напоминание в Telegram за час до начала (получает ownerId) */
   notify: boolean;
   /** Напоминание уже отправлено */

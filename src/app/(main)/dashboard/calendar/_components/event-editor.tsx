@@ -23,17 +23,27 @@ import { formatRange, fromInputValue, nextFullHour, toInputValue } from "@/lib/c
 import {
   type CalendarEvent,
   type ConflictInfo,
+  DEFAULT_EVENT_COLOR,
   EVENT_LIMITS as L,
   overlaps,
   REMINDER_LEAD_MINUTES,
 } from "@/lib/calendar/types";
 
 import { createEventAction, updateEventAction } from "../_actions";
+import { ColorPicker } from "./color-picker";
 
 /** Что открыть в редакторе: новое мероприятие (можно с заранее выбранным началом) или правка существующего */
 export type EditorTarget = { mode: "create"; startsAt?: string } | { mode: "edit"; event: CalendarEvent };
 
-type FormState = { title: string; description: string; location: string; start: string; end: string; notify: boolean };
+type FormState = {
+  title: string;
+  description: string;
+  location: string;
+  start: string;
+  end: string;
+  color: string;
+  notify: boolean;
+};
 
 function initialForm(target: EditorTarget, now: number): FormState {
   if (target.mode === "edit") {
@@ -44,6 +54,7 @@ function initialForm(target: EditorTarget, now: number): FormState {
       location: event.location,
       start: toInputValue(event.startsAt),
       end: toInputValue(event.endsAt),
+      color: event.color,
       notify: event.notify,
     };
   }
@@ -54,6 +65,7 @@ function initialForm(target: EditorTarget, now: number): FormState {
     location: "",
     start: toInputValue(start),
     end: toInputValue(new Date(new Date(start).getTime() + 3_600_000).toISOString()),
+    color: DEFAULT_EVENT_COLOR,
     notify: true,
   };
 }
@@ -132,6 +144,7 @@ function EditorBody({
         location: form.location,
         startsAt,
         endsAt,
+        color: form.color,
         notify: form.notify,
         // Администратор уже видел пересечения на экране и подтвердил кнопкой «Всё равно сохранить»
         force: conflicts.length > 0,
@@ -264,6 +277,8 @@ function EditorBody({
           </p>
         </div>
       )}
+
+      <ColorPicker value={form.color} onChange={(color) => set("color", color)} />
 
       <Label className="flex items-center justify-between gap-4 rounded-xl bg-muted/50 px-4 py-3 font-normal">
         <span className="flex flex-col gap-0.5">

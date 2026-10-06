@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { businessCode } from "@/app/(main)/dashboard/business/_data/businesses";
+import { actorOf, recordContentChange } from "@/lib/audit/store";
 import { getAdmin } from "@/lib/auth/admin";
 import { BusinessStoreError, createBusiness } from "@/lib/businesses/store";
 import { validateBusiness } from "@/lib/businesses/validate";
@@ -22,6 +24,10 @@ export async function POST(request: NextRequest) {
 
   try {
     await createBusiness(result.business, admin.id);
+    await recordContentChange(actorOf(admin), "business", "created", {
+      id: businessCode(result.business),
+      label: `${result.business.category} №${result.business.id}`,
+    });
   } catch (error) {
     if (error instanceof BusinessStoreError && error.code === "exists") {
       return NextResponse.json({ error: "Бизнес с таким типом и номером уже есть" }, { status: 409 });

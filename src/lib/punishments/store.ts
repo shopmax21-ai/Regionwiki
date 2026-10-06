@@ -193,6 +193,13 @@ async function withPeople<T extends { requester: Person; assignee: Person | null
   }));
 }
 
+/** Одна заявка по номеру записи: для журнала аудита (что именно одобрили, отклонили или выдали). */
+export const getRequestById = (id: string) =>
+  run(async () => {
+    const { rows } = await getPool().query<Row>(`SELECT ${COLUMNS} FROM punishment_requests WHERE id = $1`, [id]);
+    return rows[0] ? toRequest(rows[0]) : null;
+  });
+
 /** Свои заявки хелпера: все статусы, новые сверху. */
 export const listMine = (requesterId: string, limit = 100) =>
   run(async () => {

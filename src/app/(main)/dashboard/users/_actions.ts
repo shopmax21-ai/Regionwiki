@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { actorOf, recordAudit } from "@/lib/audit/store";
 import { getAdmin } from "@/lib/auth/admin";
 import { getAuthConfig } from "@/lib/auth/config";
 import {
@@ -14,12 +15,15 @@ import {
 } from "@/lib/auth/db";
 import {
   type AdminGroup,
+  groupInfo,
   groupLevel,
   isAdminGroup,
   isPermissionOverride,
   isToggleablePermission,
   type Permission,
+  permissionDefs,
 } from "@/lib/auth/groups";
+import { personPlainText } from "@/lib/auth/person";
 import { notifyUserDecision } from "@/lib/auth/telegram";
 
 import { toUserItem, type UserItem } from "./_lib";
@@ -37,6 +41,10 @@ const refresh = () => {
 
 const DB_DOWN = "База данных недоступна, попробуйте позже";
 
+const permissionLabel = (permission: Permission) =>
+  permissionDefs.find((def) => def.key === permission)?.label ?? permission;
+const groupLabel = (group: AdminGroup | null) => (group ? groupInfo[group].label : "без группы");
+
 /** Одобрить или отклонить доступ. Нужно право «Одобрение доступа», проверяется по базе, а не по cookie. */
 export async function changeUserStatus(telegramId: string, status: "approved" | "rejected"): Promise<ActionResult> {
   const config = getAuthConfig();
@@ -49,6 +57,14 @@ export async function changeUserStatus(telegramId: string, status: "approved" | 
     const user = await decideUser(telegramId, status, admin.id);
     if (!user) return { ok: false, error: "Пользователь не найден или состоит в группе администраторов" };
     await notifyUserDecision(config, user.telegramId, status === "approved");
+    const label = personPlainText(user);
+    await recordAudit(actorOf(admin), {
+      category: "access",
+      action: status === "approved" ? "access.approved" : "access.rejected",
+      severity: "important",
+      summary: `${status === "approved" ? "Одобрен" : "Отклонён"} доступ: ${label}`,
+      target: { type: "user", id: user.telegramId, label },
+    });
     refresh();
     return { ok: true, user: toUserItem(user) };
   } catch (error) {
@@ -83,6 +99,29 @@ export async function changeUserGroup(telegramId: string, group: AdminGroup | "n
 
     const updated = await setUserGroup(telegramId, group === "none" ? null : group, admin.id);
     if (!updated) return { ok: false, error: "Пользователь не найден" };
+
+    const label = personPlainText(updated);
+    const from = target.adminGroup;
+    const to = group === "none" ? null : group;
+    if (from !== to) {
+      let action = "group.changed";
+      let summary = `Группа изменена: ${label}, «${groupLabel(from)}» → «${groupLabel(to)}»`;
+      if (!from) {
+        action = "group.assigned";
+        summary = `Назначена группа «${groupLabel(to)}»: ${label}`;
+      } else if (!to) {
+        action = "group.removed";
+        summary = `Снята группа «${groupLabel(from)}»: ${label}`;
+      }
+      await recordAudit(actorOf(admin), {
+        category: "roles",
+        action,
+        severity: "critical",
+        summary,
+        target: { type: "user", id: telegramId, label },
+        details: { Было: groupLabel(from), Стало: groupLabel(to) },
+      });
+    }
     refresh();
     return { ok: true, user: toUserItem(updated, await getUserOverrides(telegramId)) };
   } catch (error) {
@@ -122,6 +161,19 @@ export async function changeUserPermission(
     }
 
     await setUserOverride(telegramId, permission, mode, admin.id);
+
+    const label = personPlainText(target);
+    const outcomes = { grant: "выдано лично", deny: "отозвано лично", reset: "возвращено «как у группы»" } as const;
+    const kind = mode ?? "reset";
+    const outcome = outcomes[kind];
+    await recordAudit(actorOf(admin), {
+      category: "roles",
+      action: { grant: "permission.granted", deny: "permission.denied", reset: "permission.cleared" }[kind],
+      severity: "critical",
+      summary: `Право «${permissionLabel(permission)}» ${outcome}: ${label}`,
+      target: { type: "user", id: telegramId, label },
+      details: { Право: permissionLabel(permission), Группа: groupLabel(target.adminGroup) },
+    });
     refresh();
     return { ok: true, user: toUserItem(target, await getUserOverrides(telegramId)) };
   } catch (error) {
@@ -148,6 +200,16 @@ export async function resetUserPermissions(telegramId: string): Promise<ActionRe
     }
 
     await clearUserOverrides(telegramId);
+
+    const label = personPlainText(target);
+    await recordAudit(actorOf(admin), {
+      category: "roles",
+      action: "permission.reset",
+      severity: "important",
+      summary: `Личные права сброшены до прав группы: ${label}`,
+      target: { type: "user", id: telegramId, label },
+      details: { Группа: groupLabel(target.adminGroup) },
+    });
     refresh();
     return { ok: true, user: toUserItem(target) };
   } catch (error) {

@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { actorOf, recordContentChange } from "@/lib/audit/store";
 import { getAdmin } from "@/lib/auth/admin";
-import { deleteVehicle, updateVehicle, VehicleStoreError } from "@/lib/vehicles/store";
+import { deleteVehicle, getVehicleByCode, updateVehicle, VehicleStoreError } from "@/lib/vehicles/store";
 import { validateVehicle } from "@/lib/vehicles/validate";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   try {
     await updateVehicle(result.vehicle, admin.id);
+    await recordContentChange(actorOf(admin), "vehicle", "updated", { id: code, label: result.vehicle.name });
   } catch (error) {
     if (error instanceof VehicleStoreError && error.code === "not_found") {
       return NextResponse.json({ error: "Транспорт не найден" }, { status: 404 });
@@ -41,7 +43,11 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   const { code } = await params;
 
   try {
+    const name = await getVehicleByCode(code)
+      .then(({ vehicle }) => vehicle?.name)
+      .catch(() => undefined);
     await deleteVehicle(code);
+    await recordContentChange(actorOf(admin), "vehicle", "deleted", { id: code, label: name ?? code });
   } catch (error) {
     if (error instanceof VehicleStoreError && error.code === "not_found") {
       return NextResponse.json({ error: "Транспорт не найден, возможно, его уже удалили" }, { status: 404 });

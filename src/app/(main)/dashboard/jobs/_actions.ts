@@ -2,11 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getAdmin } from "@/lib/auth/admin";
-import { createJob, deleteJob, JobStoreError, updateJob } from "@/lib/jobs/store";
-import { listMapPlaces } from "@/lib/map/store";
 import type { MapPlace } from "@/app/(main)/dashboard/map/_components/map-data";
+import { actorOf, recordContentChange } from "@/lib/audit/store";
+import { getAdmin } from "@/lib/auth/admin";
+import { createJob, deleteJob, JobStoreError, listJobs, updateJob } from "@/lib/jobs/store";
 import { validateJob } from "@/lib/jobs/validate";
+import { listMapPlaces } from "@/lib/map/store";
 
 export type JobActionResult = { ok: true; slug: string } | { ok: false; error: string };
 
@@ -37,6 +38,7 @@ export async function createJobAction(input: unknown): Promise<JobActionResult> 
 
   try {
     await createJob(result.job, admin.id);
+    await recordContentChange(actorOf(admin), "job", "created", { id: result.job.slug, label: result.job.title });
   } catch (error) {
     return failure(error);
   }
@@ -56,6 +58,7 @@ export async function updateJobAction(slug: string, input: unknown): Promise<Job
 
   try {
     await updateJob(slug, job, admin.id);
+    await recordContentChange(actorOf(admin), "job", "updated", { id: slug, label: job.title });
   } catch (error) {
     return failure(error);
   }
@@ -69,7 +72,11 @@ export async function deleteJobAction(slug: string): Promise<JobActionResult> {
   if (badSlug(slug)) return { ok: false, error: "Неизвестная работа" };
 
   try {
+    const title = await listJobs()
+      .then(({ jobs }) => jobs.find((job) => job.slug === slug)?.title)
+      .catch(() => undefined);
     await deleteJob(slug, admin.id);
+    await recordContentChange(actorOf(admin), "job", "deleted", { id: slug, label: title ?? slug });
   } catch (error) {
     return failure(error);
   }

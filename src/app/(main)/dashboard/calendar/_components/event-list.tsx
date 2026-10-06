@@ -60,6 +60,12 @@ export function EventList({ events, now, meId, onOpen, onNotifyChanged }: EventL
                       className="flex min-w-0 flex-1 flex-col gap-1 rounded-md text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                     >
                       <span className="flex flex-wrap items-center gap-2">
+                        <span
+                          className="size-2.5 shrink-0 rounded-full"
+                          style={{ backgroundColor: event.color }}
+                          role="img"
+                          aria-label="Цвет мероприятия"
+                        />
                         <span className="truncate font-medium text-sm">{event.title}</span>
                         <StatusBadge status={group.status} />
                       </span>

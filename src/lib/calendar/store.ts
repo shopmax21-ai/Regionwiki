@@ -1,8 +1,14 @@
-import { getPeopleSafe } from "@/lib/auth/db";
+import { getPeopleSafe, listCalendarSubscribers } from "@/lib/auth/db";
 import { personFromName } from "@/lib/auth/person";
 import { getPool } from "@/lib/db/pool";
 
-import { type CalendarEvent, type ConflictInfo, REMINDER_LEAD_MINUTES } from "./types";
+import {
+  type CalendarEvent,
+  type ConflictInfo,
+  DEFAULT_EVENT_COLOR,
+  isEventColor,
+  REMINDER_LEAD_MINUTES,
+} from "./types";
 import type { EventInput } from "./validate";
 import { randomUUID } from "node:crypto";
 
@@ -48,6 +54,18 @@ async function init(): Promise<void> {
       updated_at        timestamptz NOT NULL DEFAULT now()
     )`);
     await client.query("CREATE INDEX IF NOT EXISTS calendar_events_starts_idx ON calendar_events (starts_at)");
+    // Цвет мероприятия в календаре. Старые мероприятия получают цвет по умолчанию.
+    await client.query(
+      `ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS color text NOT NULL DEFAULT '${DEFAULT_EVENT_COLOR}'`,
+    );
+    // Напоминания тем, кто следит за календарём: отдельно по каждому получателю, чтобы никто не получил дубль
+    await client.query(`CREATE TABLE IF NOT EXISTS calendar_tracking_sent (
+      event_id    text NOT NULL,
+      telegram_id text NOT NULL,
+      sent_at     timestamptz,
+      attempts    integer NOT NULL DEFAULT 0,
+      PRIMARY KEY (event_id, telegram_id)
+    )`);
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK").catch((rollbackError) => console.error("[calendar] ROLLBACK failed", rollbackError));
@@ -84,11 +102,13 @@ type EventRow = {
   ends_at: string | Date;
   owner_id: string;
   owner_name: string;
+  color: string;
   notify: boolean;
   reminder_sent_at: string | Date | null;
 };
 
-const COLUMNS = "id, title, description, location, starts_at, ends_at, owner_id, owner_name, notify, reminder_sent_at";
+const COLUMNS =
+  "id, title, description, location, starts_at, ends_at, owner_id, owner_name, color, notify, reminder_sent_at";
 
 const toEvent = (row: EventRow): CalendarEvent => ({
   id: row.id,
@@ -100,6 +120,7 @@ const toEvent = (row: EventRow): CalendarEvent => ({
   ownerId: row.owner_id,
   ownerName: row.owner_name,
   owner: personFromName(row.owner_name, row.owner_id),
+  color: isEventColor(row.color) ? row.color : DEFAULT_EVENT_COLOR,
   notify: row.notify,
   reminded: row.reminder_sent_at !== null,
 });
@@ -153,8 +174,8 @@ export const createEvent = (input: EventInput, owner: { id: string; name: string
   run(async () => {
     const id = randomUUID();
     await getPool().query(
-      `INSERT INTO calendar_events (id, title, description, location, starts_at, ends_at, owner_id, owner_name, notify)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      `INSERT INTO calendar_events (id, title, description, location, starts_at, ends_at, owner_id, owner_name, color, notify)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
         id,
         input.title,
@@ -164,6 +185,7 @@ export const createEvent = (input: EventInput, owner: { id: string; name: string
         input.endsAt,
         owner.id,
         owner.name,
+        input.color,
         input.notify,
       ],
     );
@@ -176,15 +198,25 @@ export const createEvent = (input: EventInput, owner: { id: string; name: string
  */
 export const updateEvent = (id: string, input: EventInput) =>
   run(async () => {
-    const result = await getPool().query(
-      `UPDATE calendar_events SET title = $2, description = $3, location = $4, starts_at = $5, ends_at = $6, notify = $7,
+    const pool = getPool();
+    const before = await pool.query<{ starts_at: string | Date }>(
+      "SELECT starts_at FROM calendar_events WHERE id = $1",
+      [id],
+    );
+    const result = await pool.query(
+      `UPDATE calendar_events SET title = $2, description = $3, location = $4, starts_at = $5, ends_at = $6, notify = $7, color = $8,
          reminder_sent_at = CASE WHEN starts_at IS DISTINCT FROM $5 OR notify IS DISTINCT FROM $7 THEN NULL ELSE reminder_sent_at END,
          reminder_attempts = CASE WHEN starts_at IS DISTINCT FROM $5 OR notify IS DISTINCT FROM $7 THEN 0 ELSE reminder_attempts END,
          updated_at = now()
        WHERE id = $1`,
-      [id, input.title, input.description, input.location, input.startsAt, input.endsAt, input.notify],
+      [id, input.title, input.description, input.location, input.startsAt, input.endsAt, input.notify, input.color],
     );
     if (result.rowCount === 0) throw new CalendarStoreError("not_found");
+    // Время начала сдвинулось: тем, кто следит за календарём, напоминание нужно отправить заново
+    const oldStart = before.rows[0] ? new Date(before.rows[0].starts_at).getTime() : null;
+    if (oldStart !== null && oldStart !== input.startsAt.getTime()) {
+      await pool.query("DELETE FROM calendar_tracking_sent WHERE event_id = $1", [id]);
+    }
   });
 
 export const setEventNotify = (id: string, notify: boolean) =>
@@ -200,6 +232,7 @@ export const deleteEvent = (id: string) =>
   run(async () => {
     const result = await getPool().query("DELETE FROM calendar_events WHERE id = $1", [id]);
     if (result.rowCount === 0) throw new CalendarStoreError("not_found");
+    await getPool().query("DELETE FROM calendar_tracking_sent WHERE event_id = $1", [id]);
   });
 
 /* ---------- Напоминания ---------- */
@@ -251,5 +284,63 @@ export const releaseReminder = (id: string) =>
     await getPool().query(
       "UPDATE calendar_events SET reminder_sent_at = NULL, reminder_attempts = reminder_attempts + 1 WHERE id = $1",
       [id],
+    );
+  });
+
+/* ---------- Напоминания тем, кто следит за календарём ---------- */
+
+export type DueTrackingReminder = DueReminder & { recipientId: string };
+
+/**
+ * Забирает напоминания для подписчиков («Следить за календарём»): за час до начала чужого мероприятия.
+ * Автору своё мероприятие напоминает его собственный ползунок, поэтому ему здесь дубль не приходит.
+ * Пара «мероприятие + получатель» забирается атомарно, поэтому две копии сайта не отправят сообщение дважды.
+ */
+export const claimTrackingReminders = () =>
+  run(async (): Promise<DueTrackingReminder[]> => {
+    const subscribers = (await listCalendarSubscribers()).map((user) => user.telegramId);
+    if (subscribers.length === 0) return [];
+
+    const { rows } = await getPool().query<{
+      recipient_id: string;
+      id: string;
+      title: string;
+      location: string;
+      starts_at: string | Date;
+      ends_at: string | Date;
+      owner_id: string;
+    }>(
+      `WITH claimed AS (
+         INSERT INTO calendar_tracking_sent (event_id, telegram_id, sent_at)
+         SELECT e.id, s.telegram_id, now()
+         FROM calendar_events e CROSS JOIN unnest($3::text[]) AS s(telegram_id)
+         WHERE e.starts_at > now() AND e.starts_at <= now() + ($1 * interval '1 minute') AND e.owner_id <> s.telegram_id
+         ORDER BY e.starts_at ASC
+         LIMIT 200
+         ON CONFLICT (event_id, telegram_id) DO UPDATE SET sent_at = now()
+           WHERE calendar_tracking_sent.sent_at IS NULL AND calendar_tracking_sent.attempts < $2
+         RETURNING event_id, telegram_id
+       )
+       SELECT c.telegram_id AS recipient_id, e.id, e.title, e.location, e.starts_at, e.ends_at, e.owner_id
+       FROM claimed c JOIN calendar_events e ON e.id = c.event_id`,
+      [REMINDER_LEAD_MINUTES, MAX_REMINDER_ATTEMPTS, subscribers],
+    );
+    return rows.map((row) => ({
+      recipientId: row.recipient_id,
+      id: row.id,
+      title: row.title,
+      location: row.location,
+      startsAt: new Date(row.starts_at).toISOString(),
+      endsAt: new Date(row.ends_at).toISOString(),
+      ownerId: row.owner_id,
+    }));
+  });
+
+/** Отправка не удалась: возвращаем напоминание в очередь и считаем попытку. */
+export const releaseTrackingReminder = (eventId: string, recipientId: string) =>
+  run(async () => {
+    await getPool().query(
+      "UPDATE calendar_tracking_sent SET sent_at = NULL, attempts = attempts + 1 WHERE event_id = $1 AND telegram_id = $2",
+      [eventId, recipientId],
     );
   });

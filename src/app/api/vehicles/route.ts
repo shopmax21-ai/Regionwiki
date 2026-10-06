@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { actorOf, recordContentChange } from "@/lib/audit/store";
 import { getAdmin } from "@/lib/auth/admin";
 import { createVehicle, VehicleStoreError } from "@/lib/vehicles/store";
 import { validateVehicle } from "@/lib/vehicles/validate";
@@ -22,6 +23,10 @@ export async function POST(request: NextRequest) {
 
   try {
     await createVehicle(result.vehicle, admin.id);
+    await recordContentChange(actorOf(admin), "vehicle", "created", {
+      id: result.vehicle.code,
+      label: result.vehicle.name,
+    });
   } catch (error) {
     if (error instanceof VehicleStoreError && error.code === "exists") {
       return NextResponse.json({ error: "Транспорт с таким кодом уже есть" }, { status: 409 });

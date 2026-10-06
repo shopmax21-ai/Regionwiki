@@ -51,7 +51,15 @@ export function EventDetails({
               <StatusBadge status={status} />
               <span className="text-muted-foreground text-xs">{timing}</span>
             </div>
-            <DialogTitle className="text-lg leading-snug">{event.title}</DialogTitle>
+            <DialogTitle className="flex items-start gap-2 text-lg leading-snug">
+              <span
+                className="mt-1.5 size-3 shrink-0 rounded-full"
+                style={{ backgroundColor: event.color }}
+                role="img"
+                aria-label="Цвет мероприятия"
+              />
+              {event.title}
+            </DialogTitle>
             <DialogDescription className="sr-only">Сведения о мероприятии</DialogDescription>
           </DialogHeader>
 

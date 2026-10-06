@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { actorOf, recordContentChange } from "@/lib/audit/store";
 import { getAdmin } from "@/lib/auth/admin";
 import { createRealty, RealtyStoreError } from "@/lib/realties/store";
 import { validateRealty } from "@/lib/realties/validate";
@@ -22,6 +23,10 @@ export async function POST(request: NextRequest) {
 
   try {
     await createRealty(result.realty, admin.id);
+    await recordContentChange(actorOf(admin), "realty", "created", {
+      id: result.realty.id,
+      label: `${result.realty.category} №${result.realty.id}`,
+    });
   } catch (error) {
     if (error instanceof RealtyStoreError && error.code === "exists") {
       return NextResponse.json({ error: "Объект с таким номером уже есть" }, { status: 409 });

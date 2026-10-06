@@ -20,13 +20,20 @@ import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { pluralize } from "@/lib/academy/format";
-import { type CalendarEvent, type EventStatus, MSK_ZONE, STATUS_LABELS, statusOf } from "@/lib/calendar/types";
+import {
+  type CalendarEvent,
+  type EventStatus,
+  MSK_ZONE,
+  readableTextOn,
+  STATUS_LABELS,
+  statusOf,
+} from "@/lib/calendar/types";
 
 import { EventDeleteDialog } from "./event-delete-dialog";
 import { EventDetails } from "./event-details";
 import { type EditorTarget, EventEditor } from "./event-editor";
 import { EventList } from "./event-list";
-import { STATUS_COLOR } from "./status-badge";
+import { TrackingSwitch } from "./tracking-switch";
 
 const views = [
   { key: "dayGridMonth", label: "Месяц" },
@@ -45,6 +52,8 @@ type CalendarProps = {
   /** Момент загрузки страницы на сервере: от него считаются статусы до первого тика, чтобы разметка совпала */
   serverNow: number;
   me: { id: string; canManageAll: boolean };
+  /** Включено ли у этого администратора слежение за календарём в Telegram */
+  tracking: boolean;
   /** Почему мероприятия не загрузились (null, если всё в порядке) */
   problem: string | null;
 };
@@ -60,7 +69,7 @@ function useNow(initial: number, intervalMs = 30_000) {
   return now;
 }
 
-export function Calendar({ events: initialEvents, serverNow, me, problem }: CalendarProps) {
+export function Calendar({ events: initialEvents, serverNow, me, tracking, problem }: CalendarProps) {
   const router = useRouter();
   const controller = useCalendarController();
   const now = useNow(serverNow);
@@ -107,7 +116,10 @@ export function Calendar({ events: initialEvents, serverNow, me, problem }: Cale
         title: event.title,
         start: event.startsAt,
         end: event.endsAt,
-        color: STATUS_COLOR[statusOf(event, now)],
+        // Цвет выбирает автор мероприятия; закончившиеся приглушаются, чтобы текущие и будущие были заметнее
+        color: event.color,
+        textColor: readableTextOn(event.color),
+        classNames: statusOf(event, now) === "finished" ? ["opacity-60"] : [],
       })),
     [visible, now],
   );
@@ -134,6 +146,8 @@ export function Calendar({ events: initialEvents, serverNow, me, problem }: Cale
           Не удалось загрузить мероприятия: {problem}
         </p>
       )}
+
+      <TrackingSwitch initialEnabled={tracking} />
 
       <div className="flex flex-col overflow-hidden rounded-md border">
         <div className="flex flex-col gap-4 border-b bg-sidebar p-4 text-sidebar-foreground lg:flex-row lg:items-center lg:justify-between">

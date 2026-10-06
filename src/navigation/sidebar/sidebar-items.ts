@@ -1,6 +1,7 @@
 import {
   BookOpen,
   BookText,
+  Brain,
   BriefcaseBusiness,
   Calendar,
   CarFront,
@@ -10,12 +11,12 @@ import {
   Gavel,
   GraduationCap,
   HardHat,
+  History,
   House,
   Kanban,
   LayoutDashboard,
   ListChecks,
   Lock,
-  Brain,
   type LucideIcon,
   Map as MapIcon,
   MessageSquare,
@@ -273,6 +274,12 @@ function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
           url: "/dashboard/roles",
           icon: Lock,
         },
+        {
+          id: "audit",
+          title: "Аудит действий",
+          url: "/dashboard/audit",
+          icon: History,
+        },
       ],
     },
     {
@@ -280,7 +287,7 @@ function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
       label: "Разное",
       items: [
         {
-          id:"ai",
+          id: "ai",
           title: "AI Помощник",
           url: "/dashboard/ai-helper",
           icon: Brain,

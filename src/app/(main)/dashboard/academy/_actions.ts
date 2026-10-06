@@ -13,6 +13,7 @@ import {
 } from "@/lib/academy/store";
 import type { StartAttemptResult, SubmitAttemptResult } from "@/lib/academy/types";
 import { validateTest } from "@/lib/academy/validate";
+import { actorOf, recordContentChange } from "@/lib/audit/store";
 import { getAdmin, getAdminContext } from "@/lib/auth/admin";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -48,6 +49,7 @@ export async function createTestAction(input: unknown): Promise<ActionResult> {
 
   try {
     await createTest(result.test, admin.id);
+    await recordContentChange(actorOf(admin), "test", "created", { label: result.test.title });
   } catch (error) {
     return failure(error);
   }
@@ -65,6 +67,7 @@ export async function updateTestAction(id: string, input: unknown): Promise<Acti
 
   try {
     await updateTest(id, result.test, admin.id);
+    await recordContentChange(actorOf(admin), "test", "updated", { id, label: result.test.title });
   } catch (error) {
     return failure(error);
   }
@@ -78,7 +81,11 @@ export async function deleteTestAction(id: string): Promise<ActionResult> {
   if (!validId(id)) return ID_INVALID;
 
   try {
+    const title = await getTest(id)
+      .then((test) => test?.title)
+      .catch(() => undefined);
     await deleteTest(id);
+    await recordContentChange(actorOf(admin), "test", "deleted", { id, label: title ?? id });
   } catch (error) {
     return failure(error);
   }

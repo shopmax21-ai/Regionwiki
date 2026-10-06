@@ -1,8 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 
+import { actorOf, recordAudit } from "@/lib/audit/store";
 import { type AdminContext, getAdminContext } from "@/lib/auth/admin";
+import { setNotifyCalendar } from "@/lib/auth/db";
+import { personPlainText } from "@/lib/auth/person";
+import { formatRange } from "@/lib/calendar/format";
+import { type CalendarChange, notifyCalendarSubscribers } from "@/lib/calendar/notify";
 import {
   CalendarStoreError,
   createEvent,
@@ -39,6 +45,19 @@ function refresh() {
   revalidatePath("/dashboard/calendar");
 }
 
+/** Сообщение подписчикам уходит после ответа: медленный Telegram не задерживает сохранение. */
+function announce(admin: AdminContext, change: () => Promise<CalendarChange | null>) {
+  const actor = { id: admin.id, label: personPlainText(admin) };
+  after(async () => {
+    try {
+      const resolved = await change();
+      if (resolved) await notifyCalendarSubscribers(resolved, actor);
+    } catch (error) {
+      console.error("[calendar] Не удалось оповестить подписчиков", error);
+    }
+  });
+}
+
 /**
  * Зарегистрировать мероприятие. Если время пересекается с другими, возвращаем их список и ничего не сохраняем,
  * пока администратор не подтвердит (force). Так видно, с кем придётся пересечься.
@@ -57,7 +76,11 @@ export async function createEventAction(input: unknown): Promise<EventActionResu
         return { ok: false, error: "Это время пересекается с другими мероприятиями", conflicts };
       }
     }
-    await createEvent(result.event, { id: admin.id, name: admin.name });
+    const createdId = await createEvent(result.event, { id: admin.id, name: admin.name });
+    announce(admin, async () => {
+      const event = await getEvent(createdId);
+      return event ? { kind: "created", event } : null;
+    });
   } catch (error) {
     return failure(error);
   }
@@ -85,6 +108,25 @@ export async function updateEventAction(id: string, input: unknown): Promise<Eve
       }
     }
     await updateEvent(id, result.event);
+    announce(admin, async () => {
+      const updated = await getEvent(id);
+      return updated ? { kind: "updated", before: existing, after: updated } : null;
+    });
+    // Правку чужого мероприятия (это может только Гл.Администратор) фиксируем в журнале аудита
+    if (existing.ownerId !== admin.id) {
+      await recordAudit(actorOf(admin), {
+        category: "calendar",
+        action: "calendar.updated_foreign",
+        severity: "important",
+        summary: `Изменено чужое мероприятие «${existing.title}»`,
+        target: { type: "calendar_event", id, label: existing.title },
+        details: {
+          Организатор: personPlainText(existing.owner),
+          Было: `${existing.title}, ${formatRange(existing.startsAt, existing.endsAt)}`,
+          Стало: `${result.event.title}, ${formatRange(result.event.startsAt.toISOString(), result.event.endsAt.toISOString())}`,
+        },
+      });
+    }
   } catch (error) {
     return failure(error);
   }
@@ -102,6 +144,20 @@ export async function deleteEventAction(id: string): Promise<EventActionResult> 
     if (!existing) return { ok: false, error: "Мероприятие не найдено, возможно, его уже удалили" };
     if (!canChange(admin, existing.ownerId)) return FORBIDDEN;
     await deleteEvent(id);
+    announce(admin, async () => ({ kind: "deleted", event: existing }));
+    if (existing.ownerId !== admin.id) {
+      await recordAudit(actorOf(admin), {
+        category: "calendar",
+        action: "calendar.deleted_foreign",
+        severity: "important",
+        summary: `Удалено чужое мероприятие «${existing.title}»`,
+        target: { type: "calendar_event", id, label: existing.title },
+        details: {
+          Организатор: personPlainText(existing.owner),
+          Время: formatRange(existing.startsAt, existing.endsAt),
+        },
+      });
+    }
   } catch (error) {
     return failure(error);
   }
@@ -128,6 +184,25 @@ export async function setEventNotifyAction(id: string, notify: unknown): Promise
     await setEventNotify(id, notify);
   } catch (error) {
     return failure(error);
+  }
+  refresh();
+  return { ok: true };
+}
+
+/**
+ * «Следить за календарём»: включает или выключает сообщения в Telegram о новых, изменённых и удалённых мероприятиях
+ * других администраторов и напоминания за час до их начала. Настройка личная, у каждого администратора своя.
+ */
+export async function setCalendarTrackingAction(enabled: unknown): Promise<EventActionResult> {
+  const admin = await getAdminContext();
+  if (!admin) return NO_ACCESS;
+  if (typeof enabled !== "boolean") return { ok: false, error: "Неизвестное значение" };
+
+  try {
+    await setNotifyCalendar(admin.id, enabled);
+  } catch (error) {
+    console.error("[calendar] Не удалось сохранить настройку слежения", error);
+    return { ok: false, error: "База данных недоступна, попробуйте позже" };
   }
   refresh();
   return { ok: true };

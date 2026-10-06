@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { requireAdmin } from "@/lib/auth/admin";
+import { getUser } from "@/lib/auth/db";
 import { listEvents } from "@/lib/calendar/store";
 import type { CalendarEvent } from "@/lib/calendar/types";
 
@@ -25,11 +26,17 @@ export default async function Page() {
     problem = "база данных недоступна";
   }
 
+  // Настройка слежения в Telegram: если база не ответила, показываем «выключено», а сам календарь остаётся рабочим
+  const tracking = await getUser(admin.id)
+    .then((user) => user?.notifyCalendar ?? false)
+    .catch(() => false);
+
   return (
     <Calendar
       events={events}
       serverNow={Date.now()}
       me={{ id: admin.id, canManageAll: admin.permissions.includes("calendar.manage") }}
+      tracking={tracking}
       problem={problem}
     />
   );
