@@ -1,15 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-
 import { cn } from "cn";
 import { Check, Copy } from "lucide-react";
-import { toast } from "sonner";
-
-import { Card } from "@/components/ui/card";
 
 import type { QuickReply } from "../_data/replies";
-import { copyText } from "./copy-text";
+import { categoryHue, hueStyle } from "./category-hue";
+import { Highlight } from "./highlight";
 import { ReplyActions } from "./reply-actions";
 
 type ReplyCardProps = {
@@ -17,66 +13,59 @@ type ReplyCardProps = {
   categories: readonly string[];
   /** Показывать кнопки изменения и удаления */
   editable: boolean;
+  /** Ответ только что скопирован */
+  copied: boolean;
+  onCopy: (reply: QuickReply) => void;
+  /** Поисковый запрос: найденные фрагменты подсвечиваются */
+  query: string;
 };
 
-export function ReplyCard({ reply, categories, editable }: ReplyCardProps) {
-  const [copied, setCopied] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
-
-  const copy = async () => {
-    const ok = await copyText(reply.text);
-    if (!ok) {
-      toast.error("Не удалось скопировать, выделите текст вручную");
-      return;
-    }
-    toast.success("Ответ скопирован");
-    setCopied(true);
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setCopied(false), 1800);
-  };
-
+/** Ответ выглядит как сообщение в чате: именно такое игрок и увидит в репорте. */
+export function ReplyCard({ reply, categories, editable, copied, onCopy, query }: ReplyCardProps) {
   return (
-    <Card
-      className={cn(
-        "group/reply h-full gap-0 py-0 transition-shadow hover:ring-primary/50",
-        copied && "ring-2 ring-primary/70 hover:ring-primary/70",
-      )}
-    >
+    <article className="group/reply flex min-w-0 flex-col gap-1" style={hueStyle(categoryHue(reply.category))}>
       <button
         type="button"
-        onClick={copy}
+        onClick={() => onCopy(reply)}
         aria-label={`Скопировать ответ «${reply.title}»`}
-        className="flex min-w-0 flex-1 cursor-pointer flex-col gap-2 rounded-xl p-4 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="flex min-w-0 flex-1 cursor-pointer flex-col gap-1.5 rounded-2xl text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <span className="flex items-start justify-between gap-3">
-          <span className="font-semibold tracking-tight">{reply.title}</span>
+        <span className="flex items-center justify-between gap-3 px-1">
+          <span className="min-w-0 truncate font-medium text-sm">
+            <Highlight text={reply.title} query={query} />
+          </span>
           <span
             className={cn(
-              "flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors group-hover/reply:text-foreground",
-              copied && "bg-primary text-primary-foreground group-hover/reply:text-primary-foreground",
+              "flex shrink-0 items-center gap-1 text-muted-foreground text-xs transition-colors group-hover/reply:text-foreground",
+              copied && "text-foreground",
             )}
             aria-hidden="true"
           >
             {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+            {copied ? "Скопировано" : "Копировать"}
           </span>
         </span>
-        <span className="whitespace-pre-line break-words rounded-lg border-primary/60 border-l-2 bg-muted/50 px-3 py-2.5 text-foreground text-sm leading-6">
-          {reply.text}
+
+        <span
+          className={cn(
+            "h-full whitespace-pre-line break-words rounded-2xl rounded-tl-sm border px-4 py-3 text-sm leading-6 transition-[background-color,border-color,color,transform] duration-200 active:scale-[0.995]",
+            "border-[oklch(0.89_0.05_var(--h))] bg-[oklch(0.965_0.025_var(--h))]",
+            "group-hover/reply:border-[oklch(0.78_0.1_var(--h))]",
+            "dark:border-[oklch(0.38_0.07_var(--h))] dark:bg-[oklch(0.28_0.045_var(--h))]",
+            "dark:group-hover/reply:border-[oklch(0.55_0.12_var(--h))]",
+            copied &&
+              "border-[oklch(0.5_0.16_var(--h))] bg-[oklch(0.5_0.16_var(--h))] text-white group-hover/reply:border-[oklch(0.5_0.16_var(--h))] dark:border-[oklch(0.6_0.15_var(--h))] dark:bg-[oklch(0.6_0.15_var(--h))] dark:text-[oklch(0.2_0.03_var(--h))] dark:group-hover/reply:border-[oklch(0.6_0.15_var(--h))]",
+          )}
+        >
+          <Highlight text={reply.text} query={query} />
         </span>
       </button>
 
       {editable && (
-        <div className="flex items-center justify-end gap-1 border-t px-2 py-1.5">
+        <div className="flex items-center justify-end gap-1">
           <ReplyActions reply={reply} categories={categories} />
         </div>
       )}
-    </Card>
+    </article>
   );
 }
