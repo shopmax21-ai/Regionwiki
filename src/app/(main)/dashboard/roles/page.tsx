@@ -4,8 +4,9 @@ import type { Metadata } from "next";
 
 import { getAdminContext } from "@/lib/auth/admin";
 import { getAuthConfig } from "@/lib/auth/config";
-import { checkDatabase, getGroupPermissions, listUsers } from "@/lib/auth/db";
+import { checkDatabase, getGroupPermissions, listUsers, toPerson } from "@/lib/auth/db";
 import { type AdminGroup, adminGroups } from "@/lib/auth/groups";
+import type { Person } from "@/lib/auth/person";
 
 import { RolesManager } from "./_components/roles-manager";
 
@@ -38,10 +39,10 @@ export default async function Page() {
 
     const members = Object.fromEntries(adminGroups.map((group) => [group, []])) as unknown as Record<
       AdminGroup,
-      { name: string; username: string | null }[]
+      Person[]
     >;
     for (const user of users) {
-      if (user.adminGroup) members[user.adminGroup].push({ name: user.name, username: user.username });
+      if (user.adminGroup) members[user.adminGroup].push({ ...toPerson(user), group: user.adminGroup });
     }
 
     return (

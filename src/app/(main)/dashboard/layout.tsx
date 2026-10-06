@@ -9,9 +9,11 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { getViewerAccess } from "@/lib/auth/admin";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getPeopleSafe } from "@/lib/auth/db";
 import { listJobs } from "@/lib/jobs/store";
 import { getPreference } from "@/server/server-actions";
 
+import { LayoutControls } from "./_components/header/layout-controls";
 import { SearchDialog } from "./_components/header/search-dialog";
 import { ThemeSwitcher } from "./_components/header/theme-switcher";
 
@@ -27,7 +29,19 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
   const jobLinks = jobs.map((job) => ({ slug: job.slug, title: job.title }));
   const authorized = session?.status === "approved";
   const { isAdmin, permissions } = authorized ? await getViewerAccess() : { isAdmin: false, permissions: [] };
-  const user = session ? { id: session.id, name: session.name, username: session.username, role: session.role } : null;
+  // Группа, Никнейм и Statik ID берутся из базы: в сессии только имя из Telegram
+  const me = session ? (await getPeopleSafe([session.id])).get(session.id) : undefined;
+  const user = session
+    ? {
+        id: session.id,
+        name: session.name,
+        username: session.username,
+        role: session.role,
+        nickname: me?.nickname ?? null,
+        staticId: me?.staticId ?? null,
+        group: me?.group ?? null,
+      }
+    : null;
 
   return (
     <SidebarProvider
@@ -74,6 +88,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
               <SearchDialog authorized={authorized} isAdmin={isAdmin} permissions={permissions} jobs={jobLinks} />
             </div>
             <div className="flex items-center gap-2">
+              <LayoutControls />
               <ThemeSwitcher />
             </div>
           </div>

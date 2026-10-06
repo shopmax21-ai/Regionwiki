@@ -1,11 +1,15 @@
 import type { DbUser } from "@/lib/auth/db";
 import { type AdminGroup, adminGroups, groupLevel, type Permission, type PermissionOverrides } from "@/lib/auth/groups";
+import type { Person } from "@/lib/auth/person";
 
 /** Пользователь в виде, пригодном для передачи в браузер. */
 export type UserItem = {
   telegramId: string;
   name: string;
   username: string | null;
+  /** Игровой профиль администратора */
+  nickname: string | null;
+  staticId: string | null;
   status: "pending" | "approved" | "rejected";
   adminGroup: AdminGroup | null;
   /** Личные права поверх группы */
@@ -19,6 +23,8 @@ export const toUserItem = (user: DbUser, overrides: PermissionOverrides = {}): U
   telegramId: user.telegramId,
   name: user.name,
   username: user.username,
+  nickname: user.nickname,
+  staticId: user.staticId,
   status: user.status,
   adminGroup: user.adminGroup,
   overrides: user.adminGroup ? overrides : {},
@@ -40,3 +46,12 @@ export const canManage = (me: Me, user: UserItem, lockedAdminIds: readonly strin
 /** Группы, которые этот администратор вправе выдавать: Гл.Администратор любые, остальные только ниже своей. */
 export const assignableGroups = (me: Me): AdminGroup[] =>
   adminGroups.filter((group) => me.level >= 4 || groupLevel(group) < me.level);
+
+/** Человек для отображения: «иконка роли Никнейм иконка ID Статик». */
+export const userPerson = (user: UserItem): Person => ({
+  id: user.telegramId,
+  name: user.name,
+  nickname: user.nickname,
+  staticId: user.staticId,
+  group: user.adminGroup,
+});

@@ -5,6 +5,7 @@ import { useId, useMemo, useState, useTransition } from "react";
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
+import { PersonName } from "@/components/person-name";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -252,7 +253,8 @@ function EditorBody({
           <ul className="flex flex-col gap-1">
             {conflicts.map((conflict) => (
               <li key={conflict.id} className="text-muted-foreground text-xs leading-5">
-                <span className="font-medium text-foreground">{conflict.title}</span> · {conflict.ownerName} ·{" "}
+                <span className="font-medium text-foreground">{conflict.title}</span> ·{" "}
+                <PersonName person={conflict.owner} className="align-bottom" /> ·{" "}
                 {formatRange(conflict.startsAt, conflict.endsAt)}
               </li>
             ))}

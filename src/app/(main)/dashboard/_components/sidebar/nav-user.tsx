@@ -6,8 +6,9 @@ import { usePathname } from "next/navigation";
 import { Copy, EllipsisVertical, LogIn, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
+import { PersonName } from "@/components/person-name";
+import { RoleBadge } from "@/components/role-icon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
+import type { AdminGroup } from "@/lib/auth/groups";
+import { personLabel } from "@/lib/auth/person";
 import { getInitials } from "@/lib/utils";
 
 export type SidebarUser = {
@@ -25,13 +28,25 @@ export type SidebarUser = {
   readonly name: string;
   readonly username?: string;
   readonly role: "user" | "admin";
+  /** Игровой профиль администратора и его группа (у обычного участника null) */
+  readonly nickname: string | null;
+  readonly staticId: string | null;
+  readonly group: AdminGroup | null;
 };
+
+const personOf = (user: SidebarUser) => ({
+  id: user.id,
+  name: user.name,
+  nickname: user.nickname,
+  staticId: user.staticId,
+  group: user.group,
+});
 
 function UserAvatar({ user, className }: { user: SidebarUser; className?: string }) {
   return (
     <Avatar className={className}>
       <AvatarImage src="/api/auth/avatar" alt={user.name} />
-      <AvatarFallback className="rounded-lg">{getInitials(user.name)}</AvatarFallback>
+      <AvatarFallback className="rounded-lg">{getInitials(personLabel(user))}</AvatarFallback>
     </Avatar>
   );
 }
@@ -68,6 +83,7 @@ export function NavUser({
     );
   }
 
+  const person = personOf(user);
   const roleLabel = user.role === "admin" ? "Администратор" : "Участник";
 
   return (
@@ -81,7 +97,7 @@ export function NavUser({
             >
               <UserAvatar user={user} className="h-8 w-8 rounded-lg" />
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
+                <PersonName person={person} />
                 <span className="truncate text-muted-foreground text-xs">
                   {user.username ? `@${user.username}` : roleLabel}
                 </span>
@@ -99,10 +115,10 @@ export function NavUser({
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <UserAvatar user={user} className="h-8 w-8 rounded-lg" />
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-muted-foreground text-xs">ID {user.id}</span>
+                  <PersonName person={person} showRole={false} />
+                  <span className="truncate text-muted-foreground text-xs">Telegram ID {user.id}</span>
                 </div>
-                <Badge variant={user.role === "admin" ? "default" : "secondary"}>{roleLabel}</Badge>
+                <RoleBadge group={user.group} />
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

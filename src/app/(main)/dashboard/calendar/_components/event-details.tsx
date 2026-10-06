@@ -2,6 +2,7 @@
 
 import { CalendarClock, MapPin, Pencil, Trash2, UserRound } from "lucide-react";
 
+import { PersonName } from "@/components/person-name";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatRange, relativeTo } from "@/lib/calendar/format";
@@ -66,8 +67,8 @@ export function EventDetails({
               <UserRound className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
               <div>
                 <dt className="sr-only">Зарегистрировал</dt>
-                <dd>
-                  {event.ownerName}
+                <dd className="flex min-w-0 items-center gap-1">
+                  <PersonName person={event.owner} />
                   {mine && <span className="text-muted-foreground"> (вы)</span>}
                 </dd>
               </div>

@@ -4,6 +4,8 @@ import { Fragment } from "react";
 
 import { RotateCcw } from "lucide-react";
 
+import { PersonName } from "@/components/person-name";
+import { groupIconComponent, RoleBadge } from "@/components/role-icon";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,9 +19,10 @@ import {
   type PermissionOverride,
   permissionDefs,
 } from "@/lib/auth/groups";
+import { personLabel } from "@/lib/auth/person";
 import { getInitials } from "@/lib/utils";
 
-import { assignableGroups, canManage, type Me, type UserItem } from "../_lib";
+import { assignableGroups, canManage, type Me, type UserItem, userPerson } from "../_lib";
 
 const categories = Array.from(new Set(permissionDefs.map((def) => def.category)));
 
@@ -63,14 +66,18 @@ export function UserAccessSheet({
             <SheetHeader className="border-b p-4 pr-12">
               <div className="flex items-center gap-3">
                 <Avatar className="size-10">
-                  <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                  <AvatarFallback>{getInitials(personLabel(user))}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 text-left">
-                  <SheetTitle className="truncate">{user.name}</SheetTitle>
+                  <SheetTitle className="truncate">
+                    <PersonName person={userPerson(user)} />
+                  </SheetTitle>
                   <SheetDescription className="truncate">
-                    {user.username ? `@${user.username} · ` : ""}ID {user.telegramId}
+                    {user.nickname ? `${user.name} · ` : ""}
+                    {user.username ? `@${user.username} · ` : ""}Telegram ID {user.telegramId}
                   </SheetDescription>
                 </div>
+                <RoleBadge group={user.adminGroup} className="ml-auto shrink-0" />
               </div>
             </SheetHeader>
 
@@ -96,6 +103,7 @@ export function UserAccessSheet({
                         disabled={!manageable || userBusy || (!current && busy.size > 0 && isTogglingUser(busy, user))}
                         onClick={() => !current && onGroup(user, option.id)}
                       >
+                        {option.id !== "none" && <GroupOptionIcon group={option.id} />}
                         {option.label}
                       </Button>
                     );
@@ -208,4 +216,9 @@ function permissionHint(def: PermissionDef, lacksPermission: boolean): string {
 function nextOverride(value: boolean, fromGroup: boolean): PermissionOverride | null {
   if (value === fromGroup) return null;
   return value ? "grant" : "deny";
+}
+
+function GroupOptionIcon({ group }: { group: AdminGroup }) {
+  const Icon = groupIconComponent(group);
+  return <Icon data-icon="inline-start" aria-hidden="true" />;
 }

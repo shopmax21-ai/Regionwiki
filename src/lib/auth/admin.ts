@@ -8,6 +8,9 @@ import { type AdminGroup, effectivePermissions, groupLevel, type Permission } fr
 export type AdminContext = {
   id: string;
   name: string;
+  /** Игровой никнейм и Statik ID из профиля (если указаны) */
+  nickname: string | null;
+  staticId: string | null;
   group: AdminGroup;
   level: number;
   permissions: Permission[];
@@ -32,7 +35,15 @@ export async function getAdminContext(): Promise<AdminContext | null> {
     // Гл.Администратор всегда имеет все права, личные настройки на него не действуют
     const base = (await getGroupPermissions())[group];
     const permissions = group === "chief" ? base : effectivePermissions(base, await getUserOverrides(user.telegramId));
-    return { id: user.telegramId, name: user.name, group, level: groupLevel(group), permissions };
+    return {
+      id: user.telegramId,
+      name: user.name,
+      nickname: user.nickname,
+      staticId: user.staticId,
+      group,
+      level: groupLevel(group),
+      permissions,
+    };
   } catch {
     return null;
   }

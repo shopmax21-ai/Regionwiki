@@ -1,5 +1,6 @@
 import { getPool } from "@/lib/db/pool";
 
+import { getAuthConfig } from "./config";
 import { AuthDependencyError } from "./errors";
 import {
   type AdminGroup,
@@ -17,6 +18,7 @@ import {
   type PermissionOverrides,
   permissionDefs,
 } from "./groups";
+import type { Person } from "./person";
 import type { AccessRole, AccessStatus } from "./session";
 
 /** Любая ошибка запроса оборачивается, чтобы API мог отличить проблемы с базой от остальных. */
@@ -84,6 +86,9 @@ function ensureSchema(): Promise<void> {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_group text`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS notify_requests boolean NOT NULL DEFAULT true`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS sessions_valid_after timestamptz`;
+    // Игровой профиль администратора: Никнейм и Statik ID. Показываются на сайте вместо имени из Telegram.
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS nickname text`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS static_id text`;
     // Администраторы, назначенные до появления групп, становятся Гл.Администраторами
     await sql`UPDATE users SET admin_group = 'chief' WHERE role = 'admin' AND admin_group IS NULL`;
     await sql`CREATE TABLE IF NOT EXISTS group_permissions (
@@ -126,6 +131,10 @@ export type DbUser = {
   adminGroup: AdminGroup | null;
   /** Присылать ли в Telegram уведомления о новых заявках на доступ (для тех, кто может их рассматривать) */
   notifyRequests: boolean;
+  /** Игровой никнейм администратора (не указан: null) */
+  nickname: string | null;
+  /** Statik ID администратора (не указан: null) */
+  staticId: string | null;
   createdAt: Date;
   decidedAt: Date | null;
   lastLoginAt: Date | null;
@@ -140,6 +149,8 @@ type UserRow = {
   role: AccessRole;
   admin_group: string | null;
   notify_requests: boolean;
+  nickname: string | null;
+  static_id: string | null;
   created_at: string;
   decided_at: string | null;
   last_login_at: string | null;
@@ -154,6 +165,8 @@ const toUser = (row: UserRow): DbUser => ({
   role: row.role,
   adminGroup: isAdminGroup(row.admin_group) ? row.admin_group : row.role === "admin" ? "chief" : null,
   notifyRequests: row.notify_requests !== false,
+  nickname: row.nickname ?? null,
+  staticId: row.static_id ?? null,
   createdAt: new Date(row.created_at),
   decidedAt: row.decided_at ? new Date(row.decided_at) : null,
   lastLoginAt: row.last_login_at ? new Date(row.last_login_at) : null,
@@ -251,7 +264,7 @@ export async function recordLogin(input: {
   isAdmin: boolean;
   ip: string;
   userAgent: string;
-}): Promise<{ user: DbUser; created: boolean; loginId: string }> {
+}): Promise<{ user: DbUser; created: boolean }> {
   await ensureSchema();
   const status: AccessStatus = input.isAdmin ? "approved" : "pending";
   const role: AccessRole = input.isAdmin ? "admin" : "user";
@@ -269,11 +282,11 @@ export async function recordLogin(input: {
       status = CASE WHEN ${input.isAdmin} THEN 'approved' ELSE users.status END
     RETURNING *, (xmax = 0) AS created`;
 
-  const events = await sql`INSERT INTO login_events (telegram_id, ip, user_agent)
-    VALUES (${input.telegramId}, ${input.ip}, ${input.userAgent.slice(0, 300)}) RETURNING id`;
+  await sql`INSERT INTO login_events (telegram_id, ip, user_agent)
+    VALUES (${input.telegramId}, ${input.ip}, ${input.userAgent.slice(0, 300)})`;
 
   const row = rows[0] as UserRow & { created: boolean };
-  return { user: toUser(row), created: row.created, loginId: String((events[0] as { id: string | number }).id) };
+  return { user: toUser(row), created: row.created };
 }
 
 export async function getUser(telegramId: string): Promise<DbUser | null> {
@@ -365,31 +378,17 @@ export async function getSessionsValidAfter(telegramId: string): Promise<number>
   return Number((rows[0] as { t: number | null } | undefined)?.t ?? 0);
 }
 
-export type LoginEvent = { id: string; createdAt: Date; ip: string | null; userAgent: string | null };
-
-type LoginEventRow = { id: string | number; created_at: string; ip: string | null; user_agent: string | null };
-
-const toLoginEvent = (row: LoginEventRow): LoginEvent => ({
-  id: String(row.id),
-  createdAt: new Date(row.created_at),
-  ip: row.ip,
-  userAgent: row.user_agent,
-});
-
-/** Одна запись входа. Фильтр по telegram_id не даёт открыть чужую запись по номеру. */
-export async function getLoginEvent(telegramId: string, id: string): Promise<LoginEvent | null> {
-  if (!/^\d{1,19}$/.test(id)) return null;
-  await ensureSchema();
-  const rows = await sql`SELECT id, created_at, ip, user_agent FROM login_events
-    WHERE telegram_id = ${telegramId} AND id = ${id}`;
-  return rows[0] ? toLoginEvent(rows[0] as LoginEventRow) : null;
-}
+export type LoginEvent = { createdAt: Date; ip: string | null; userAgent: string | null };
 
 export async function getLoginEvents(telegramId: string, limit = 8): Promise<LoginEvent[]> {
   await ensureSchema();
-  const rows = await sql`SELECT id, created_at, ip, user_agent FROM login_events
-    WHERE telegram_id = ${telegramId} ORDER BY created_at DESC, id DESC LIMIT ${limit}`;
-  return (rows as LoginEventRow[]).map(toLoginEvent);
+  const rows = await sql`SELECT created_at, ip, user_agent FROM login_events
+    WHERE telegram_id = ${telegramId} ORDER BY created_at DESC LIMIT ${limit}`;
+  return (rows as { created_at: string; ip: string | null; user_agent: string | null }[]).map((row) => ({
+    createdAt: new Date(row.created_at),
+    ip: row.ip,
+    userAgent: row.user_agent,
+  }));
 }
 
 /* ---------- Личные права ---------- */
@@ -439,4 +438,59 @@ export async function setUserOverride(
 export async function clearUserOverrides(telegramId: string): Promise<void> {
   await ensureSchema();
   await sql`DELETE FROM user_permissions WHERE telegram_id = ${telegramId}`;
+}
+
+/* ---------- Никнейм и Statik ID ---------- */
+
+/** Сохранить Никнейм и Statik ID. null очищает поле. */
+export async function setUserIdentity(
+  telegramId: string,
+  nickname: string | null,
+  staticId: string | null,
+): Promise<DbUser | null> {
+  await ensureSchema();
+  const rows = await sql`UPDATE users SET nickname = ${nickname}, static_id = ${staticId}
+    WHERE telegram_id = ${telegramId} RETURNING *`;
+  return rows[0] ? toUser(rows[0] as UserRow) : null;
+}
+
+/** Группа человека с учётом TELEGRAM_ADMIN_IDS: оттуда всегда Гл.Администраторы, как и при проверке прав. */
+export function groupOfUser(user: Pick<DbUser, "telegramId" | "role" | "adminGroup">): AdminGroup | null {
+  if (getAuthConfig()?.adminIds.includes(user.telegramId)) return "chief";
+  return user.role === "admin" ? user.adminGroup : null;
+}
+
+export const toPerson = (user: DbUser): Person => ({
+  id: user.telegramId,
+  name: user.name,
+  nickname: user.nickname,
+  staticId: user.staticId,
+  group: groupOfUser(user),
+});
+
+/**
+ * Данные для отображения сразу по нескольким Telegram ID, одним запросом. Кого нет в базе, в результат не попадает:
+ * вызывающий код подставляет запасной вариант из сохранённого имени.
+ */
+export async function getPeople(ids: readonly string[]): Promise<Map<string, Person>> {
+  const unique = [...new Set(ids.filter((id) => id !== ""))];
+  const result = new Map<string, Person>();
+  if (unique.length === 0) return result;
+  await ensureSchema();
+  const rows = await sql`SELECT * FROM users WHERE telegram_id = ANY(${unique}::text[])`;
+  for (const row of rows as UserRow[]) {
+    const user = toUser(row);
+    result.set(user.telegramId, toPerson(user));
+  }
+  return result;
+}
+
+/** Безопасная загрузка: ошибка базы не ломает страницу, а возвращает пустую карту (останутся имена из Telegram). */
+export async function getPeopleSafe(ids: readonly string[]): Promise<Map<string, Person>> {
+  try {
+    return await getPeople(ids);
+  } catch (error) {
+    console.error("[auth] Не удалось загрузить профили людей", error);
+    return new Map();
+  }
 }

@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 
+import { PersonName } from "@/components/person-name";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDateTime, formatSpent } from "@/lib/academy/format";
@@ -34,7 +35,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const correct = attempt.questions.filter((question) => question.chosen === question.correct).length;
   const skipped = attempt.questions.filter((question) => question.chosen === null).length;
   const facts = [
-    { label: "Администратор", value: attempt.userName },
+    { label: "Администратор", value: <PersonName person={attempt.user} /> },
     { label: "Завершён", value: formatDateTime(attempt.finishedAt) },
     { label: "Заняло времени", value: formatSpent(attempt.startedAt, attempt.finishedAt) },
     { label: "Проходной балл", value: `${attempt.passPercent}%` },

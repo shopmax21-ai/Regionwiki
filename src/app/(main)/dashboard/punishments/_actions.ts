@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 
 import { getAdmin } from "@/lib/auth/admin";
+import { personPlainText } from "@/lib/auth/person";
 import { notifyReviewers } from "@/lib/punishments/notify";
 import { searchRulePoints } from "@/lib/punishments/rules-index";
 import {
@@ -67,7 +68,7 @@ export async function createRequestAction(input: unknown): Promise<ActionResult>
         await notifyReviewers({
           number: created.number,
           requesterId: helper.id,
-          requesterName: helper.name,
+          requesterName: personPlainText(helper),
           staticId: result.value.staticId,
           kind: result.value.kind,
           muteChannel: result.value.muteChannel,
