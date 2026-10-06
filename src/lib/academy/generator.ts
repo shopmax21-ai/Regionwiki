@@ -1,7 +1,7 @@
 import { getGroupArticles } from "@/app/(main)/dashboard/rules/_components/rules-content";
 import type { RuleItem } from "@/app/(main)/dashboard/rules/_content/parse";
 
-import type { QuestionDef, RuleGroupKey, RulesConfig } from "./types";
+import type { QuestionDef, RulesConfig } from "./types";
 
 /**
  * Автогенерация вопросов по правилам проекта. Правила берутся из тех же данных, что и раздел «Правила»
@@ -66,26 +66,42 @@ function clip(value: string, limit: number): string {
   return `${cut.slice(0, space > limit * 0.6 ? space : limit).replace(/[\s,;:.-]+$/, "")}…`;
 }
 
-async function collectPool(groups: readonly RuleGroupKey[]): Promise<PoolRule[]> {
+/**
+ * Статьи правил, из которых делаются вопросы: выбранные группы целиком плюс отдельные разделы ОП.
+ * Статья, попавшая в оба списка, берётся один раз.
+ */
+async function collectArticles(config: RulesConfig) {
+  const picked = new Map<string, Awaited<ReturnType<typeof getGroupArticles>>[number]>();
+  for (const group of config.groups) {
+    for (const article of await getGroupArticles(group)) picked.set(article.slug, article);
+  }
+  const only = new Set(config.articles ?? []);
+  if (only.size > 0) {
+    for (const article of await getGroupArticles("general")) {
+      if (only.has(article.slug)) picked.set(article.slug, article);
+    }
+  }
+  return [...picked.values()];
+}
+
+async function collectPool(config: RulesConfig): Promise<PoolRule[]> {
   const pool: PoolRule[] = [];
-  for (const group of groups) {
-    for (const article of await getGroupArticles(group)) {
-      for (const section of article.sections) {
-        for (const entry of section.entries) {
-          if (entry.type !== "rule") continue;
-          const text = entry.text.replace(/\s+/g, " ").trim();
-          // Слишком короткие и «вводные» пункты (с двоеточием и списком) без остального текста не имеют смысла
-          if (text.length < 30 || text.endsWith(":")) continue;
-          pool.push({
-            rule: entry,
-            excerpt: clip(text, EXCERPT_LIMIT),
-            fullText: text,
-            articleSlug: article.slug,
-            articleTitle: article.title,
-            sectionTitle: section.title,
-            label: `${article.tag ?? article.title} ${entry.number}`,
-          });
-        }
+  for (const article of await collectArticles(config)) {
+    for (const section of article.sections) {
+      for (const entry of section.entries) {
+        if (entry.type !== "rule") continue;
+        const text = entry.text.replace(/\s+/g, " ").trim();
+        // Слишком короткие и «вводные» пункты (с двоеточием и списком) без остального текста не имеют смысла
+        if (text.length < 30 || text.endsWith(":")) continue;
+        pool.push({
+          rule: entry,
+          excerpt: clip(text, EXCERPT_LIMIT),
+          fullText: text,
+          articleSlug: article.slug,
+          articleTitle: article.title,
+          sectionTitle: section.title,
+          label: `${article.tag ?? article.title} ${entry.number}`,
+        });
       }
     }
   }
@@ -109,7 +125,9 @@ function pickDistractors(candidates: readonly string[], correct: string, count =
     if (unique.length === LENGTH_POOL) break;
   }
   if (unique.length < count) return null;
-  return unique.sort((a, b) => Math.abs(a.length - correct.length) - Math.abs(b.length - correct.length)).slice(0, count);
+  return unique
+    .sort((a, b) => Math.abs(a.length - correct.length) - Math.abs(b.length - correct.length))
+    .slice(0, count);
 }
 
 function assemble(
@@ -210,7 +228,7 @@ function kindOrder(item: PoolRule): QuestionKind[] {
  * Бросает RulesGenerationError, если подходящих пунктов слишком мало.
  */
 export async function generateRulesQuestions(config: RulesConfig): Promise<GeneratedQuestion[]> {
-  const pool = await collectPool(config.groups);
+  const pool = await collectPool(config);
   if (pool.length < 8) {
     throw new RulesGenerationError("В выбранных правилах недостаточно пунктов для генерации вопросов");
   }

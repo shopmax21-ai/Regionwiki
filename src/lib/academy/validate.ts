@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { ruleGroups } from "@/app/(main)/dashboard/rules/_components/rules-meta";
+
 import {
   DEFAULT_PASS_PERCENT,
   DIFFICULTIES,
@@ -66,7 +68,8 @@ const rulesSchema = z.object({
       .int()
       .min(L.minRulesQuestions, `Не меньше ${L.minRulesQuestions} вопросов`)
       .max(L.maxRulesQuestions, `Не больше ${L.maxRulesQuestions} вопросов`),
-    groups: z.array(z.enum(RULE_GROUP_KEYS)).min(1, "Выберите хотя бы один раздел правил"),
+    groups: z.array(z.enum(RULE_GROUP_KEYS)),
+    articles: z.array(z.string().max(80)).max(30).default([]),
   }),
 });
 
@@ -106,13 +109,23 @@ export function validateTest(input: unknown): { ok: true; test: TestInput } | { 
   if (data.kind === "manual") {
     return { ok: true, test: { ...common, kind: "manual", questions: data.questions, rules: null } };
   }
+  const groups = [...new Set(data.rules.groups)];
+  // Отдельные разделы берём только из ОП и только существующие. Если ОП выбрано целиком, они уже входят в него.
+  const known = new Set(ruleGroups.general.articles.map((article) => article.slug));
+  const articles = groups.includes("general")
+    ? []
+    : [...new Set(data.rules.articles)].filter((slug) => known.has(slug));
+  if (groups.length === 0 && articles.length === 0) {
+    return { ok: false, error: "Выберите правила целиком или хотя бы один раздел ОП" };
+  }
+
   return {
     ok: true,
     test: {
       ...common,
       kind: "rules",
       questions: [],
-      rules: { ...data.rules, groups: [...new Set(data.rules.groups)] },
+      rules: { questionCount: data.rules.questionCount, groups, articles },
     },
   };
 }
