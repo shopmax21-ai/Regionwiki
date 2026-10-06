@@ -213,12 +213,8 @@ export function VehicleEditor(props: VehicleEditorProps) {
         >
           <DialogHeader>
             <DialogTitle>
-              {editing ? `Редактирование: ${props.vehicle.name} ${props.vehicle.model}` : "Новый транспорт"}
+              {editing ? `Редактирование: ${props.vehicle.name} ${props.vehicle.model}` : "Добавление транспорта"}
             </DialogTitle>
-            <DialogDescription>
-              Справа карточка, какой она будет в каталоге. Картинку можно перетащить прямо на неё или вставить через
-              Ctrl+V. Изменения сразу появятся на сайте для всех посетителей.
-            </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">

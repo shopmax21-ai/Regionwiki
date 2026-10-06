@@ -132,7 +132,7 @@ export function ItemEditor({ item, defaultCategory, onClose }: ItemEditorProps) 
     >
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{item ? `Редактирование: ${item.name}` : "Новый предмет"}</DialogTitle>
+          <DialogTitle>{item ? `Редактирование: ${item.name}` : "Добавление предмета"}</DialogTitle>
           <DialogDescription>Изменения сразу появятся на сайте для всех посетителей.</DialogDescription>
         </DialogHeader>
 

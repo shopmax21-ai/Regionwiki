@@ -252,10 +252,6 @@ export function RealtyEditor(props: RealtyEditorProps) {
         >
           <DialogHeader>
             <DialogTitle>{editing ? `Редактирование: ${title}` : title}</DialogTitle>
-            <DialogDescription>
-              Справа карточка, какой она будет в каталоге. Картинку можно перетащить прямо на неё или вставить через
-              Ctrl+V. Изменения сразу появятся на сайте для всех посетителей.
-            </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_280px]">
