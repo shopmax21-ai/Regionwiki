@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Check, KeyRound, MoreHorizontal, Search, ShieldOff, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { PersonAvatar } from "@/components/person-avatar";
 import { PersonName } from "@/components/person-name";
 import { groupIconComponent, RoleBadge } from "@/components/role-icon";
 import {
@@ -101,9 +102,13 @@ function confirmTexts(action: Action, name: string): { title: string; text: stri
 function UserIdentity({ user }: { user: UserItem }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <Avatar className="size-9">
-        <AvatarFallback>{getInitials(personLabel(user))}</AvatarFallback>
-      </Avatar>
+      {user.adminGroup ? (
+        <PersonAvatar id={user.telegramId} name={personLabel(user)} className="size-9 rounded-full text-xs" />
+      ) : (
+        <Avatar className="size-9">
+          <AvatarFallback>{getInitials(personLabel(user))}</AvatarFallback>
+        </Avatar>
+      )}
       <div className="min-w-0 leading-tight">
         <p className="truncate text-sm">
           {/* Роль в этой строке уже показана бейджем в колонке «Группа»: иконку слева не дублируем в таблице */}

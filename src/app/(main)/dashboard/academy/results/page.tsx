@@ -129,7 +129,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                           prefetch={false}
                           className="hover:text-primary hover:underline"
                         >
-                          <PersonName person={row.user} />
+                          <PersonName person={row.user} avatar />
                         </Link>
                         <span className="block font-normal text-muted-foreground text-xs">
                           {formatDateTime(row.lastAt)}

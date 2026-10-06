@@ -73,7 +73,7 @@ export function QueueList({ items, now }: { items: QueueItem[]; now: number }) {
                 <TableRow key={item.id}>
                   <TableCell className="pl-4 text-muted-foreground tabular-nums">{item.number}</TableCell>
                   <TableCell className="max-w-56">
-                    <PersonName person={item.requester} />
+                    <PersonName person={item.requester} avatar />
                   </TableCell>
                   <TableCell className="font-medium tabular-nums">{item.staticId}</TableCell>
                   <TableCell className="whitespace-nowrap">{kindText(item)}</TableCell>

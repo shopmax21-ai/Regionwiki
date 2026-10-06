@@ -53,7 +53,7 @@ export function AttemptsTable({ attempts, showUser = false, detailsHref, emptyTe
               <TableCell className="max-w-64 truncate pl-4 font-medium">{attempt.testTitle}</TableCell>
               {showUser && (
                 <TableCell className="max-w-56">
-                  <PersonName person={attempt.user} />
+                  <PersonName person={attempt.user} avatar />
                 </TableCell>
               )}
               <TableCell className="whitespace-nowrap text-muted-foreground text-xs tabular-nums">

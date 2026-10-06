@@ -117,7 +117,7 @@ export function RolesManager({
                     <ul className="flex flex-col gap-1 text-xs" aria-label={`Состав: ${info.label}`}>
                       {list.map((member) => (
                         <li key={member.id} className="min-w-0">
-                          <PersonName person={member} />
+                          <PersonName person={member} avatar />
                         </li>
                       ))}
                     </ul>

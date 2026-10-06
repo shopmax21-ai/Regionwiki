@@ -154,7 +154,7 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
                   №{event.number} · {event.staticId}
                 </TableCell>
                 <TableCell className="max-w-56">
-                  <PersonName person={event.actor} />
+                  <PersonName person={event.actor} avatar />
                 </TableCell>
                 <TableCell className="max-w-64 truncate pr-4 text-muted-foreground text-xs">
                   {event.note || "—"}
@@ -207,10 +207,10 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
                   {request.forum || "—"}
                 </TableCell>
                 <TableCell className="max-w-56">
-                  <PersonName person={request.requester} />
+                  <PersonName person={request.requester} avatar />
                 </TableCell>
                 <TableCell className="max-w-56">
-                  {request.assignee ? <PersonName person={request.assignee} /> : "—"}
+                  {request.assignee ? <PersonName person={request.assignee} avatar /> : "—"}
                 </TableCell>
                 <TableCell>
                   <AdminStatusBadge status={request.status} />

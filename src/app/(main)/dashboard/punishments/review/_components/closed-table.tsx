@@ -45,7 +45,7 @@ export function ClosedTable({ requests }: { requests: PunishmentRequest[] }) {
                     </div>
                   </TableCell>
                   <TableCell className="max-w-56">
-                    <PersonName person={request.requester} />
+                    <PersonName person={request.requester} avatar />
                   </TableCell>
                   <TableCell>
                     <AdminStatusBadge status={request.status} />

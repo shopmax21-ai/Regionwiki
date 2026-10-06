@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 import { getAdminContext } from "@/lib/auth/admin";
+import { warmAvatars } from "@/lib/auth/avatar";
 import { getAuthConfig } from "@/lib/auth/config";
 import { checkDatabase, getGroupPermissions, listUserOverrides, listUsers } from "@/lib/auth/db";
 
@@ -45,6 +46,8 @@ export default async function Page() {
     console.error("[users] Не удалось загрузить список", error);
     return <Notice>База данных недоступна. Список пользователей появится, когда подключение восстановится.</Notice>;
   }
+
+  warmAvatars(users.filter((user) => user.adminGroup).map((user) => user.telegramId));
 
   return (
     <UsersManager

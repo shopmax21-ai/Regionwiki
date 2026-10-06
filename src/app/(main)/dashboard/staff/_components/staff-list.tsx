@@ -2,13 +2,12 @@ import Link from "next/link";
 
 import { ChevronRight } from "lucide-react";
 
+import { PersonAvatar } from "@/components/person-avatar";
 import { PersonName } from "@/components/person-name";
 import { ProfileBanner } from "@/components/profile-banner";
 import { RoleBadge } from "@/components/role-icon";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Person } from "@/lib/auth/person";
-import { getInitials } from "@/lib/utils";
 
 export type StaffMember = {
   person: Person;
@@ -47,10 +46,7 @@ export function StaffList({ members, meId }: { members: StaffMember[]; meId: str
                   <Card className="relative overflow-hidden transition-colors group-hover:bg-muted/40">
                     {person.background && <ProfileBanner src={person.background} />}
                     <CardContent className="relative z-10 flex items-center gap-3">
-                      <Avatar className="size-12 shrink-0 rounded-xl">
-                        <AvatarImage src={`/api/auth/avatar?id=${encodeURIComponent(person.id)}`} alt={person.name} />
-                        <AvatarFallback className="rounded-xl">{getInitials(person.name)}</AvatarFallback>
-                      </Avatar>
+                      <PersonAvatar id={person.id} name={person.name} className="size-12 rounded-xl text-base" />
                       <div className="flex min-w-0 flex-1 flex-col gap-1">
                         <PersonName person={person} showRole={true} className="text-sm" />
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">

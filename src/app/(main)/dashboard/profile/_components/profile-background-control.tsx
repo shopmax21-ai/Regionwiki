@@ -83,7 +83,7 @@ export function ProfileBackgroundControl({ hasBackground }: { hasBackground: boo
   };
 
   return (
-    <div className="absolute top-3 right-12 z-10 flex items-center gap-1.5">
+    <div className="absolute top-3 right-12 z-20 flex items-center gap-1.5">
       <input
         ref={inputRef}
         type="file"

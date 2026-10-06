@@ -63,7 +63,7 @@ export function ProfileHeaderCard({
             <button
               type="button"
               aria-label={statusLabel.approved}
-              className="absolute top-3 right-3 z-10 flex size-7 items-center justify-center rounded-md bg-green-500/15 text-green-600 outline-none transition hover:bg-green-500/25 focus-visible:ring-2 focus-visible:ring-green-500/50 dark:text-green-400"
+              className="absolute top-3 right-3 z-20 flex size-7 items-center justify-center rounded-md bg-green-500/15 text-green-600 outline-none transition hover:bg-green-500/25 focus-visible:ring-2 focus-visible:ring-green-500/50 dark:text-green-400"
             >
               <ShieldCheck className="size-4" />
             </button>

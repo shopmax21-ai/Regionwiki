@@ -66,7 +66,7 @@ export function EventList({ events, now, meId, onOpen, onNotifyChanged }: EventL
                       <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-muted-foreground text-xs">
                         <span>{formatRange(event.startsAt, event.endsAt)}</span>
                         <span className="flex min-w-0 items-center gap-1">
-                          <PersonName person={event.owner} />
+                          <PersonName person={event.owner} avatar />
                           {mine ? " (вы)" : ""}
                         </span>
                         {event.location && (
