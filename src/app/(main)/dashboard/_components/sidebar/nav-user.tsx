@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 import { PersonName } from "@/components/person-name";
 import { ProfileBanner } from "@/components/profile-banner";
-import { RoleBadge } from "@/components/role-icon";
+import { RoleIcon } from "@/components/role-icon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -117,7 +117,7 @@ export function NavUser({
               {/* Иконка роли справа в закруглённом квадрате */}
               {user.group && (
                 <div className="relative z-10 ml-auto flex size-7 shrink-0 items-center justify-center rounded-md border bg-background/50 backdrop-blur-xs group-data-[collapsible=icon]:hidden">
-                  <RoleBadge group={user.group} className="h-3.5 px-0" />
+                  <RoleIcon group={user.group} className="h-3.5 px-0" />
                 </div>
               )}
 
@@ -143,7 +143,7 @@ export function NavUser({
                   </span>
                 </div>
                 <div className="flex size-7 shrink-0 items-center justify-center rounded-md border bg-background/50">
-                  <RoleBadge group={user.group} className="h-3.5 px-0" />
+                  <RoleIcon group={user.group} className="h-3.5 px-0" />
                 </div>
               </div>
             </DropdownMenuLabel>
