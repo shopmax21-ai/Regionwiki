@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
             username: user.username ?? undefined,
             status: user.status,
             role: user.role,
+            loginId: session.loginId,
           },
           config.secret,
         ),

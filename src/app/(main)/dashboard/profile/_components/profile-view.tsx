@@ -1,11 +1,13 @@
-import { CalendarClock, Fingerprint, LogIn, Monitor } from "lucide-react";
+import { CalendarClock, Fingerprint, LogIn, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { UserStats } from "@/lib/academy/store";
 import type { DbUser, LoginEvent } from "@/lib/auth/db";
 
 import { AcademyStatsCard } from "./academy-stats-card";
+import { LoginHistory } from "./login-history";
 import { NotificationsCard } from "./notifications-card";
 import { ProfileAvatar } from "./profile-avatar";
 import { SecurityCard } from "./security-card";
@@ -45,11 +47,14 @@ function deviceName(userAgent: string | null): string {
 export function ProfileView({
   user,
   events,
+  activeLoginId,
   canReceiveRequests,
   academy,
 }: {
   user: DbUser;
   events: LoginEvent[];
+  /** Запись входа текущей сессии */
+  activeLoginId: string | null;
   canReceiveRequests: boolean;
   /** Статистика тестов Академии; только у администраторов */
   academy: UserStats | null;
@@ -62,7 +67,21 @@ export function ProfileView({
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 md:gap-6">
-      <Card>
+      <Card className="relative">
+        {user.status === "approved" && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label={statusLabel.approved}
+                className="absolute top-3 right-3 flex size-7 items-center justify-center rounded-full bg-green-500/15 text-green-600 outline-none transition hover:bg-green-500/25 focus-visible:ring-2 focus-visible:ring-green-500/50 dark:text-green-400"
+              >
+                <ShieldCheck className="size-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left">{statusLabel.approved}</TooltipContent>
+          </Tooltip>
+        )}
         <CardContent className="flex flex-wrap items-center gap-4">
           <ProfileAvatar name={user.name} />
           <div className="min-w-0 flex-1">
@@ -75,7 +94,7 @@ export function ProfileView({
             <Badge variant={user.role === "admin" ? "default" : "secondary"}>
               {user.role === "admin" ? "Администратор" : "Участник"}
             </Badge>
-            <Badge variant={user.status === "approved" ? "outline" : "destructive"}>{statusLabel[user.status]}</Badge>
+            {user.status !== "approved" && <Badge variant="destructive">{statusLabel[user.status]}</Badge>}
           </div>
         </CardContent>
       </Card>
@@ -100,30 +119,15 @@ export function ProfileView({
 
       <SecurityCard />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Последние входы</CardTitle>
-          <CardDescription>Если здесь есть вход, которого вы не совершали, сообщите администратору.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col divide-y">
-          {events.length === 0 && <p className="text-muted-foreground text-sm">Записей пока нет.</p>}
-          {events.map((event) => (
-            <div
-              key={event.createdAt.toISOString()}
-              className="flex flex-wrap items-center justify-between gap-2 py-3 first:pt-0 last:pb-0"
-            >
-              <span className="flex items-center gap-2 text-sm">
-                <Monitor className="size-4 text-muted-foreground" />
-                {deviceName(event.userAgent)}
-              </span>
-              <span className="text-muted-foreground text-xs tabular-nums">
-                {dateFormat.format(event.createdAt)}
-                {event.ip && event.ip !== "unknown" ? ` · ${event.ip}` : ""}
-              </span>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      <LoginHistory
+        rows={events.map((event) => ({
+          id: event.id,
+          active: event.id === activeLoginId,
+          device: deviceName(event.userAgent),
+          when: dateFormat.format(event.createdAt),
+          ip: event.ip && event.ip !== "unknown" ? event.ip : null,
+        }))}
+      />
     </div>
   );
 }

@@ -14,12 +14,20 @@ export type SessionUser = {
   role: AccessRole;
   /** Когда выдан токен (секунды), нужно для периодической сверки с базой */
   issuedAt: number;
+  /** Номер записи входа в login_events: по нему профиль отмечает активную сессию. Нет у старых токенов. */
+  loginId?: string;
 };
 
 const encode = (secret: string) => new TextEncoder().encode(secret);
 
 export async function createSessionToken(user: Omit<SessionUser, "issuedAt">, secret: string): Promise<string> {
-  return new SignJWT({ name: user.name, username: user.username, status: user.status, role: user.role })
+  return new SignJWT({
+    name: user.name,
+    username: user.username,
+    status: user.status,
+    role: user.role,
+    sid: user.loginId,
+  })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(user.id)
     .setIssuedAt()
@@ -40,6 +48,7 @@ export async function readSessionToken(token: string, secret: string): Promise<S
       status,
       role: payload.role === "admin" ? "admin" : "user",
       issuedAt: typeof payload.iat === "number" ? payload.iat : 0,
+      loginId: typeof payload.sid === "string" && /^\d{1,19}$/.test(payload.sid) ? payload.sid : undefined,
     };
   } catch {
     return null;
