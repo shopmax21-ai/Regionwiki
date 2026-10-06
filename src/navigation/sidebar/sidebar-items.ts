@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   ListChecks,
   Lock,
+  Brain,
   type LucideIcon,
   Map as MapIcon,
   MessageSquare,
@@ -278,6 +279,14 @@ function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
       id: 7,
       label: "Разное",
       items: [
+        {
+          id:"ai",
+          title: "AI Помощник",
+          url: "/dashboard/ai-helper",
+          icon: Brain,
+          badge: "soon",
+          disabled: true,
+        },
         {
           id: "others",
           title: "Другое",
