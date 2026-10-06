@@ -107,10 +107,9 @@ export function NavUser({
               )}
               <UserAvatar user={user} className="relative z-10 h-8 w-8 rounded-lg" />
               <div className="relative z-10 grid flex-1 text-left text-sm leading-tight">
-                <PersonName person={person} showRole={false} />
+                <PersonName person={person} showRole={true} />
                 <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground text-xs">
                   {user.username && <span className="truncate">@{user.username}</span>}
-                  <RoleBadge group={user.group} className="h-4 shrink-0 px-1.5 text-[10px]" />
                 </span>
               </div>
               <EllipsisVertical className="relative z-10 ml-auto size-4" />
@@ -129,10 +128,9 @@ export function NavUser({
               <div className="relative z-10 flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <UserAvatar user={user} className="h-8 w-8 rounded-lg" />
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <PersonName person={person} showRole={false} />
-                  <span className="truncate text-muted-foreground text-xs">Telegram ID {user.id}</span>
+                  <PersonName person={person} showRole={true} />
+                  <span className="truncate text-muted-foreground text-xs">{staticId}</span>
                 </div>
-                <RoleBadge group={user.group} />
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
