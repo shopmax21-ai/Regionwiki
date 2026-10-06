@@ -6,7 +6,7 @@ import { getUserStats, type UserStats } from "@/lib/academy/store";
 import { getAdminContext } from "@/lib/auth/admin";
 import { LOGIN_PATH } from "@/lib/auth/config";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getLoginEvents, getUser } from "@/lib/auth/db";
+import { getLoginEvent, getLoginEvents, getUser } from "@/lib/auth/db";
 
 import { ProfileView } from "./_components/profile-view";
 
@@ -38,10 +38,20 @@ export default async function Page() {
     }
   }
 
+  // Активная сессия определяется по записи входа из токена. У старых токенов её нет, тогда берём последний вход.
+  const events = await getLoginEvents(user.telegramId);
+  let activeId = session.loginId;
+  if (activeId && !events.some((event) => event.id === activeId)) {
+    const own = await getLoginEvent(user.telegramId, activeId);
+    if (own) events.push(own);
+    else activeId = undefined;
+  }
+
   return (
     <ProfileView
       user={user}
-      events={await getLoginEvents(user.telegramId)}
+      events={events}
+      activeLoginId={activeId ?? events[0]?.id ?? null}
       canReceiveRequests={canReceiveRequests}
       academy={academy}
       group={admin?.group ?? null}

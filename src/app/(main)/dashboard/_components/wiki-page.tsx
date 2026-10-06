@@ -372,7 +372,7 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
             <dl className="wk-rise mt-9 flex flex-wrap gap-x-10 gap-y-4 border-t pt-6 [animation-delay:280ms]">
               <StatItem value={stats.rules} label="пунктов правил" />
               <StatItem value={stats.jobs} label="работ" />
-              <StatItem value={stats.vehicles} label="машин" />
+              <StatItem value={stats.vehicles} label="��ашин" />
               <StatItem value={stats.realties + stats.businesses} label="объектов и бизнесов" />
             </dl>
           </div>
@@ -452,7 +452,7 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
               </ul>
             </section>
 
-            <aside className="relative isolate flex flex-col overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground">
+            <aside className="relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl bg-primary p-5 text-primary-foreground sm:p-6">
               <LifeBuoy
                 aria-hidden="true"
                 className="absolute -right-6 -bottom-6 -z-10 size-36 rotate-12 text-primary-foreground/10"

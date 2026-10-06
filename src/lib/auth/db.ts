@@ -264,7 +264,7 @@ export async function recordLogin(input: {
   isAdmin: boolean;
   ip: string;
   userAgent: string;
-}): Promise<{ user: DbUser; created: boolean }> {
+}): Promise<{ user: DbUser; created: boolean; loginId: string }> {
   await ensureSchema();
   const status: AccessStatus = input.isAdmin ? "approved" : "pending";
   const role: AccessRole = input.isAdmin ? "admin" : "user";
@@ -282,11 +282,11 @@ export async function recordLogin(input: {
       status = CASE WHEN ${input.isAdmin} THEN 'approved' ELSE users.status END
     RETURNING *, (xmax = 0) AS created`;
 
-  await sql`INSERT INTO login_events (telegram_id, ip, user_agent)
-    VALUES (${input.telegramId}, ${input.ip}, ${input.userAgent.slice(0, 300)})`;
+  const events = await sql`INSERT INTO login_events (telegram_id, ip, user_agent)
+    VALUES (${input.telegramId}, ${input.ip}, ${input.userAgent.slice(0, 300)}) RETURNING id`;
 
   const row = rows[0] as UserRow & { created: boolean };
-  return { user: toUser(row), created: row.created };
+  return { user: toUser(row), created: row.created, loginId: String((events[0] as { id: string | number }).id) };
 }
 
 export async function getUser(telegramId: string): Promise<DbUser | null> {
@@ -378,17 +378,31 @@ export async function getSessionsValidAfter(telegramId: string): Promise<number>
   return Number((rows[0] as { t: number | null } | undefined)?.t ?? 0);
 }
 
-export type LoginEvent = { createdAt: Date; ip: string | null; userAgent: string | null };
+export type LoginEvent = { id: string; createdAt: Date; ip: string | null; userAgent: string | null };
+
+type LoginEventRow = { id: string | number; created_at: string; ip: string | null; user_agent: string | null };
+
+const toLoginEvent = (row: LoginEventRow): LoginEvent => ({
+  id: String(row.id),
+  createdAt: new Date(row.created_at),
+  ip: row.ip,
+  userAgent: row.user_agent,
+});
+
+/** Одна запись входа. Фильтр по telegram_id не даёт открыть чужую запись по номеру. */
+export async function getLoginEvent(telegramId: string, id: string): Promise<LoginEvent | null> {
+  if (!/^\d{1,19}$/.test(id)) return null;
+  await ensureSchema();
+  const rows = await sql`SELECT id, created_at, ip, user_agent FROM login_events
+    WHERE telegram_id = ${telegramId} AND id = ${id}`;
+  return rows[0] ? toLoginEvent(rows[0] as LoginEventRow) : null;
+}
 
 export async function getLoginEvents(telegramId: string, limit = 8): Promise<LoginEvent[]> {
   await ensureSchema();
-  const rows = await sql`SELECT created_at, ip, user_agent FROM login_events
-    WHERE telegram_id = ${telegramId} ORDER BY created_at DESC LIMIT ${limit}`;
-  return (rows as { created_at: string; ip: string | null; user_agent: string | null }[]).map((row) => ({
-    createdAt: new Date(row.created_at),
-    ip: row.ip,
-    userAgent: row.user_agent,
-  }));
+  const rows = await sql`SELECT id, created_at, ip, user_agent FROM login_events
+    WHERE telegram_id = ${telegramId} ORDER BY created_at DESC, id DESC LIMIT ${limit}`;
+  return (rows as LoginEventRow[]).map(toLoginEvent);
 }
 
 /* ---------- Личные права ---------- */
