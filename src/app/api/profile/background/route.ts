@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
   try {
     const url = await saveImage(new Uint8Array(await file.arrayBuffer()), user.telegramId);
     await setUserBackground(user.telegramId, url);
-    revalidatePath("/dashboard/profile");
+    revalidatePath("/dashboard", "layout");
     return NextResponse.json({ url }, { status: 201 });
   } catch (error) {
     if (error instanceof ImageStoreError) {
@@ -80,7 +80,7 @@ export async function DELETE(request: NextRequest) {
     const user = await currentMember();
     if (!user) return NextResponse.json({ error: "Войдите заново" }, { status: 401 });
     await setUserBackground(user.telegramId, null);
-    revalidatePath("/dashboard/profile");
+    revalidatePath("/dashboard", "layout");
     return NextResponse.json({ ok: true });
   } catch (error) {
     return unavailable(error);
