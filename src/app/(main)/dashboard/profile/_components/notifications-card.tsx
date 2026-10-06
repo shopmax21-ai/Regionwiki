@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 
-import { Bell } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +34,7 @@ export function NotificationsCard({ initialEnabled }: { initialEnabled: boolean 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Bell className="size-4" aria-hidden="true" />Уведомления</CardTitle>
+        <CardTitle>Уведомления</CardTitle>
         <CardDescription>Сообщения от бота в Telegram, когда кто-то подаёт заявку на доступ.</CardDescription>
       </CardHeader>
       <CardContent>

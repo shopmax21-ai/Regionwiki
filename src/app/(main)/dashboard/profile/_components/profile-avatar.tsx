@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 
-import { cn } from "cn";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 
@@ -22,7 +20,7 @@ function hintFor(reason: string | null, status: number): string {
  * userId — Telegram ID другого администратора: его фото отдаётся только администрации, а подсказки про
  * настройки приватности (они для владельца профиля) не показываются.
  */
-export function ProfileAvatar({ name, userId, className }: { name: string; userId?: string; className?: string }) {
+export function ProfileAvatar({ name, userId }: { name: string; userId?: string }) {
   const [hint, setHint] = useState<string | null>(null);
   const src = userId ? `/api/auth/avatar?id=${encodeURIComponent(userId)}` : "/api/auth/avatar";
 
@@ -40,7 +38,7 @@ export function ProfileAvatar({ name, userId, className }: { name: string; userI
 
   return (
     <>
-      <Avatar className={cn("size-16 rounded-xl", className)}>
+      <Avatar className="size-16 rounded-xl">
         <AvatarImage
           src={src}
           alt={name}
@@ -48,7 +46,7 @@ export function ProfileAvatar({ name, userId, className }: { name: string; userI
             if (status === "error") void explain();
           }}
         />
-        <AvatarFallback className="rounded-[inherit] text-lg">{getInitials(name)}</AvatarFallback>
+        <AvatarFallback className="rounded-xl text-lg">{getInitials(name)}</AvatarFallback>
       </Avatar>
       {hint && <p className="basis-full text-muted-foreground text-xs">{hint}</p>}
     </>

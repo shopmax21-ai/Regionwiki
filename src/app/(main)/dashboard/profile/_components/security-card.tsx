@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 
-import { LogOut, ShieldAlert } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -44,7 +44,7 @@ export function SecurityCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><ShieldAlert className="size-4" aria-hidden="true" />Безопасность</CardTitle>
+        <CardTitle>Безопасность</CardTitle>
         <CardDescription>
           Если вы входили с чужого или общего устройства, завершите все сессии. Войти снова можно с новым кодом из
           Telegram.

@@ -10,7 +10,7 @@ import type { AdminGroup } from "@/lib/auth/groups";
 import { AcademyStatsCard } from "./academy-stats-card";
 import { IdentityCard } from "./identity-card";
 import { ProfileHeaderCard } from "./profile-header-card";
-import { profileDateFormat } from "./profile-stat-tiles";
+import { ProfileStatTiles, profileDateFormat } from "./profile-stat-tiles";
 
 /**
  * Профиль другого администратора, как его видит остальная администрация. Только чтение: история входов, адреса и
@@ -41,7 +41,7 @@ export function StaffProfileView({
   ];
 
   return (
-    <div className="flex w-full flex-col gap-4 md:gap-6">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 md:gap-6">
       <div>
         <Link href="/dashboard/staff" prefetch={false} className={buttonVariants({ variant: "ghost", size: "sm" })}>
           <ArrowLeft data-icon="inline-start" />К администрации
@@ -54,20 +54,13 @@ export function StaffProfileView({
         username={user.username}
         background={user.profileBackground}
         avatarUserId={user.telegramId}
-        stats={stats}
       />
 
-      {/* Статистика Академии занимает основную часть, форма исправления данных стоит рядом справа */}
-      <div
-        className={
-          canEditIdentity && academy
-            ? "grid items-start gap-4 md:gap-6 xl:grid-cols-[minmax(0,1fr)_26rem]"
-            : "flex flex-col gap-4 md:gap-6"
-        }
-      >
-        {academy && <AcademyStatsCard stats={academy} own={false} />}
-        {canEditIdentity && <IdentityCard person={person} mode="staff" />}
-      </div>
+      <ProfileStatTiles stats={stats} />
+
+      {canEditIdentity && <IdentityCard person={person} mode="staff" />}
+
+      {academy && <AcademyStatsCard stats={academy} own={false} />}
     </div>
   );
 }

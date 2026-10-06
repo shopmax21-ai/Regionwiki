@@ -1,22 +1,26 @@
 import type { LucideIcon } from "lucide-react";
 
+import { Card, CardContent } from "@/components/ui/card";
+
 export const profileDateFormat = new Intl.DateTimeFormat("ru-RU", { dateStyle: "long", timeStyle: "short" });
 
 export type ProfileStat = { icon: LucideIcon; label: string; value: string };
 
-/** Короткие цифры профиля: Telegram ID, даты входа, число входов. Показываются внутри блока профиля. */
+/** Плитки с короткими цифрами профиля: Telegram ID, даты входа, число входов. */
 export function ProfileStatTiles({ stats }: { stats: ProfileStat[] }) {
   return (
-    <dl className="grid gap-2 sm:grid-cols-3 md:min-w-0 md:shrink-0">
+    <div className={stats.length > 3 ? "grid gap-4 sm:grid-cols-2 md:gap-6" : "grid gap-4 sm:grid-cols-3 md:gap-6"}>
       {stats.map(({ icon: Icon, label, value }) => (
-        <div key={label} className="flex min-w-0 flex-col gap-0.5 rounded-xl bg-muted/50 px-4 py-2.5">
-          <dt className="flex items-center gap-1.5 text-muted-foreground text-xs">
-            <Icon className="size-3.5" aria-hidden="true" />
-            {label}
-          </dt>
-          <dd className="font-medium text-sm tabular-nums">{value}</dd>
-        </div>
+        <Card key={label}>
+          <CardContent className="flex flex-col gap-1">
+            <span className="flex items-center gap-1.5 text-muted-foreground text-xs">
+              <Icon className="size-3.5" />
+              {label}
+            </span>
+            <span className="truncate font-medium text-sm tabular-nums">{value}</span>
+          </CardContent>
+        </Card>
       ))}
-    </dl>
+    </div>
   );
 }

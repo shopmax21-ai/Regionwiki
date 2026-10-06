@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { ChevronDown, History, Monitor } from "lucide-react";
+import { ChevronDown, Monitor } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ export function LoginHistory({ rows }: { rows: LoginRow[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><History className="size-4" aria-hidden="true" />Последние входы</CardTitle>
+        <CardTitle>Последние входы</CardTitle>
         <CardDescription>Если здесь есть вход, которого вы не совершали, сообщите администратору.</CardDescription>
       </CardHeader>
       <CardContent>
