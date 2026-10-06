@@ -25,6 +25,7 @@ import {
   SquareArrowUpRight,
   UserRound,
   Users,
+  UsersRound,
 } from "lucide-react";
 
 import { isPathVisible, type Viewer } from "@/lib/auth/protected-paths";
@@ -246,6 +247,12 @@ function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
           title: "Профиль",
           url: "/dashboard/profile",
           icon: UserRound,
+        },
+        {
+          id: "staff",
+          title: "Администрация",
+          url: "/dashboard/staff",
+          icon: UsersRound,
         },
         {
           id: "access",
