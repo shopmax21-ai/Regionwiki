@@ -107,7 +107,7 @@ export function NavUser({
               <UserAvatar user={user} className="relative z-10 h-8 w-8 rounded-lg" />
               
               <div className="relative z-10 grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
+                <span className="truncate font-medium">{user.nickname}</span>
                 <span className="truncate text-muted-foreground text-xs">
                   {user.staticId ? `#${user.staticId}` : "Static ID не указан"}
                 </span>
@@ -136,7 +136,7 @@ export function NavUser({
               <div className="relative z-10 flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <UserAvatar user={user} className="h-8 w-8 rounded-lg" />
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
+                  <span className="truncate font-medium">{user.nickname}</span>
                   <span className="truncate text-muted-foreground text-xs">
                     {user.staticId ? `Static ID: #${user.staticId}` : "Static ID не указан"}
                   </span>
