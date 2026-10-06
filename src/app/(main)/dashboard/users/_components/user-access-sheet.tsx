@@ -78,8 +78,9 @@ export function UserAccessSheet({
                     <PersonName person={userPerson(user)} />
                   </SheetTitle>
                   <SheetDescription className="truncate">
-                    {user.nickname ? `${user.name} · ` : ""}
-                    {user.username ? `@${user.username} · ` : ""}Telegram ID {user.telegramId}
+                    {[user.nickname ? user.name : null, user.username ? `@${user.username}` : null]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </SheetDescription>
                 </div>
                 <RoleBadge group={user.adminGroup} className="ml-auto shrink-0" />

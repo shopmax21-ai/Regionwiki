@@ -4,7 +4,7 @@ import { ArrowRight, GraduationCap } from "lucide-react";
 
 import { AttemptsTable } from "@/app/(main)/dashboard/academy/_components/attempts-table";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/academy/format";
 import type { UserStats } from "@/lib/academy/store";
 
@@ -23,26 +23,36 @@ export function AcademyStatsCard({
     { label: "Лучший результат", value: stats.attempts > 0 ? `${stats.bestPercent}%` : "—" },
   ];
 
+  const hasTable = stats.recent.length > 0;
+
   return (
-    <Card className="gap-0 pb-0">
-      <CardHeader className="flex-row items-start justify-between gap-3 pb-4">
-        <div className="flex flex-col gap-1">
-          <CardTitle className="flex items-center gap-2">
-            <GraduationCap className="size-4" aria-hidden="true" />
-            Академия
-          </CardTitle>
-          <CardDescription>
-            {stats.lastAt
-              ? `Последний тест: ${formatDateTime(stats.lastAt)}`
-              : own
-                ? "Вы ещё не проходили тесты."
-                : "Тесты ещё не пройдены."}
-          </CardDescription>
-        </div>
-        <Link href="/dashboard/academy" prefetch={false} className={buttonVariants({ variant: "outline", size: "sm" })}>
-          К тестам
-          <ArrowRight data-icon="inline-end" />
-        </Link>
+    // Нижний отступ нужен, пока под плитками нет таблицы: иначе плитки прилипают к краю карточки
+    <Card className={hasTable ? "gap-0 pb-0" : "gap-0"}>
+      <CardHeader className="gap-1 pb-4">
+        <CardTitle className="flex items-center gap-2">
+          <GraduationCap className="size-4" aria-hidden="true" />
+          Академия
+        </CardTitle>
+        <CardDescription>
+          {stats.lastAt
+            ? `Последний тест: ${formatDateTime(stats.lastAt)}`
+            : own
+              ? "Вы ещё не проходили тесты."
+              : "Тесты ещё не пройдены."}
+        </CardDescription>
+        {/* Кнопка справа вверху по центру блока заголовка. В чужом профиле её нет: тесты он проходит сам */}
+        {own && (
+          <CardAction className="self-center">
+            <Link
+              href="/dashboard/academy"
+              prefetch={false}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              К тестам
+              <ArrowRight data-icon="inline-end" />
+            </Link>
+          </CardAction>
+        )}
       </CardHeader>
       <CardContent className="flex flex-col gap-4 px-0">
         <dl className="grid grid-cols-2 gap-3 px-6 sm:grid-cols-4">
@@ -53,7 +63,7 @@ export function AcademyStatsCard({
             </div>
           ))}
         </dl>
-        {stats.recent.length > 0 && (
+        {hasTable && (
           <div className="border-t">
             <AttemptsTable attempts={stats.recent} emptyText="" />
           </div>

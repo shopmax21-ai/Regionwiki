@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { ArrowLeft, CalendarClock, Clock, Fingerprint, LogIn } from "lucide-react";
+import { ArrowLeft, CalendarClock, Clock, LogIn } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import type { UserStats } from "@/lib/academy/store";
@@ -27,7 +27,6 @@ export function StaffProfileView({
 }) {
   const person = toPerson(user);
   const stats = [
-    { icon: Fingerprint, label: "Telegram ID", value: user.telegramId },
     { icon: CalendarClock, label: "Первый вход", value: profileDateFormat.format(user.createdAt) },
     {
       icon: Clock,

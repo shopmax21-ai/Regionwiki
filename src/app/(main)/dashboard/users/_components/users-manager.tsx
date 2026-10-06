@@ -115,8 +115,7 @@ function UserIdentity({ user }: { user: UserItem }) {
           <PersonName person={userPerson(user)} showRole={false} />
         </p>
         <p className="truncate text-muted-foreground text-xs">
-          {user.nickname ? `${user.name} · ` : ""}
-          {user.username ? `@${user.username} · ` : ""}Telegram ID {user.telegramId}
+          {[user.nickname ? user.name : null, user.username ? `@${user.username}` : null].filter(Boolean).join(" · ")}
         </p>
       </div>
     </div>
@@ -157,7 +156,7 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
     return items.filter(
       (user) =>
         matchesFilter(user, filter) &&
-        `${user.name} ${user.nickname ?? ""} ${user.staticId ?? ""} ${user.username ?? ""} ${user.telegramId}`
+        `${user.name} ${user.nickname ?? ""} ${user.staticId ?? ""} ${user.username ?? ""}`
           .toLowerCase()
           .includes(needle),
     );
@@ -314,7 +313,7 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Поиск по имени, @username или Telegram ID"
+              placeholder="Поиск по имени, нику или @username"
               aria-label="Поиск пользователя"
               className="h-10 pl-9"
             />

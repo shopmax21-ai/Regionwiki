@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 import { getAdmin } from "@/lib/auth/admin";
+import { warmAvatars } from "@/lib/auth/avatar";
 import { getAuthConfig } from "@/lib/auth/config";
 import { listUsers } from "@/lib/auth/db";
 
@@ -21,5 +22,8 @@ export default async function Page() {
   const admin = await getAdmin("access.decide");
   if (!admin) redirect("/unauthorized");
 
-  return <AccessList users={await listUsers()} />;
+  const users = await listUsers();
+  warmAvatars(users.filter((user) => user.adminGroup).map((user) => user.telegramId));
+
+  return <AccessList users={users} />;
 }
