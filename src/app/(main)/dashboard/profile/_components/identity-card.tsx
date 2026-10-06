@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 
 import { useRouter } from "next/navigation";
 
-import { Lock, Save } from "lucide-react";
+import { IdCard, Lock, Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { PersonName } from "@/components/person-name";
@@ -99,7 +99,7 @@ export function IdentityCard({ person, mode }: IdentityCardProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Игровой профиль</CardTitle>
+        <CardTitle className="flex items-center gap-2"><IdCard className="size-4" aria-hidden="true" />Игровой профиль</CardTitle>
         <CardDescription>
           {own
             ? "Никнейм и Statik ID показываются на сайте рядом с иконкой вашей роли: в заявках на наказания, календаре, результатах тестов и списках администрации. Указать их можно один раз."

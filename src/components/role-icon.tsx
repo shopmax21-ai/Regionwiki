@@ -42,13 +42,10 @@ const MEMBER_BADGE = {
 
 const MEMBER_LABEL = "Участник";
 
-const MEMBER_DESCRIPTION = "Обычный участник без прав администратора.";
-
-/** Иконка роли для подписи рядом с именем. По наведению показывается подсказка: название роли и что она значит. */
+/** Иконка роли для подписи рядом с именем. По наведению показывается подсказка с названием роли. */
 export function RoleIcon({ group, className }: { group: AdminGroup | null; className?: string }) {
   const { icon: Icon, text } = group ? GROUP_BADGES[group] : MEMBER_BADGE;
   const label = group ? groupInfo[group].label : MEMBER_LABEL;
-  const description = group ? groupInfo[group].description : MEMBER_DESCRIPTION;
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -56,10 +53,7 @@ export function RoleIcon({ group, className }: { group: AdminGroup | null; class
           <Icon className={cn("size-4", text, className)} aria-hidden="true" />
         </span>
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-56">
-        <p className="font-medium">{label}</p>
-        <p className="opacity-80">{description}</p>
-      </TooltipContent>
+      <TooltipContent side="top">{label}</TooltipContent>
     </Tooltip>
   );
 }

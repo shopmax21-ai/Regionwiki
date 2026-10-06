@@ -9,7 +9,7 @@ import { IdentityCard } from "./identity-card";
 import { LoginHistory } from "./login-history";
 import { NotificationsCard } from "./notifications-card";
 import { ProfileHeaderCard } from "./profile-header-card";
-import { ProfileStatTiles, profileDateFormat } from "./profile-stat-tiles";
+import { profileDateFormat } from "./profile-stat-tiles";
 import { SecurityCard } from "./security-card";
 
 /** Короткое название устройства из User-Agent: хватает, чтобы узнать свой вход. */
@@ -65,26 +65,14 @@ export function ProfileView({
     { icon: LogIn, label: "Входов всего", value: String(user.loginCount) },
   ];
 
-  return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 md:gap-6">
-      <ProfileHeaderCard
-        person={person}
-        status={user.status}
-        username={user.username}
-        background={user.profileBackground}
-        editable
-      />
+  // Слева то, что относится к игре и работе администратора; справа аккаунт: уведомления, безопасность, входы.
+  // У обычного участника левой колонки нет, тогда карточки аккаунта занимают всю ширину в две колонки.
+  const hasMain = group !== null || academy !== null;
 
-      <ProfileStatTiles stats={stats} />
-
-      {group && <IdentityCard person={person} mode="self" />}
-
-      {academy && <AcademyStatsCard stats={academy} />}
-
+  const account = (
+    <>
       {canReceiveRequests && <NotificationsCard initialEnabled={user.notifyRequests} />}
-
       <SecurityCard />
-
       <LoginHistory
         rows={events.map((event) => ({
           id: event.id,
@@ -94,6 +82,31 @@ export function ProfileView({
           ip: event.ip && event.ip !== "unknown" ? event.ip : null,
         }))}
       />
+    </>
+  );
+
+  return (
+    <div className="flex w-full flex-col gap-4 md:gap-6">
+      <ProfileHeaderCard
+        person={person}
+        status={user.status}
+        username={user.username}
+        background={user.profileBackground}
+        stats={stats}
+        editable
+      />
+
+      {hasMain ? (
+        <div className="grid items-start gap-4 md:gap-6 xl:grid-cols-[minmax(0,1fr)_26rem]">
+          <div className="flex min-w-0 flex-col gap-4 md:gap-6">
+            {group && <IdentityCard person={person} mode="self" />}
+            {academy && <AcademyStatsCard stats={academy} />}
+          </div>
+          <div className="flex min-w-0 flex-col gap-4 md:gap-6">{account}</div>
+        </div>
+      ) : (
+        <div className="grid items-start gap-4 md:gap-6 lg:grid-cols-2">{account}</div>
+      )}
     </div>
   );
 }
