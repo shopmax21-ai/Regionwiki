@@ -420,7 +420,7 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
           </section>
 
           <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
-            <section className="flex flex-col gap-4 rounded-2xl border bg-card p-5 sm:p-6">
+            <section className="flex min-w-0 flex-col gap-4 rounded-2xl border bg-card p-5 sm:p-6">
               <div>
                 <h2 className="font-semibold text-lg tracking-tight">Недавно обновлённые правила</h2>
                 <p className="mt-1 text-muted-foreground text-sm">Свежие изменения, которые стоит перечитать</p>
@@ -452,7 +452,7 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
               </ul>
             </section>
 
-            <aside className="relative isolate flex flex-col overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground">
+            <aside className="relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl bg-primary p-5 text-primary-foreground sm:p-6">
               <LifeBuoy
                 aria-hidden="true"
                 className="absolute -right-6 -bottom-6 -z-10 size-36 rotate-12 text-primary-foreground/10"
