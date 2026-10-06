@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getUser, setUserBackground } from "@/lib/auth/db";
+import { isSameOrigin } from "@/lib/auth/request";
 import { IMAGE_MAX_BYTES, ImageStoreError, saveImage } from "@/lib/jobs/images";
 
 export const dynamic = "force-dynamic";
@@ -15,11 +16,8 @@ async function currentMember() {
   return user?.status === "approved" ? user : null;
 }
 
-/** Запрос должен прийти с этого же сайта, а не со страницы чужого сайта. */
-const isForeignOrigin = (request: NextRequest) => {
-  const origin = request.headers.get("origin");
-  return Boolean(origin && origin !== request.nextUrl.origin);
-};
+/** Запрос должен прийти с этого же сайта, а не со страницы чужого сайта. За прокси сверяем хост, а не полный origin. */
+const isForeignOrigin = (request: NextRequest) => !isSameOrigin(request);
 
 const unavailable = (error: unknown) => {
   console.error("[profile] Не удалось сохранить фон профиля", error);
