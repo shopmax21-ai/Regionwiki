@@ -5,9 +5,11 @@ import { getPool } from "@/lib/db/pool";
 import {
   type EvidenceItem,
   isCommandAvailable,
+  type MuteChannel,
   needsDecision,
   type PunishmentEvent,
   type PunishmentEventType,
+  type PunishmentKind,
   type PunishmentRequest,
   type PunishmentStatus,
   type QueueItem,
@@ -78,6 +80,11 @@ async function init(): Promise<void> {
       note       text NOT NULL DEFAULT '',
       at         timestamptz NOT NULL DEFAULT now()
     )`);
+    // Миграция: вид наказания, тип мута и жалоба на форуме. Старые заявки остаются деморганом (/jail).
+    // Колонка minutes хранит срок: минуты для jail и mute, дни для ban и hardban.
+    await client.query("ALTER TABLE punishment_requests ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'jail'");
+    await client.query("ALTER TABLE punishment_requests ADD COLUMN IF NOT EXISTS mute_channel text");
+    await client.query("ALTER TABLE punishment_requests ADD COLUMN IF NOT EXISTS forum text NOT NULL DEFAULT ''");
     await client.query(
       "CREATE INDEX IF NOT EXISTS punishment_requests_status_idx ON punishment_requests (status, created_at)",
     );
@@ -124,6 +131,9 @@ type Row = {
   number: string | number;
   static_id: string;
   minutes: number;
+  kind: PunishmentKind;
+  mute_channel: MuteChannel | null;
+  forum: string;
   rules: string[];
   evidence: EvidenceItem[];
   requester_id: string;
@@ -144,7 +154,10 @@ const toRequest = (row: Row): PunishmentRequest => ({
   id: row.id,
   number: Number(row.number),
   staticId: row.static_id,
-  minutes: row.minutes,
+  kind: row.kind,
+  muteChannel: row.mute_channel,
+  duration: row.minutes,
+  forum: row.forum,
   rules: Array.isArray(row.rules) ? row.rules : [],
   evidence: Array.isArray(row.evidence) ? row.evidence : [],
   requesterId: row.requester_id,
@@ -160,7 +173,7 @@ const toRequest = (row: Row): PunishmentRequest => ({
 });
 
 const COLUMNS =
-  "id, number, static_id, minutes, rules, evidence, requester_id, requester_name, status, assignee_id, assignee_name, claimed_at, decision_note, copied_at, issued_at, created_at";
+  "id, number, static_id, minutes, kind, mute_channel, forum, rules, evidence, requester_id, requester_name, status, assignee_id, assignee_name, claimed_at, decision_note, copied_at, issued_at, created_at";
 
 /** Свои заявки хелпера: все статусы, новые сверху. */
 export const listMine = (requesterId: string, limit = 100) =>
@@ -184,7 +197,10 @@ export const listQueue = () =>
         id: request.id,
         number: request.number,
         staticId: request.staticId,
-        minutes: request.minutes,
+        kind: request.kind,
+        muteChannel: request.muteChannel,
+        duration: request.duration,
+        forum: request.forum,
         rules: request.rules,
         requesterName: request.requesterName,
         createdAt: request.createdAt,
@@ -307,12 +323,15 @@ export const createRequest = (input: RequestInput, requester: Actor) =>
     try {
       await client.query("BEGIN");
       const { rows } = await client.query<{ number: string }>(
-        `INSERT INTO punishment_requests (id, static_id, minutes, rules, evidence, requester_id, requester_name)
-         VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7) RETURNING number`,
+        `INSERT INTO punishment_requests (id, static_id, minutes, kind, mute_channel, forum, rules, evidence, requester_id, requester_name)
+         VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9, $10) RETURNING number`,
         [
           id,
           input.staticId,
-          input.minutes,
+          input.duration,
+          input.kind,
+          input.muteChannel,
+          input.forum,
           JSON.stringify(input.rules),
           JSON.stringify(input.evidence),
           requester.id,
@@ -401,6 +420,24 @@ export const markCopied = (id: string, admin: Actor) =>
         [id],
       );
       if (first) await logEvent(client, id, "copied", admin);
+    }),
+  );
+
+/**
+ * Администратор указал или поправил жалобу на форуме. Команда от этого меняется, поэтому «скопировано» сбрасывается:
+ * чтобы выдать наказание, команду нужно скопировать заново.
+ */
+export const setForum = (id: string, admin: Actor, forum: string) =>
+  run(() =>
+    withRequest(id, async (client, request) => {
+      assertAssignee(request, admin);
+      if (request.status !== "claimed" && request.status !== "approved") throw new PunishmentStoreError("state");
+      if (request.forum === forum) return;
+      await client.query(
+        "UPDATE punishment_requests SET forum = $2, copied_at = NULL, updated_at = now() WHERE id = $1",
+        [id, forum],
+      );
+      await logEvent(client, id, "forum_changed", admin, forum || "жалоба убрана");
     }),
   );
 

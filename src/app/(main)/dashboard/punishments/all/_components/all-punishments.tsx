@@ -13,10 +13,16 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { buildCommand, EVENT_LABELS, type PunishmentEvent, type PunishmentRequest } from "@/lib/punishments/types";
+import {
+  buildCommand,
+  EVENT_LABELS,
+  kindText,
+  type PunishmentEvent,
+  type PunishmentRequest,
+} from "@/lib/punishments/types";
 
 import { releaseRequestAction } from "../../_actions";
-import { formatFull, formatShort, minutesText } from "../../_components/format";
+import { durationLabel, formatFull, formatShort } from "../../_components/format";
 import { AdminStatusBadge, RuleChips } from "../../_components/status-badge";
 
 /** Подходит ли строка под поисковый запрос: ищем вхождение в любом из полей без учёта регистра. */
@@ -72,6 +78,8 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
             request.staticId,
             request.requesterName,
             request.assigneeName,
+            request.forum,
+            kindText(request),
             request.rules.join(" "),
           ]),
         ),
@@ -152,13 +160,15 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
   } else {
     body = (
       <div className="overflow-x-auto">
-        <Table className="min-w-[860px]">
+        <Table className="min-w-[980px]">
           <TableHeader>
             <TableRow>
               <TableHead className="pl-4">№</TableHead>
               <TableHead>Статик</TableHead>
-              <TableHead>Время</TableHead>
+              <TableHead>Наказание</TableHead>
+              <TableHead>Срок</TableHead>
               <TableHead>Пункты</TableHead>
+              <TableHead>Жалоба</TableHead>
               <TableHead>Хелпер</TableHead>
               <TableHead>Администратор</TableHead>
               <TableHead>Статус</TableHead>
@@ -178,9 +188,13 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
                     />
                   )}
                 </TableCell>
-                <TableCell className="whitespace-nowrap">{minutesText(request.minutes)}</TableCell>
+                <TableCell className="whitespace-nowrap">{kindText(request)}</TableCell>
+                <TableCell className="whitespace-nowrap">{durationLabel(request)}</TableCell>
                 <TableCell>
                   <RuleChips rules={request.rules} />
+                </TableCell>
+                <TableCell className="max-w-36 truncate text-muted-foreground text-xs">
+                  {request.forum || "—"}
                 </TableCell>
                 <TableCell className="max-w-36 truncate">{request.requesterName}</TableCell>
                 <TableCell className="max-w-36 truncate">{request.assigneeName ?? "—"}</TableCell>
@@ -218,7 +232,7 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Статик, имя, номер, пункт"
+            placeholder="Статик, имя, номер, пункт, жалоба"
             aria-label="Поиск по наказаниям"
             className="pl-8"
           />
@@ -241,7 +255,9 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
 
             <dl className="grid gap-3 sm:grid-cols-2">
               <Fact label="Статик" value={opened.staticId} />
-              <Fact label="Время наказания" value={minutesText(opened.minutes)} />
+              <Fact label="Наказание" value={kindText(opened)} />
+              <Fact label="Срок" value={durationLabel(opened)} />
+              <Fact label="Жалоба на форуме" value={opened.forum || "—"} />
               <Fact label="Администратор" value={opened.assigneeName ?? "Пока никто не взял"} />
               <Fact label="Выдано" value={opened.issuedAt ? formatFull(opened.issuedAt) : "—"} />
             </dl>

@@ -2,9 +2,9 @@ import { Paperclip } from "lucide-react";
 
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { PunishmentRequest } from "@/lib/punishments/types";
+import { kindText, type PunishmentRequest } from "@/lib/punishments/types";
 
-import { formatFull, formatShort, minutesText } from "./format";
+import { durationLabel, formatFull, formatShort } from "./format";
 import { HelperStatusBadge, RuleChips } from "./status-badge";
 
 /** Таблица наказаний хелпера: его заявки и их статус. После выдачи наказания статус становится «Выдано». */
@@ -19,12 +19,13 @@ export function MyRequests({ requests }: { requests: PunishmentRequest[] }) {
         <p className="px-4 py-8 text-center text-muted-foreground text-sm">Вы ещё не подавали заявок.</p>
       ) : (
         <div className="overflow-x-auto">
-          <Table className="min-w-[640px]">
+          <Table className="min-w-[760px]">
             <TableHeader>
               <TableRow>
                 <TableHead className="pl-4">№</TableHead>
                 <TableHead>Статик</TableHead>
-                <TableHead>Время</TableHead>
+                <TableHead>Наказание</TableHead>
+                <TableHead>Срок</TableHead>
                 <TableHead>Пункты</TableHead>
                 <TableHead>Подана</TableHead>
                 <TableHead className="pr-4">Статус</TableHead>
@@ -43,9 +44,13 @@ export function MyRequests({ requests }: { requests: PunishmentRequest[] }) {
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap">{minutesText(request.minutes)}</TableCell>
+                  <TableCell className="whitespace-nowrap">{kindText(request)}</TableCell>
+                  <TableCell className="whitespace-nowrap">{durationLabel(request)}</TableCell>
                   <TableCell>
-                    <RuleChips rules={request.rules} />
+                    <div className="flex flex-col items-start gap-1">
+                      <RuleChips rules={request.rules} />
+                      {request.forum && <span className="text-muted-foreground text-xs">Жалоба: {request.forum}</span>}
+                    </div>
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-muted-foreground text-xs tabular-nums">
                     {formatShort(request.createdAt)}
