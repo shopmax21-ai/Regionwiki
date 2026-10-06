@@ -74,31 +74,13 @@ function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
   return [
     {
       id: 1,
-      label: "Дашборды",
+      label: "База знаний",
       items: [
         {
           id: "default",
-          title: "По умолчанию",
+          title: "Главная",
           url: "/dashboard/default",
           icon: LayoutDashboard,
-        },
-        {
-          id: "crm",
-          title: "CRM",
-          url: "/dashboard/crm",
-          icon: ChartBar,
-        },
-        {
-          id: "academy",
-          title: "Академия",
-          url: "/dashboard/academy",
-          icon: GraduationCap,
-        },
-        {
-          id: "academy-results",
-          title: "Результаты тестов",
-          url: "/dashboard/academy/results",
-          icon: ClipboardCheck,
         },
         {
           id: "transport",
@@ -113,12 +95,6 @@ function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
           icon: Package,
         },
         {
-          id: "map",
-          title: "Карта",
-          url: "/dashboard/map",
-          icon: MapIcon,
-        },
-        {
           id: "real-estate",
           title: "Недвижимость",
           url: "/dashboard/real-estate",
@@ -126,7 +102,7 @@ function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
         },
         {
           id: "business",
-          title: "Бизнес",
+          title: "Бизнесы",
           url: "/dashboard/business",
           icon: BriefcaseBusiness,
         },
@@ -139,54 +115,48 @@ function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
             ...jobLinks.map((job) => ({ id: `job-${job.slug}`, title: job.title, url: `/dashboard/jobs/${job.slug}` })),
           ],
         },
+        {
+          id: "map",
+          title: "Карта",
+          url: "/dashboard/map",
+          icon: MapIcon,
+        },
       ],
     },
     {
       id: 2,
-      label: "Страницы",
+      label: "Правила",
       items: [
         {
-          id: "chat",
-          title: "Чат",
-          url: "/dashboard/chat",
-          icon: MessageSquare,
+          id: "general-rules",
+          title: "Основные правила",
+          url: "/dashboard/rules/general",
+          icon: BookOpen,
         },
         {
-          id: "calendar",
-          title: "Календарь",
-          url: "/dashboard/calendar",
-          icon: Calendar,
+          id: "government-rules",
+          title: "Правила госструктур",
+          url: "/dashboard/rules/government",
+          icon: BookOpen,
         },
         {
-          id: "kanban",
-          title: "Канбан",
-          url: "/dashboard/kanban",
-          icon: Kanban,
+          id: "rp-terms",
+          title: "RP термины",
+          url: "/dashboard/rp-terms",
+          icon: BookText,
         },
         {
-          id: "tasks",
-          title: "Задачи",
-          url: "/dashboard/tasks",
-          icon: CheckSquare,
+          id: "rules-changelog",
+          title: "История изменений",
+          url: "/dashboard/rules/changelog",
+          icon: BookOpen,
         },
-        {
-          id: "profile",
-          title: "Профиль",
-          url: "/dashboard/profile",
-          icon: UserRound,
-        },
-        {
-          id: "users",
-          title: "Пользователи",
-          url: "/dashboard/users",
-          icon: Users,
-        },
-        {
-          id: "replies",
-          title: "Быстрые ответы",
-          url: "/dashboard/replies",
-          icon: MessageSquareReply,
-        },
+      ],
+    },
+    {
+      id: 3,
+      label: "Модерация",
+      items: [
         {
           id: "punishments",
           title: "Заявка на наказание",
@@ -206,10 +176,88 @@ function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
           icon: ListChecks,
         },
         {
+          id: "replies",
+          title: "Быстрые ответы",
+          url: "/dashboard/replies",
+          icon: MessageSquareReply,
+        },
+      ],
+    },
+    {
+      id: 4,
+      label: "Обучение",
+      items: [
+        {
+          id: "academy",
+          title: "Академия",
+          url: "/dashboard/academy",
+          icon: GraduationCap,
+        },
+        {
+          id: "academy-results",
+          title: "Результаты тестов",
+          url: "/dashboard/academy/results",
+          icon: ClipboardCheck,
+        },
+      ],
+    },
+    {
+      id: 5,
+      label: "Инструменты",
+      items: [
+        {
+          id: "calendar",
+          title: "Календарь",
+          url: "/dashboard/calendar",
+          icon: Calendar,
+        },
+        {
+          id: "tasks",
+          title: "Задачи",
+          url: "/dashboard/tasks",
+          icon: CheckSquare,
+        },
+        {
+          id: "kanban",
+          title: "Канбан",
+          url: "/dashboard/kanban",
+          icon: Kanban,
+        },
+        {
+          id: "chat",
+          title: "Чат",
+          url: "/dashboard/chat",
+          icon: MessageSquare,
+        },
+        {
+          id: "crm",
+          title: "CRM",
+          url: "/dashboard/crm",
+          icon: ChartBar,
+        },
+      ],
+    },
+    {
+      id: 6,
+      label: "Доступ и аккаунт",
+      items: [
+        {
+          id: "profile",
+          title: "Профиль",
+          url: "/dashboard/profile",
+          icon: UserRound,
+        },
+        {
           id: "access",
           title: "Заявки на доступ",
           url: "/dashboard/access",
           icon: ShieldCheck,
+        },
+        {
+          id: "users",
+          title: "Пользователи",
+          url: "/dashboard/users",
+          icon: Users,
         },
         {
           id: "roles",
@@ -220,37 +268,7 @@ function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
       ],
     },
     {
-      id: 3,
-      label: "Правила",
-      items: [
-        {
-          id: "general-rules",
-          title: "Основные правила",
-          url: "/dashboard/rules/general",
-          icon: BookOpen,
-        },
-        {
-          id: "government-rules",
-          title: "Государственных структур",
-          url: "/dashboard/rules/government",
-          icon: BookOpen,
-        },
-        {
-          id: "rp-terms",
-          title: "RP термины",
-          url: "/dashboard/rp-terms",
-          icon: BookText,
-        },
-        {
-          id: "rules-changelog",
-          title: "История изменений",
-          url: "/dashboard/rules/changelog",
-          icon: BookOpen,
-        },
-      ],
-    },
-    {
-      id: 4,
+      id: 7,
       label: "Разное",
       items: [
         {
