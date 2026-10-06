@@ -52,9 +52,8 @@ export function StaffList({ members, meId }: { members: StaffMember[]; meId: str
                         <AvatarFallback className="rounded-xl">{getInitials(person.name)}</AvatarFallback>
                       </Avatar>
                       <div className="flex min-w-0 flex-1 flex-col gap-1">
-                        <PersonName person={person} showRole={false} className="text-sm" />
+                        <PersonName person={person} showRole={true} className="text-sm" />
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                          <RoleBadge group={person.group} />
                           {own && <span className="text-muted-foreground text-xs">это вы</span>}
                         </div>
                         <span className="truncate text-muted-foreground text-xs">
