@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { Copy, EllipsisVertical, LogIn, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
-import { PersonName } from "@/components/person-name";
 import { ProfileBanner } from "@/components/profile-banner";
 import { RoleIcon } from "@/components/role-icon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -108,10 +107,10 @@ export function NavUser({
               <UserAvatar user={user} className="relative z-10 h-8 w-8 rounded-lg" />
               
               <div className="relative z-10 grid flex-1 text-left text-sm leading-tight">
-                <PersonName person={person} showRole={false} />
-                {user.username && (
-                  <span className="truncate text-muted-foreground text-xs">@{user.username}</span>
-                )}
+                <span className="truncate font-medium">{user.name}</span>
+                <span className="truncate text-muted-foreground text-xs">
+                  {user.staticId ? `#${user.staticId}` : "Static ID не указан"}
+                </span>
               </div>
 
               {/* Иконка роли справа в закруглённом квадрате */}
@@ -137,14 +136,16 @@ export function NavUser({
               <div className="relative z-10 flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <UserAvatar user={user} className="h-8 w-8 rounded-lg" />
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <PersonName person={person} showRole={false} />
+                  <span className="truncate font-medium">{user.name}</span>
                   <span className="truncate text-muted-foreground text-xs">
                     {user.staticId ? `Static ID: #${user.staticId}` : "Static ID не указан"}
                   </span>
                 </div>
-                <div className="flex size-7 shrink-0 items-center justify-center rounded-md border bg-background/50">
-                  <RoleIcon group={user.group} className="h-3.5 px-0" />
-                </div>
+                {user.group && (
+                  <div className="flex size-7 shrink-0 items-center justify-center rounded-md border bg-background/50">
+                    <RoleIcon group={user.group} className="h-3.5 px-0" />
+                  </div>
+                )}
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
