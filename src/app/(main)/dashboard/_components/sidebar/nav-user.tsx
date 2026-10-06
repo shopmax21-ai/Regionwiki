@@ -106,13 +106,22 @@ export function NavUser({
                 />
               )}
               <UserAvatar user={user} className="relative z-10 h-8 w-8 rounded-lg" />
+              
               <div className="relative z-10 grid flex-1 text-left text-sm leading-tight">
-                <PersonName person={person} showRole={true} />
-                <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground text-xs">
-                  {user.username && <span className="truncate">@{user.username}</span>}
-                </span>
+                <PersonName person={person} showRole={false} />
+                {user.username && (
+                  <span className="truncate text-muted-foreground text-xs">@{user.username}</span>
+                )}
               </div>
-              <EllipsisVertical className="relative z-10 ml-auto size-4" />
+
+              {/* Иконка роли справа в закруглённом квадрате */}
+              {user.group && (
+                <div className="relative z-10 ml-auto flex size-7 shrink-0 items-center justify-center rounded-md border bg-background/50 backdrop-blur-xs group-data-[collapsible=icon]:hidden">
+                  <RoleBadge group={user.group} className="h-3.5 px-0" />
+                </div>
+              )}
+
+              <EllipsisVertical className="relative z-10 ml-1 size-4 shrink-0" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -128,8 +137,13 @@ export function NavUser({
               <div className="relative z-10 flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <UserAvatar user={user} className="h-8 w-8 rounded-lg" />
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <PersonName person={person} showRole={true} />
-                  <span className="truncate text-muted-foreground text-xs">{staticId}</span>
+                  <PersonName person={person} showRole={false} />
+                  <span className="truncate text-muted-foreground text-xs">
+                    {user.staticId ? `Static ID: #${user.staticId}` : "Static ID не указан"}
+                  </span>
+                </div>
+                <div className="flex size-7 shrink-0 items-center justify-center rounded-md border bg-background/50">
+                  <RoleBadge group={user.group} className="h-3.5 px-0" />
                 </div>
               </div>
             </DropdownMenuLabel>
@@ -150,15 +164,17 @@ export function NavUser({
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem
+                disabled={!user.staticId}
                 onSelect={() => {
+                  if (!user.staticId) return;
                   navigator.clipboard
-                    .writeText(user.id)
-                    .then(() => toast.success("Telegram ID скопирован"))
+                    .writeText(user.staticId)
+                    .then(() => toast.success("Static ID скопирован"))
                     .catch(() => toast.error("Не удалось скопировать ID"));
                 }}
               >
                 <Copy />
-                Скопировать Telegram ID
+                Скопировать Static ID
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
