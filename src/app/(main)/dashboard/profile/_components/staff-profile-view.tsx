@@ -8,6 +8,7 @@ import { type DbUser, toPerson } from "@/lib/auth/db";
 import type { AdminGroup } from "@/lib/auth/groups";
 
 import { AcademyStatsCard } from "./academy-stats-card";
+import { IdentityCard } from "./identity-card";
 import { ProfileHeaderCard } from "./profile-header-card";
 import { ProfileStatTiles, profileDateFormat } from "./profile-stat-tiles";
 
@@ -19,11 +20,14 @@ export function StaffProfileView({
   user,
   group,
   academy,
+  canEditIdentity,
 }: {
   user: DbUser;
   group: AdminGroup;
   /** Статистика тестов Академии; null, если её не удалось загрузить */
   academy: UserStats | null;
+  /** Посетитель стоит выше по группе: может исправить Никнейм и Statik ID этого администратора */
+  canEditIdentity: boolean;
 }) {
   const person = toPerson(user);
   const stats = [
@@ -53,6 +57,8 @@ export function StaffProfileView({
       />
 
       <ProfileStatTiles stats={stats} />
+
+      {canEditIdentity && <IdentityCard person={person} mode="staff" />}
 
       {academy && <AcademyStatsCard stats={academy} own={false} />}
     </div>

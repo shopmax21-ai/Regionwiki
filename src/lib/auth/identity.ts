@@ -47,3 +47,22 @@ export function validateIdentity(input: {
 
   return { ok: true, value: { nickname: nickname || null, staticId: staticId || null } };
 }
+
+/**
+ * Никнейм и Statik ID указываются один раз. Дальше их меняет только вышестоящий администратор.
+ * Признак «уже указано» — любое из двух полей заполнено.
+ */
+export const identityLocked = (value: { nickname: string | null; staticId: string | null }): boolean =>
+  value.nickname !== null || value.staticId !== null;
+
+/** Первое заполнение: нужны оба поля, потому что потом самому исправить их будет нельзя. */
+export function validateFirstIdentity(input: {
+  nickname?: unknown;
+  staticId?: unknown;
+}): { ok: true; value: { nickname: string; staticId: string } } | { ok: false; error: string } {
+  const parsed = validateIdentity(input);
+  if (!parsed.ok) return parsed;
+  const { nickname, staticId } = parsed.value;
+  if (!nickname || !staticId) return { ok: false, error: "Укажите и Никнейм, и Statik ID" };
+  return { ok: true, value: { nickname, staticId } };
+}

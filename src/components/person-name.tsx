@@ -1,6 +1,6 @@
 import { cn } from "cn";
-import { IdCard } from "lucide-react";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Person } from "@/lib/auth/person";
 import { personLabel } from "@/lib/auth/person";
 
@@ -8,7 +8,7 @@ import { PersonAvatar } from "./person-avatar";
 import { RoleIcon } from "./role-icon";
 
 /**
- * Единое отображение человека на сайте: «(иконка роли) Никнейм (иконка ID) Статик».
+ * Единое отображение человека на сайте: «(иконка роли) Никнейм #Статик».
  * Если Никнейм не указан, вместо него имя из Telegram; если не указан Статик, его часть не показывается;
  * у обычного участника (не администратора) иконки роли нет.
  */
@@ -31,10 +31,18 @@ export function PersonName({
       {showRole && person.group && <RoleIcon group={person.group} />}
       <span className="truncate font-medium">{personLabel(person)}</span>
       {person.staticId && (
-        <span className="inline-flex shrink-0 items-center gap-1 text-muted-foreground tabular-nums">
-          <IdCard className="size-3.5" role="img" aria-label="Statik ID" />
-          {person.staticId}
-        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {/* Тихая приписка: мельче и бледнее имени, без иконки и рамки */}
+            <span
+              aria-label={`Statik ID ${person.staticId}`}
+              className="shrink-0 cursor-default font-normal text-[0.85em] text-muted-foreground/70 tabular-nums"
+            >
+              #{person.staticId}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top">Statik ID</TooltipContent>
+        </Tooltip>
       )}
     </span>
   );

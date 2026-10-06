@@ -77,7 +77,7 @@ export function ProfileView({
 
       <ProfileStatTiles stats={stats} />
 
-      {group && <IdentityCard person={person} />}
+      {group && <IdentityCard person={person} mode="self" />}
 
       {academy && <AcademyStatsCard stats={academy} />}
 

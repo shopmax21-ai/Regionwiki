@@ -7,6 +7,7 @@ import { getAdminContext } from "@/lib/auth/admin";
 import { LOGIN_PATH } from "@/lib/auth/config";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getUser, groupOfUser } from "@/lib/auth/db";
+import { groupLevel } from "@/lib/auth/groups";
 
 import { StaffProfileView } from "../_components/staff-profile-view";
 
@@ -55,5 +56,5 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     console.error("[profile] Не удалось загрузить статистику Академии", error);
   }
 
-  return <StaffProfileView user={user} group={group} academy={academy} />;
+  return <StaffProfileView user={user} group={group} academy={academy} canEditIdentity={admin.level > groupLevel(group)} />;
 }

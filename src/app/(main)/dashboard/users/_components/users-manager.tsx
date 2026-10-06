@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 import { PersonAvatar } from "@/components/person-avatar";
 import { PersonName } from "@/components/person-name";
-import { groupIconComponent, RoleBadge } from "@/components/role-icon";
+import { groupIconComponent, RoleIcon } from "@/components/role-icon";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -375,7 +375,7 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
                     <Badge variant={statusVariant[user.status]}>{statusLabel[user.status]}</Badge>
                   </TableCell>
                   <TableCell>
-                    <RoleBadge group={user.adminGroup} />
+                    <RoleIcon group={user.adminGroup} className="size-5" />
                   </TableCell>
                   <TableCell className="hidden text-muted-foreground text-sm md:table-cell">
                     {/* Дата форматируется в часовом поясе б��аузера, поэтому сервер и клиент могут отличаться */}

@@ -6,8 +6,16 @@ import { cookies } from "next/headers";
 import { getAdminContext } from "@/lib/auth/admin";
 import { SESSION_COOKIE } from "@/lib/auth/config";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { revokeSessions, setNotifyRequests, setUserIdentity } from "@/lib/auth/db";
-import { validateIdentity } from "@/lib/auth/identity";
+import {
+  getUser,
+  groupOfUser,
+  revokeSessions,
+  setNotifyRequests,
+  setUserIdentity,
+  setUserIdentityOnce,
+} from "@/lib/auth/db";
+import { groupLevel } from "@/lib/auth/groups";
+import { identityLocked, validateFirstIdentity, validateIdentity } from "@/lib/auth/identity";
 import { forgetRevocation } from "@/lib/auth/revocation";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -30,12 +38,49 @@ export async function setRequestNotifications(enabled: boolean): Promise<ActionR
 }
 
 /**
- * Сохранить свой Никнейм и Statik ID. Только для администраторов: на сайте они показываются вместо имени из Telegram
- * («иконка роли Никнейм иконка ID Статик»). Пустое поле очищает значение.
+ * Указать свои Никнейм и Statik ID. Только для администраторов и только один раз: на сайте они показываются вместо
+ * имени из Telegram («иконка роли Никнейм иконка ID Статик»). Потом их меняет только вышестоящий администратор
+ * (saveStaffIdentity).
  */
 export async function saveIdentity(input: unknown): Promise<ActionResult> {
   const admin = await getAdminContext();
   if (!admin) return { ok: false, error: "Никнейм и Statik ID указывают администраторы" };
+  if (identityLocked(admin)) {
+    return { ok: false, error: "Никнейм и Statik ID уже указаны. Изменить их может только вышестоящий администратор" };
+  }
+
+  const fields = (typeof input === "object" && input !== null ? input : {}) as {
+    nickname?: unknown;
+    staticId?: unknown;
+  };
+  const parsed = validateFirstIdentity(fields);
+  if (!parsed.ok) return parsed;
+
+  try {
+    const saved = await setUserIdentityOnce(admin.id, parsed.value.nickname, parsed.value.staticId);
+    if (!saved) {
+      return { ok: false, error: "Никнейм и Statik ID уже указаны. Изменить их может только вышестоящий администратор" };
+    }
+  } catch (error) {
+    console.error("[profile] Не удалось сохранить Никнейм и Statik ID", error);
+    return { ok: false, error: "База данных недоступна, попробуйте позже" };
+  }
+
+  // Имя показывается в боковом меню и во всех разделах, поэтому обновляем весь дашборд
+  revalidatePath("/dashboard", "layout");
+  return { ok: true };
+}
+
+/**
+ * Изменить Никнейм и Statik ID другого администратора. Доступно только тому, кто стоит выше него по группе.
+ * Пустое поле очищает значение: если очистить оба, человек сможет указать их заново.
+ */
+export async function saveStaffIdentity(targetId: unknown, input: unknown): Promise<ActionResult> {
+  const admin = await getAdminContext();
+  if (!admin) return { ok: false, error: "Только для администраторов" };
+  if (typeof targetId !== "string" || !/^\d{1,20}$/.test(targetId) || targetId === admin.id) {
+    return { ok: false, error: "Неизвестный администратор" };
+  }
 
   const fields = (typeof input === "object" && input !== null ? input : {}) as {
     nickname?: unknown;
@@ -45,13 +90,19 @@ export async function saveIdentity(input: unknown): Promise<ActionResult> {
   if (!parsed.ok) return parsed;
 
   try {
-    await setUserIdentity(admin.id, parsed.value.nickname, parsed.value.staticId);
+    const target = await getUser(targetId);
+    const group = target ? groupOfUser(target) : null;
+    if (!target || !group) return { ok: false, error: "Администратор не найден" };
+    // Уровень проверяется по базе в момент сохранения, а не по тому, что видела страница
+    if (admin.level <= groupLevel(group)) {
+      return { ok: false, error: "Менять данные может только вышестоящий администратор" };
+    }
+    await setUserIdentity(targetId, parsed.value.nickname, parsed.value.staticId);
   } catch (error) {
-    console.error("[profile] Не удалось сохранить Никнейм и Statik ID", error);
+    console.error("[profile] Не удалось сохранить Никнейм и Statik ID администратора", error);
     return { ok: false, error: "База данных недоступна, попробуйте позже" };
   }
 
-  // Имя показывается в боковом меню и во всех разделах, поэтому обновляем весь дашборд
   revalidatePath("/dashboard", "layout");
   return { ok: true };
 }

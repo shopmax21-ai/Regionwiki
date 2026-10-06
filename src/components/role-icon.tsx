@@ -2,6 +2,7 @@ import { cn } from "cn";
 import { Crown, HandHelping, type LucideIcon, Shield, ShieldCheck, User } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { type AdminGroup, groupInfo } from "@/lib/auth/groups";
 
 type IconComponent = LucideIcon;
@@ -41,14 +42,25 @@ const MEMBER_BADGE = {
 
 const MEMBER_LABEL = "Участник";
 
-/** Иконка роли для подписи рядом с именем. Название роли доступно по наведению и для скринридеров. */
+const MEMBER_DESCRIPTION = "Обычный участник без прав администратора.";
+
+/** Иконка роли для подписи рядом с именем. По наведению показывается подсказка: название роли и что она значит. */
 export function RoleIcon({ group, className }: { group: AdminGroup | null; className?: string }) {
   const { icon: Icon, text } = group ? GROUP_BADGES[group] : MEMBER_BADGE;
   const label = group ? groupInfo[group].label : MEMBER_LABEL;
+  const description = group ? groupInfo[group].description : MEMBER_DESCRIPTION;
   return (
-    <span role="img" aria-label={label} title={label} className="inline-flex shrink-0">
-      <Icon className={cn("size-4", text, className)} aria-hidden="true" />
-    </span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span role="img" aria-label={label} className="inline-flex shrink-0 cursor-default">
+          <Icon className={cn("size-4", text, className)} aria-hidden="true" />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-56">
+        <p className="font-medium">{label}</p>
+        <p className="opacity-80">{description}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

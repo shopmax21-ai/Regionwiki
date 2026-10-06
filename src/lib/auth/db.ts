@@ -86,8 +86,6 @@ function ensureSchema(): Promise<void> {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_group text`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS notify_requests boolean NOT NULL DEFAULT true`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS sessions_valid_after timestamptz`;
-    // «Следить за календарём»: сообщения в Telegram о новых, изменённых и удалённых мероприятиях и напоминания
-    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS notify_calendar boolean NOT NULL DEFAULT false`;
     // Игровой профиль администратора: Никнейм и Statik ID. Показываются на сайте вместо имени из Telegram.
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS nickname text`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS static_id text`;
@@ -135,8 +133,6 @@ export type DbUser = {
   adminGroup: AdminGroup | null;
   /** Присылать ли в Telegram уведомления о новых заявках на доступ (для тех, кто может их рассматривать) */
   notifyRequests: boolean;
-  /** Следит ли за календарём мероприятий через Telegram (по умолчанию выключено) */
-  notifyCalendar: boolean;
   /** Игровой никнейм администратора (не указан: null) */
   nickname: string | null;
   /** Statik ID администратора (не указан: null) */
@@ -157,7 +153,6 @@ type UserRow = {
   role: AccessRole;
   admin_group: string | null;
   notify_requests: boolean;
-  notify_calendar: boolean;
   nickname: string | null;
   static_id: string | null;
   profile_background: string | null;
@@ -181,7 +176,6 @@ const toUser = (row: UserRow): DbUser => ({
   role: row.role,
   adminGroup: isAdminGroup(row.admin_group) ? row.admin_group : row.role === "admin" ? "chief" : null,
   notifyRequests: row.notify_requests !== false,
-  notifyCalendar: row.notify_calendar === true,
   nickname: row.nickname ?? null,
   staticId: row.static_id ?? null,
   profileBackground: safeBackground(row.profile_background),
@@ -375,19 +369,6 @@ export async function setNotifyRequests(telegramId: string, enabled: boolean): P
   await sql`UPDATE users SET notify_requests = ${enabled} WHERE telegram_id = ${telegramId}`;
 }
 
-/** Включить или выключить слежение за календарём мероприятий в Telegram. */
-export async function setNotifyCalendar(telegramId: string, enabled: boolean): Promise<void> {
-  await ensureSchema();
-  await sql`UPDATE users SET notify_calendar = ${enabled} WHERE telegram_id = ${telegramId}`;
-}
-
-/** Администраторы, которые следят за календарём: им уходят сообщения о мероприятиях. */
-export async function listCalendarSubscribers(): Promise<DbUser[]> {
-  await ensureSchema();
-  const rows = await sql`SELECT * FROM users WHERE role = 'admin' AND status = 'approved' AND notify_calendar`;
-  return (rows as UserRow[]).map(toUser);
-}
-
 /** Все одобренные администраторы: им могут уходить уведомления о заявках. */
 export async function listAdmins(): Promise<DbUser[]> {
   await ensureSchema();
@@ -496,6 +477,21 @@ export async function setUserIdentity(
   await ensureSchema();
   const rows = await sql`UPDATE users SET nickname = ${nickname}, static_id = ${staticId}
     WHERE telegram_id = ${telegramId} RETURNING *`;
+  return rows[0] ? toUser(rows[0] as UserRow) : null;
+}
+
+/**
+ * Первое указание Никнейма и Statik ID самим администратором. Условие в запросе гарантирует «один раз» даже при
+ * двух одновременных отправках: если поля уже заполнены, строка не обновится и вернётся null.
+ */
+export async function setUserIdentityOnce(
+  telegramId: string,
+  nickname: string,
+  staticId: string,
+): Promise<DbUser | null> {
+  await ensureSchema();
+  const rows = await sql`UPDATE users SET nickname = ${nickname}, static_id = ${staticId}
+    WHERE telegram_id = ${telegramId} AND nickname IS NULL AND static_id IS NULL RETURNING *`;
   return rows[0] ? toUser(rows[0] as UserRow) : null;
 }
 
