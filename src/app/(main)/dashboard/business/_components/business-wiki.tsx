@@ -73,9 +73,6 @@ export function BusinessWiki({ initialQuery = "", businesses, editor, mapPlaces 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-10">
       <header className="flex flex-col items-center gap-3 py-4 text-center md:py-6">
-        <Badge variant="secondary" className="gap-2 rounded-full px-3 py-1">
-          <Sparkles data-icon="inline-start" /> Region Wiki
-        </Badge>
         <h1 className="text-3xl font-semibold tracking-tight md:text-5xl">Таблица бизнесов</h1>
         <p className="max-w-xl text-sm text-muted-foreground md:text-base">
           Магазины, заправки, банкоматы, салоны и мастерские штата со стоимостью

@@ -305,13 +305,6 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
 
         <div className="relative px-6 py-10 md:px-12 md:py-14">
           <div className="max-w-2xl">
-            <p className="wk-rise inline-flex items-center gap-2 rounded-full border bg-background/70 px-3 py-1 text-muted-foreground text-xs backdrop-blur">
-              <span className="relative flex size-2">
-                <span className="wk-ping absolute inline-flex size-full rounded-full bg-primary/70" />
-                <span className="relative inline-flex size-2 rounded-full bg-primary" />
-              </span>
-              Справочник игрока · Region WIKI
-            </p>
 
             <h1 className="wk-rise mt-5 text-balance font-extrabold text-4xl leading-[1.05] tracking-tight [animation-delay:60ms] md:text-6xl">
               Всё о жизни на <span className="wk-accent italic">Region</span>
@@ -372,7 +365,7 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
             <dl className="wk-rise mt-9 flex flex-wrap gap-x-10 gap-y-4 border-t pt-6 [animation-delay:280ms]">
               <StatItem value={stats.rules} label="пунктов правил" />
               <StatItem value={stats.jobs} label="работ" />
-              <StatItem value={stats.vehicles} label="��ашин" />
+              <StatItem value={stats.vehicles} label="машин" />
               <StatItem value={stats.realties + stats.businesses} label="объектов и бизнесов" />
             </dl>
           </div>

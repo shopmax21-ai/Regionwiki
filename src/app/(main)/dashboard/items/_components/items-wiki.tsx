@@ -74,9 +74,6 @@ export function ItemsWiki({ items, initialQuery = "", editor = "off" }: ItemsWik
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-10">
       <header className="flex flex-col items-center gap-3 py-4 text-center md:py-6">
-        <Badge variant="secondary" className="gap-2 rounded-full px-3 py-1">
-          <Sparkles data-icon="inline-start" /> Region Wiki
-        </Badge>
         <h1 className="font-semibold text-3xl tracking-tight md:text-5xl">Таблица предметов</h1>
         <p className="max-w-xl text-muted-foreground text-sm md:text-base">
           Продукты, инструменты, материалы, одежда и другие предметы проекта

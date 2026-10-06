@@ -76,9 +76,6 @@ export function JobsHub({ jobs, editor, problem }: JobsHubProps) {
       <section className="relative overflow-hidden rounded-3xl border bg-card px-4 py-8 shadow-sm sm:px-6 md:px-10 md:py-12">
         <div className="pointer-events-none absolute -top-24 -right-20 size-72 rounded-full bg-primary/10 blur-3xl" />
         <div className="relative max-w-2xl">
-          <Badge variant="secondary" className="mb-5 gap-2 rounded-full px-3 py-1">
-            <BriefcaseBusiness className="size-3.5" /> Region Wiki · {jobs.length} {pluralJobs(jobs.length)}
-          </Badge>
           <h1 className="text-3xl font-semibold tracking-tight md:text-5xl">Всё о работах</h1>
           <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground md:text-lg">
             Работы приносят деньги и открывают новые способы заработка. Одни рассчитаны на спокойную добычу, другие — на

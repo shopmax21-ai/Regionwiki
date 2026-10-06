@@ -63,9 +63,6 @@ export function RulesPage({
       <section className="rounded-3xl border bg-card px-4 py-6 shadow-sm sm:px-6 sm:py-8 md:px-10">
         <div className="flex min-w-0 flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div>
-            <Badge variant="secondary" className="mb-4 gap-2 rounded-full px-3 py-1">
-              <ShieldCheck className="size-3.5" /> Полный текст правил · {totalRules} пунктов
-            </Badge>
             <h1 className="text-3xl font-semibold tracking-tight">{data.title}</h1>
             <p className="mt-3 max-w-2xl text-muted-foreground">{data.description}</p>
           </div>
@@ -189,9 +186,6 @@ export function ChangelogPage({ entries, sync }: { entries: ChangelogEntry[]; sy
   return (
     <main className="mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-6 pb-10">
       <section>
-        <Badge variant="secondary" className="mb-4 gap-2 rounded-full">
-          <RefreshCw className="size-3.5" /> Автоматическая синхронизация
-        </Badge>
         <h1 className="text-3xl font-semibold tracking-tight">История изменений</h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">
           Лента изменений правил проекта Region: что добавили, изменили или убрали. Проверка форума выполняется{" "}
