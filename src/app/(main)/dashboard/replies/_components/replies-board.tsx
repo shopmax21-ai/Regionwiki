@@ -195,9 +195,6 @@ export function RepliesBoard({
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 pt-2">
         <div className="flex min-w-0 flex-col gap-1.5">
           <h1 className="font-semibold text-3xl tracking-tight md:text-4xl">Быстрые ответы</h1>
-          <p className="max-w-xl text-muted-foreground text-sm md:text-base">
-            Готовые сообщения для репортов. Нажмите на ответ, и он скопируется в буфер обмена.
-          </p>
         </div>
         {editor === "on" && (
           <ReplyEditor

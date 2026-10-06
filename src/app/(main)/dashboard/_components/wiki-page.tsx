@@ -202,7 +202,6 @@ function SectionCard({ section, index }: { section: Section; index: number }) {
         <h3 className={cn("font-semibold text-lg tracking-tight", soon && "text-muted-foreground")}>{section.title}</h3>
         <p className="mt-1.5 text-muted-foreground text-sm leading-6">{section.description}</p>
       </div>
-      {section.meta && <p className="border-t pt-3 text-muted-foreground text-xs tabular-nums">{section.meta}</p>}
     </div>
   );
 
@@ -310,8 +309,7 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
               Всё о жизни на <span className="wk-accent italic">Region</span>
             </h1>
             <p className="wk-rise mt-5 max-w-xl text-base text-muted-foreground leading-7 [animation-delay:120ms] md:text-lg">
-              Правила, работы, бизнес, недвижимость и транспорт. Поиск работает по всем разделам сразу, включая текст
-              каждого пункта правил.
+              Здесь Вы можете найти любую информацию о проекте Region, его игровых системах
             </p>
 
             <div className="wk-rise relative mt-8 max-w-xl [animation-delay:180ms]">
@@ -361,13 +359,6 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
                 </button>
               ))}
             </div>
-
-            <dl className="wk-rise mt-9 flex flex-wrap gap-x-10 gap-y-4 border-t pt-6 [animation-delay:280ms]">
-              <StatItem value={stats.rules} label="пунктов правил" />
-              <StatItem value={stats.jobs} label="работ" />
-              <StatItem value={stats.vehicles} label="машин" />
-              <StatItem value={stats.realties + stats.businesses} label="объектов и бизнесов" />
-            </dl>
           </div>
         </div>
       </section>

@@ -187,11 +187,6 @@ export function ChangelogPage({ entries, sync }: { entries: ChangelogEntry[]; sy
     <main className="mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-6 pb-10">
       <section>
         <h1 className="text-3xl font-semibold tracking-tight">История изменений</h1>
-        <p className="mt-3 max-w-2xl text-muted-foreground">
-          Лента изменений правил проекта Region: что добавили, изменили или убрали. Проверка форума выполняется{" "}
-          {syncInfo.interval.toLowerCase()}. Последняя: {sync.lastChecked ?? "ещё не проверялось"}
-          {sync.lastChecked && !sync.ok ? " (были ошибки)" : ""}.
-        </p>
       </section>
       <ChangelogFeed entries={entries} />
     </main>

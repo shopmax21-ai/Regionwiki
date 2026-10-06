@@ -75,9 +75,6 @@ export function ItemsWiki({ items, initialQuery = "", editor = "off" }: ItemsWik
     <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-10">
       <header className="flex flex-col items-center gap-3 py-4 text-center md:py-6">
         <h1 className="font-semibold text-3xl tracking-tight md:text-5xl">Таблица предметов</h1>
-        <p className="max-w-xl text-muted-foreground text-sm md:text-base">
-          Продукты, инструменты, материалы, одежда и другие предметы проекта
-        </p>
         {editor === "on" && (
           <Button size="sm" onClick={() => setEditing({ mode: "create" })}>
             <Plus data-icon="inline-start" /> Добавить предмет

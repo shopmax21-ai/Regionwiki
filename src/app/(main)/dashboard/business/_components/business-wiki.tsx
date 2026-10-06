@@ -74,9 +74,6 @@ export function BusinessWiki({ initialQuery = "", businesses, editor, mapPlaces 
     <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-10">
       <header className="flex flex-col items-center gap-3 py-4 text-center md:py-6">
         <h1 className="text-3xl font-semibold tracking-tight md:text-5xl">Таблица бизнесов</h1>
-        <p className="max-w-xl text-sm text-muted-foreground md:text-base">
-          Магазины, заправки, банкоматы, салоны и мастерские штата со стоимостью
-        </p>
         {editor === "on" && <BusinessEditor mode="create" mapPlaces={mapPlaces} />}
         {editor === "unavailable" && (
           <p role="status" className="max-w-xl rounded-lg border border-dashed px-3 py-2 text-muted-foreground text-xs">
