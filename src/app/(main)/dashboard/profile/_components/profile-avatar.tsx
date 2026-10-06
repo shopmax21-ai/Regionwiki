@@ -50,7 +50,7 @@ export function ProfileAvatar({ name, userId, className }: { name: string; userI
         />
         <AvatarFallback className="rounded-[inherit] text-lg">{getInitials(name)}</AvatarFallback>
       </Avatar>
-      {hint && <p className="basis-full text-muted-foreground text-xs">{hint}</p>}
+      {hint && <p className="order-last basis-full text-muted-foreground text-xs">{hint}</p>}
     </>
   );
 }

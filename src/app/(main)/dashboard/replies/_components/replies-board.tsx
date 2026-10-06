@@ -27,7 +27,7 @@ const ALL = "Все";
 /** Кнопка показывает вид, на который переключит нажатие. */
 const nextLayout: Record<Layout, { id: Layout; label: string; icon: typeof Rows3 }> = {
   columns: { id: "rows", label: "Показать в строку", icon: Rows3 },
-  rows: { id: "columns", label: "Показать в 2 столбца", icon: LayoutGrid },
+  rows: { id: "columns", label: "Показать колонками", icon: LayoutGrid },
 };
 
 const isLayout = (value: string | null): value is Layout => value === "rows" || value === "columns";
@@ -167,7 +167,7 @@ export function RepliesBoard({
     [recent, replies],
   );
 
-  const railItem = (name: string, count: number, hueFor?: string) => {
+  const chip = (name: string, count: number, hueFor?: string) => {
     const active = activeCategory === name;
     return (
       <button
@@ -176,14 +176,16 @@ export function RepliesBoard({
         aria-pressed={active}
         onClick={() => setCategory(name)}
         className={cn(
-          "flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
-          active ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+          "flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
+          active
+            ? "border-foreground bg-foreground font-medium text-background"
+            : "bg-card text-muted-foreground hover:border-foreground/30 hover:text-foreground",
           count === 0 && !active && "opacity-50",
         )}
       >
-        {hueFor ? <Dot category={hueFor} /> : <span className="size-2.5 shrink-0 rounded-full bg-foreground/70" aria-hidden="true" />}
-        <span className="min-w-0 flex-1 truncate">{name}</span>
-        <span className="font-normal text-muted-foreground text-xs tabular-nums">{count}</span>
+        {hueFor && <Dot category={hueFor} />}
+        {name}
+        <span className={cn("text-xs tabular-nums", active ? "text-background/70" : "text-muted-foreground")}>{count}</span>
       </button>
     );
   };
@@ -289,24 +291,15 @@ export function RepliesBoard({
         )}
 
         {categories.length > 1 && (
-          <fieldset className="m-0 flex min-w-0 gap-1.5 overflow-x-auto border-0 p-0 pb-1 lg:hidden">
+          <fieldset className="m-0 flex min-w-0 gap-2 overflow-x-auto border-0 p-0 pb-1">
             <legend className="sr-only">Категории ответов</legend>
-            {railItem(ALL, allCount)}
-            {categories.map((name) => railItem(name, counts.get(name) ?? 0, name))}
+            {chip(ALL, allCount)}
+            {categories.map((name) => chip(name, counts.get(name) ?? 0, name))}
           </fieldset>
         )}
       </section>
 
-      <div className={cn("grid gap-8", categories.length > 1 && "lg:grid-cols-[13.5rem_minmax(0,1fr)]")}>
-        {categories.length > 1 && (
-          <nav aria-label="Категории ответов" className="hidden lg:block">
-            <div className="sticky top-20 flex flex-col gap-0.5">
-              {railItem(ALL, allCount)}
-              {categories.map((name) => railItem(name, counts.get(name) ?? 0, name))}
-            </div>
-          </nav>
-        )}
-
+      <div className="grid gap-8">
         <div className="flex min-w-0 flex-col gap-8">
           {!normalized && recentReplies.length > 0 && (
             <section className="flex flex-col gap-2.5" aria-label="Недавно использованные ответы">
@@ -342,7 +335,7 @@ export function RepliesBoard({
                   {group.name}
                   <span className="font-normal text-muted-foreground text-sm tabular-nums">{group.items.length}</span>
                 </h2>
-                <div className={cn("grid gap-x-4 gap-y-5", layout === "columns" ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1")}>
+                <div className={cn("grid gap-4", layout === "columns" ? "grid-cols-1 md:grid-cols-2 2xl:grid-cols-3" : "grid-cols-1")}>
                   {group.items.map((reply) => (
                     <ReplyCard
                       key={reply.id}

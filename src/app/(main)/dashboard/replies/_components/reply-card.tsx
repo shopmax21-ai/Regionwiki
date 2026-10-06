@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "cn";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, MessageSquareText } from "lucide-react";
 
 import type { QuickReply } from "../_data/replies";
 import { categoryHue, hueStyle } from "./category-hue";
@@ -20,49 +20,55 @@ type ReplyCardProps = {
   query: string;
 };
 
-/** Ответ выглядит как сообщение в чате: именно такое игрок и увидит в репорте. */
+/** Блок с готовым ответом: цвет категории в значке и рамке, весь блок нажимается и копирует текст. */
 export function ReplyCard({ reply, categories, editable, copied, onCopy, query }: ReplyCardProps) {
   return (
-    <article className="group/reply flex min-w-0 flex-col gap-1" style={hueStyle(categoryHue(reply.category))}>
+    <article
+      style={hueStyle(categoryHue(reply.category))}
+      className={cn(
+        "group/reply flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-xs transition-[border-color,box-shadow] duration-200",
+        "hover:border-[oklch(0.72_0.1_var(--h))] hover:shadow-md",
+        copied && "border-[oklch(0.62_0.16_var(--h))] shadow-md ring-2 ring-[oklch(0.62_0.16_var(--h)/0.35)]",
+      )}
+    >
       <button
         type="button"
         onClick={() => onCopy(reply)}
         aria-label={`Скопировать ответ «${reply.title}»`}
-        className="flex min-w-0 flex-1 cursor-pointer flex-col gap-1.5 rounded-2xl text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="flex min-w-0 flex-1 cursor-pointer flex-col gap-3 p-4 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset"
       >
-        <span className="flex items-center justify-between gap-3 px-1">
-          <span className="min-w-0 truncate font-medium text-sm">
-            <Highlight text={reply.title} query={query} />
-          </span>
+        <span className="flex items-center gap-3">
           <span
-            className={cn(
-              "flex shrink-0 items-center gap-1 text-muted-foreground text-xs transition-colors group-hover/reply:text-foreground",
-              copied && "text-foreground",
-            )}
             aria-hidden="true"
+            className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.94_0.045_var(--h))] text-[oklch(0.45_0.14_var(--h))] dark:bg-[oklch(0.32_0.07_var(--h))] dark:text-[oklch(0.85_0.1_var(--h))]"
           >
-            {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-            {copied ? "Скопировано" : "Копировать"}
+            <MessageSquareText className="size-4.5" />
+          </span>
+          <span className="min-w-0 flex-1 font-semibold leading-snug tracking-tight">
+            <Highlight text={reply.title} query={query} />
           </span>
         </span>
 
+        <span className="whitespace-pre-line break-words rounded-xl bg-muted/50 px-3.5 py-3 text-foreground/90 text-sm leading-6">
+          <Highlight text={reply.text} query={query} />
+        </span>
+
         <span
+          aria-hidden="true"
           className={cn(
-            "h-full whitespace-pre-line break-words rounded-2xl rounded-tl-sm border px-4 py-3 text-sm leading-6 transition-[background-color,border-color,color,transform] duration-200 active:scale-[0.995]",
-            "border-[oklch(0.89_0.05_var(--h))] bg-[oklch(0.965_0.025_var(--h))]",
-            "group-hover/reply:border-[oklch(0.78_0.1_var(--h))]",
-            "dark:border-[oklch(0.38_0.07_var(--h))] dark:bg-[oklch(0.28_0.045_var(--h))]",
-            "dark:group-hover/reply:border-[oklch(0.55_0.12_var(--h))]",
-            copied &&
-              "border-[oklch(0.5_0.16_var(--h))] bg-[oklch(0.5_0.16_var(--h))] text-white group-hover/reply:border-[oklch(0.5_0.16_var(--h))] dark:border-[oklch(0.6_0.15_var(--h))] dark:bg-[oklch(0.6_0.15_var(--h))] dark:text-[oklch(0.2_0.03_var(--h))] dark:group-hover/reply:border-[oklch(0.6_0.15_var(--h))]",
+            "mt-auto flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 font-medium text-xs transition-colors",
+            copied
+              ? "border-transparent bg-[oklch(0.55_0.16_var(--h))] text-white dark:bg-[oklch(0.7_0.14_var(--h))] dark:text-[oklch(0.2_0.03_var(--h))]"
+              : "text-muted-foreground group-hover/reply:text-foreground",
           )}
         >
-          <Highlight text={reply.text} query={query} />
+          {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+          {copied ? "Скопировано" : "Копировать"}
         </span>
       </button>
 
       {editable && (
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center justify-end gap-1 border-t bg-muted/20 px-2 py-1.5">
           <ReplyActions reply={reply} categories={categories} />
         </div>
       )}

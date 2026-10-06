@@ -76,13 +76,14 @@ export function ProfileHeaderCard({
       </div>
 
       <div className="flex flex-col gap-5 px-5 pb-5 md:px-8 md:pb-6 xl:flex-row xl:items-end xl:justify-between xl:gap-8">
-        <div className="-mt-12 flex min-w-0 flex-wrap items-end gap-x-5 gap-y-2 md:-mt-16">
+        {/* Вверх за край баннера поднят только аватар. Имя остаётся в обычном потоке: на телефоне оно стоит под аватаром и баннер его не закрывает. */}
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-5">
           <ProfileAvatar
             name={person.name}
             userId={avatarUserId}
-            className="size-24 rounded-2xl shadow-sm ring-4 ring-card md:size-32"
+            className="-mt-12 size-24 rounded-2xl shadow-sm ring-4 ring-card sm:-mt-16 md:size-32"
           />
-          <div className="flex min-w-0 flex-1 flex-col gap-2 pb-1">
+          <div className="relative z-10 flex min-w-0 flex-col gap-2 sm:flex-1 sm:pb-1">
             <h1 className="min-w-0 truncate font-semibold text-2xl tracking-tight md:text-3xl">
               <PersonName person={person} showRole={false} className="[&>span.truncate]:font-semibold" />
             </h1>
