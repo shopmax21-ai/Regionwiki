@@ -17,7 +17,7 @@ type PersonAvatarProps = {
 /**
  * Аватар из Telegram для строк таблиц и списков.
  * Инициалы лежат под картинкой, поэтому фото появляется сразу, как только браузер его отдал из кэша,
- * а если фото нет (404), остаются инициалы без значка «битой» картинки.
+ * а если фото нет (404), остаются инициалы без значка «битой» картинки
  */
 export function PersonAvatar({ id, name, className }: PersonAvatarProps) {
   const [failed, setFailed] = useState(false);
