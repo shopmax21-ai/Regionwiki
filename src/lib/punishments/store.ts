@@ -388,7 +388,7 @@ export const claimRequest = (id: string, admin: Actor) =>
     }),
   );
 
-/** Вернуть заявку в очередь: может взявший её администратор, а Гл.Администратор любую (force). */
+/** Вернуть заявку в ��чередь: может взявший её администратор, а Гл.Администратор любую (force). */
 export const releaseRequest = (id: string, actor: Actor, force: boolean) =>
   run(() =>
     withRequest(id, async (client, request) => {

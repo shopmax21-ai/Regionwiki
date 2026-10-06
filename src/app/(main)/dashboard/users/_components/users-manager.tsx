@@ -374,7 +374,7 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
                     <RoleBadge group={user.adminGroup} />
                   </TableCell>
                   <TableCell className="hidden text-muted-foreground text-sm md:table-cell">
-                    {/* Дата форматируется в часовом поясе браузера, поэтому сервер и клиент могут отличаться */}
+                    {/* Дата форматируется в часовом поясе б��аузера, поэтому сервер и клиент могут отличаться */}
                     <time dateTime={user.createdAt} suppressHydrationWarning>
                       {dateFormat.format(new Date(user.createdAt))}
                     </time>
