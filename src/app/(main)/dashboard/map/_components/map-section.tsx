@@ -35,6 +35,15 @@ interface MapSectionProps {
   /** on — можно редактировать; unavailable — право есть, но база недоступна; off — права нет */
   editor: "on" | "off" | "unavailable";
   problem: string | null;
+  /** Место, на которое ведёт ссылка с другой страницы (например, «На карте» у бизнеса) */
+  linked?: LinkedPlace | null;
+}
+
+/** Временная метка по ссылке: показывается на карте, пока её не закроют. */
+export interface LinkedPlace {
+  x: number;
+  y: number;
+  name: string;
 }
 
 function CategoryChips({
@@ -109,14 +118,18 @@ const parseCoordinate = (value: string): number | null => {
 
 const formatCoordinate = (value: number) => String(Math.round(value * 100) / 100);
 
-export function MapSection({ places: allPlaces, editor, problem }: MapSectionProps) {
+export function MapSection({ places: allPlaces, editor, problem, linked = null }: MapSectionProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<CategoryFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [focus, setFocus] = useState<FocusRequest | null>(null);
+  const [linkedPlace, setLinkedPlace] = useState<LinkedPlace | null>(linked);
+  // Если пришли по ссылке, карта сразу приближается к этому месту
+  const [focus, setFocus] = useState<FocusRequest | null>(
+    linked ? { id: "linked", n: 1, point: { x: linked.x, y: linked.y } } : null,
+  );
   const [fullscreen, setFullscreen] = useState<FullscreenMode>("off");
   const [draft, setDraft] = useState<PlaceDraft | null>(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -354,9 +367,27 @@ export function MapSection({ places: allPlaces, editor, problem }: MapSectionPro
             current ? { ...current, x: formatCoordinate(point.x), y: formatCoordinate(point.y) } : current,
           )
         }
-        draft={draftMarker}
+        draft={draftMarker ?? (linkedPlace ? { x: linkedPlace.x, y: linkedPlace.y, category: "other" } : null)}
         focus={focus}
       />
+
+      {linkedPlace && !draft && (
+        <div
+          role="status"
+          className="absolute top-4 left-1/2 z-10 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-2 rounded-full bg-card/95 py-1 pr-1 pl-4 text-sm shadow-sm ring-1 ring-foreground/10 backdrop-blur"
+        >
+          <span className="truncate font-medium">{linkedPlace.name}</span>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            className="shrink-0 rounded-full"
+            aria-label="Убрать отметку с карты"
+            onClick={() => setLinkedPlace(null)}
+          >
+            <X />
+          </Button>
+        </div>
+      )}
 
       {/* Десктоп: боковая панель. Сворачивается в узкую полосу со значками, чтобы не закрывать карту. */}
       {collapsed ? (

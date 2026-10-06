@@ -1,7 +1,7 @@
-import { businesses } from "@/app/(main)/dashboard/business/_data/businesses";
 import { mapPlaces } from "@/app/(main)/dashboard/map/_components/map-data";
-import { realties } from "@/app/(main)/dashboard/real-estate/_data/realties";
+import { listBusinesses } from "@/lib/businesses/store";
 import { listJobs } from "@/lib/jobs/store";
+import { listRealties } from "@/lib/realties/store";
 import { listVehicles } from "@/lib/vehicles/store";
 
 import { getGroupCards } from "../rules/_components/rules-content";
@@ -16,7 +16,12 @@ const dateValue = (value: string) => {
 
 /** Серверная обёртка главной: собирает счётчики и свежие правила для клиентского WikiPage. */
 export async function WikiHome() {
-  const [{ vehicles }, { jobs }] = await Promise.all([listVehicles(), listJobs()]);
+  const [{ vehicles }, { jobs }, { businesses }, { realties }] = await Promise.all([
+    listVehicles(),
+    listJobs(),
+    listBusinesses(),
+    listRealties(),
+  ]);
   const [general, government] = await Promise.all([getGroupCards("general"), getGroupCards("government")]);
 
   const recent: RecentArticle[] = [...general, ...government]

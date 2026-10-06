@@ -5,21 +5,24 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Funnel, Search, Sparkles } from "lucide-react";
 
 import { FilterDropdown } from "@/app/(main)/dashboard/_components/filter-dropdown";
+import { DeleteRecordButton } from "@/app/(main)/dashboard/_components/record-dialogs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
 import {
+  type Business,
   type Category,
+  businessCode,
   businessKey,
   businessTitle,
-  businesses,
   categories,
   compareByCategory,
   pluralBusinesses,
 } from "../_data/businesses";
 import { BusinessCard } from "./business-card";
+import { BusinessEditor, type MapPlaceOption } from "./business-editor";
 
 const PAGE_SIZE = 24;
 
@@ -32,7 +35,15 @@ const sortOptions = [
 
 type SortId = (typeof sortOptions)[number]["id"];
 
-export function BusinessWiki({ initialQuery = "" }: { initialQuery?: string }) {
+type BusinessWikiProps = {
+  initialQuery?: string;
+  businesses: Business[];
+  /** on — можно менять, unavailable — права есть, но базы нет, off — просто просмотр */
+  editor: "on" | "off" | "unavailable";
+  mapPlaces: MapPlaceOption[];
+};
+
+export function BusinessWiki({ initialQuery = "", businesses, editor, mapPlaces }: BusinessWikiProps) {
   const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState<Category>("Все");
   const [sort, setSort] = useState<SortId>("new");
@@ -53,7 +64,7 @@ export function BusinessWiki({ initialQuery = "" }: { initialQuery?: string }) {
         if (sort === "cheap") return a.price - b.price || b.id - a.id;
         return b.id - a.id || compareByCategory(a, b);
       });
-  }, [category, query, sort]);
+  }, [businesses, category, query, sort]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
@@ -69,6 +80,12 @@ export function BusinessWiki({ initialQuery = "" }: { initialQuery?: string }) {
         <p className="max-w-xl text-sm text-muted-foreground md:text-base">
           Магазины, заправки, банкоматы, салоны и мастерские штата со стоимостью
         </p>
+        {editor === "on" && <BusinessEditor mode="create" mapPlaces={mapPlaces} />}
+        {editor === "unavailable" && (
+          <p role="status" className="max-w-xl rounded-lg border border-dashed px-3 py-2 text-muted-foreground text-xs">
+            База данных недоступна: показаны встроенные данные, добавление и редактирование отключены.
+          </p>
+        )}
       </header>
 
       <section className="flex flex-col gap-3" aria-label="Фильтры бизнесов">
@@ -126,7 +143,24 @@ export function BusinessWiki({ initialQuery = "" }: { initialQuery?: string }) {
       {visible.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {visible.map((business) => (
-            <BusinessCard key={businessKey(business)} business={business} />
+            <BusinessCard
+              key={businessKey(business)}
+              business={business}
+              actions={
+                editor === "on" ? (
+                  <>
+                    <BusinessEditor mode="edit" business={business} mapPlaces={mapPlaces} />
+                    <DeleteRecordButton
+                      iconOnly
+                      endpoint={`/api/businesses/${businessCode(business)}`}
+                      noun="бизнес"
+                      name={businessTitle(business)}
+                      successMessage="Бизнес удалён"
+                    />
+                  </>
+                ) : undefined
+              }
+            />
           ))}
         </div>
       ) : (
