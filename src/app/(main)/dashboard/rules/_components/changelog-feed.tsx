@@ -5,11 +5,12 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 
 import { cn } from "cn";
-import { ArrowUpRight, type LucideIcon, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowUpRight, ChevronDown, type LucideIcon, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 import { type DiffPart, diffWords } from "./diff-words";
 import {
@@ -200,54 +201,62 @@ export function ChangelogFeed({ entries }: { entries: ChangelogEntry[] }) {
         </div>
       ) : (
         <ol className="flex min-w-0 flex-col gap-8 border-l pl-6">
-          {days.map(([date, items]) => {
+          {days.map(([date, items], dayIndex) => {
             const total = items.reduce((sum, item) => sum + item.changes.length, 0);
             return (
-              <li key={date} className="relative flex min-w-0 flex-col gap-3">
+              <li key={date} className="relative min-w-0">
                 <span
                   className="absolute top-2 left-[calc(-1.5rem-6.5px)] size-3 rounded-full border-2 border-background bg-primary"
                   aria-hidden="true"
                 />
-                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <h2 className="text-xl font-semibold tracking-tight">{date}</h2>
-                  {total > 0 && <span className="text-sm text-muted-foreground">изменений: {total}</span>}
-                </div>
+                <Collapsible defaultOpen={dayIndex === 0} className="flex min-w-0 flex-col gap-3">
+                  <CollapsibleTrigger className="group flex min-w-0 w-full items-center justify-between gap-3 rounded-md text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+                    <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <h2 className="text-xl font-semibold tracking-tight">{date}</h2>
+                      {total > 0 && <span className="text-sm text-muted-foreground">изменений: {total}</span>}
+                    </span>
+                    <ChevronDown
+                      className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180"
+                      aria-hidden="true"
+                    />
+                  </CollapsibleTrigger>
 
-                <div className="flex flex-col gap-3">
-                  {items.map(({ entry, changes }, entryIndex) => (
-                    <Card key={`${entry.date}-${entry.slug}-${entryIndex}`} className="min-w-0">
-                      <CardHeader className="min-w-0">
-                        <CardTitle className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-                          <Link
-                            href={articleHref(entry.group, entry.slug)}
-                            className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
-                          >
-                            {entry.title}
-                            <ArrowUpRight className="size-4 text-muted-foreground" aria-hidden="true" />
-                          </Link>
-                          <Badge variant="outline" className="font-normal">
-                            {entry.section}
-                          </Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="min-w-0">
-                        {changes.length > 0 ? (
-                          <ul className="flex min-w-0 flex-col gap-5">
-                            {changes.map((change, changeIndex) => (
-                              <ChangeItem
-                                key={`${change.type}-${change.number}-${changeIndex}`}
-                                change={change}
-                                entry={entry}
-                              />
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">Подробности изменений не указаны.</p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                  <CollapsibleContent className="flex min-w-0 flex-col gap-3">
+                    {items.map(({ entry, changes }, entryIndex) => (
+                      <Card key={`${entry.date}-${entry.slug}-${entryIndex}`} className="min-w-0">
+                        <CardHeader className="min-w-0">
+                          <CardTitle className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                            <Link
+                              href={articleHref(entry.group, entry.slug)}
+                              className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+                            >
+                              {entry.title}
+                              <ArrowUpRight className="size-4 text-muted-foreground" aria-hidden="true" />
+                            </Link>
+                            <Badge variant="outline" className="font-normal">
+                              {entry.section}
+                            </Badge>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="min-w-0">
+                          {changes.length > 0 ? (
+                            <ul className="flex min-w-0 flex-col gap-5">
+                              {changes.map((change, changeIndex) => (
+                                <ChangeItem
+                                  key={`${change.type}-${change.number}-${changeIndex}`}
+                                  change={change}
+                                  entry={entry}
+                                />
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Подробности изменений не указаны.</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
               </li>
             );
           })}
