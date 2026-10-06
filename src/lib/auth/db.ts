@@ -499,6 +499,7 @@ export const toPerson = (user: DbUser): Person => ({
   nickname: user.nickname,
   staticId: user.staticId,
   group: groupOfUser(user),
+  background: user.profileBackground,
 });
 
 /**

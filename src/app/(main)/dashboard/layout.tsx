@@ -39,6 +39,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         nickname: me?.nickname ?? null,
         staticId: me?.staticId ?? null,
         group: me?.group ?? null,
+        background: me?.background ?? null,
       }
     : null;
 

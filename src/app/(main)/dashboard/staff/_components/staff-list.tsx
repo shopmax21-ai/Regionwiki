@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 import { PersonName } from "@/components/person-name";
+import { ProfileBanner } from "@/components/profile-banner";
 import { RoleBadge } from "@/components/role-icon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,8 +44,9 @@ export function StaffList({ members, meId }: { members: StaffMember[]; meId: str
                   prefetch={false}
                   className="group block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                 >
-                  <Card className="transition-colors group-hover:bg-muted/40">
-                    <CardContent className="flex items-center gap-3">
+                  <Card className="relative overflow-hidden transition-colors group-hover:bg-muted/40">
+                    {person.background && <ProfileBanner src={person.background} />}
+                    <CardContent className="relative z-10 flex items-center gap-3">
                       <Avatar className="size-12 shrink-0 rounded-xl">
                         <AvatarImage src={`/api/auth/avatar?id=${encodeURIComponent(person.id)}`} alt={person.name} />
                         <AvatarFallback className="rounded-xl">{getInitials(person.name)}</AvatarFallback>

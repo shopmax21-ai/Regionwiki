@@ -7,6 +7,7 @@ import { Copy, EllipsisVertical, LogIn, LogOut, ShieldCheck, UserRound } from "l
 import { toast } from "sonner";
 
 import { PersonName } from "@/components/person-name";
+import { ProfileBanner } from "@/components/profile-banner";
 import { RoleBadge } from "@/components/role-icon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -32,6 +33,8 @@ export type SidebarUser = {
   readonly nickname: string | null;
   readonly staticId: string | null;
   readonly group: AdminGroup | null;
+  /** Баннер профиля: адрес картинки или null */
+  readonly background: string | null;
 };
 
 const personOf = (user: SidebarUser) => ({
@@ -93,16 +96,24 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="relative overflow-hidden data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <UserAvatar user={user} className="h-8 w-8 rounded-lg" />
-              <div className="grid flex-1 text-left text-sm leading-tight">
+              {/* В свёрнутом сайдбаре остаётся одна аватарка, баннер там не нужен */}
+              {user.background && (
+                <ProfileBanner
+                  src={user.background}
+                  overlayClassName="from-sidebar/60 via-sidebar/25"
+                  className="group-data-[collapsible=icon]:hidden"
+                />
+              )}
+              <UserAvatar user={user} className="relative z-10 h-8 w-8 rounded-lg" />
+              <div className="relative z-10 grid flex-1 text-left text-sm leading-tight">
                 <PersonName person={person} />
                 <span className="truncate text-muted-foreground text-xs">
                   {user.username ? `@${user.username}` : roleLabel}
                 </span>
               </div>
-              <EllipsisVertical className="ml-auto size-4" />
+              <EllipsisVertical className="relative z-10 ml-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -111,8 +122,11 @@ export function NavUser({
             align="end"
             sideOffset={4}
           >
-            <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+            <DropdownMenuLabel className="relative overflow-hidden rounded-md p-0 font-normal">
+              {user.background && (
+                <ProfileBanner src={user.background} overlayClassName="from-popover/60 via-popover/25" />
+              )}
+              <div className="relative z-10 flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <UserAvatar user={user} className="h-8 w-8 rounded-lg" />
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <PersonName person={person} showRole={false} />

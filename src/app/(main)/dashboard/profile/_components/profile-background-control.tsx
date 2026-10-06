@@ -8,10 +8,17 @@ import { ImagePlus, LoaderCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { ImagePrepareError, prepareImage } from "@/lib/image-resize.client";
 
-const ACCEPT = "image/png,image/jpeg,image/webp,image/gif";
-const TYPES = new Set(ACCEPT.split(","));
-const MAX_BYTES = 5 * 1024 * 1024;
+// image/* вместо списка типов: на телефонах файл может прийти без типа или в HEIC, браузер всё равно его прочитает
+const ACCEPT = "image/*";
+/** Исходник до сжатия: фото с телефона бывают крупными, но совсем огромные файлы не читаем */
+const MAX_SOURCE_BYTES = 40 * 1024 * 1024;
+
+const uploadError = (status: number, fallback?: string) => {
+  if (status === 413) return "Картинка слишком большая, выберите другую";
+  return fallback ?? "Не удалось загрузить фон";
+};
 
 /** Кнопки «Загрузить фон» и «Убрать фон» в углу блока профиля. Только для своего профиля. */
 export function ProfileBackgroundControl({ hasBackground }: { hasBackground: boolean }) {
@@ -20,23 +27,32 @@ export function ProfileBackgroundControl({ hasBackground }: { hasBackground: boo
   const [busy, setBusy] = useState(false);
 
   const upload = async (file: File) => {
-    if (!TYPES.has(file.type)) {
-      toast.error("Подходят только PNG, JPEG, WebP и GIF");
-      return;
-    }
-    if (file.size > MAX_BYTES) {
-      toast.error("Картинка больше 5 МБ, уменьшите её");
+    if (file.size > MAX_SOURCE_BYTES) {
+      toast.error("Файл слишком большой, выберите другое изображение");
       return;
     }
 
     setBusy(true);
     try {
+      // Уменьшаем и пересохраняем в JPEG прямо в браузере: так загрузка проходит и с телефона
+      let prepared: File;
+      try {
+        prepared = await prepareImage(file);
+      } catch (error) {
+        toast.error(
+          error instanceof ImagePrepareError && error.code === "decode"
+            ? "Не удалось прочитать картинку. Выберите JPEG, PNG, WebP или GIF"
+            : "Не удалось подготовить картинку, выберите другую",
+        );
+        return;
+      }
+
       const body = new FormData();
-      body.append("file", file);
+      body.append("file", prepared);
       const response = await fetch("/api/profile/background", { method: "POST", body });
       const data = (await response.json().catch(() => null)) as { error?: string } | null;
       if (!response.ok) {
-        toast.error(data?.error ?? "Не удалось загрузить фон");
+        toast.error(uploadError(response.status, data?.error));
         return;
       }
       toast.success("Фон профиля обновлён");
