@@ -82,7 +82,7 @@ export function ProfileView({
               <button
                 type="button"
                 aria-label={statusLabel.approved}
-                className="absolute top-3 right-3 flex size-7 items-center justify-center rounded-full bg-green-500/15 text-green-600 outline-none transition hover:bg-green-500/25 focus-visible:ring-2 focus-visible:ring-green-500/50 dark:text-green-400"
+                className="absolute top-3 right-3 flex size-7 items-center justify-center rounded-md bg-green-500/15 text-green-600 outline-none transition hover:bg-green-500/25 focus-visible:ring-2 focus-visible:ring-green-500/50 dark:text-green-400"
               >
                 <ShieldCheck className="size-4" />
               </button>
@@ -94,7 +94,7 @@ export function ProfileView({
           <ProfileAvatar name={user.name} />
           <div className="min-w-0 flex-1">
             <h1 className="truncate font-semibold text-xl">
-              <PersonName person={person} className="[&>span:nth-child(2)]:font-semibold" />
+              <PersonName person={person} showRole={false} className="[&>span:nth-child(1)]:font-semibold" />
             </h1>
             <p className="truncate text-muted-foreground text-sm">
               {user.nickname ? `${user.name} · ` : ""}
