@@ -17,7 +17,6 @@ import { clientIp } from "@/lib/auth/request";
 import { createSessionToken } from "@/lib/auth/session";
 import { notifyAdminsAboutRequest } from "@/lib/auth/telegram";
 
-
 /** Проверка 6 цифр. Первый вход создаёт заявку, дальше вход просто пишется в базу. */
 export async function POST(request: NextRequest) {
   const config = getAuthConfig();
@@ -46,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
     if (!(await consumeAttempt(tokenHash))) return expired();
 
-    const { user, created } = await recordLogin({
+    const { user, created, loginId } = await recordLogin({
       telegramId: attempt.telegramId,
       name: attempt.name ?? attempt.telegramId,
       username: attempt.username,
@@ -64,6 +63,7 @@ export async function POST(request: NextRequest) {
         username: user.username ?? undefined,
         status: user.status,
         role: user.role,
+        loginId,
       },
       config.secret,
     );

@@ -54,6 +54,7 @@ export async function proxy(request: NextRequest) {
       username: user.username ?? undefined,
       status: user.status,
       role: user.role,
+      loginId: session.loginId,
     },
     auth.secret,
   );
