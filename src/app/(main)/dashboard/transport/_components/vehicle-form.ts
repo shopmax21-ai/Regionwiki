@@ -100,7 +100,7 @@ export const toForm = (vehicle: Vehicle): FormState => ({
   })),
 });
 
-/* ---------- Ввод чисел ---------- */
+/* Ввод чисел */
 
 /** Оставляет только цифры: для целых полей (скорость, цена, багажник). */
 export const digitsOnly = (value: string, maxLength = 12) => value.replace(/\D/g, "").slice(0, maxLength);
@@ -121,7 +121,7 @@ const toNumber = (value: string): number => {
   return trimmed === "" ? Number.NaN : Number(trimmed);
 };
 
-/* ---------- Код (адрес страницы) ---------- */
+/* Код (адрес страницы) */
 
 const TRANSLIT: Record<string, string> = {
   а: "a",
@@ -176,7 +176,7 @@ export function slugify(...parts: string[]): string {
 
 export const CODE_PATTERN = /^[a-z0-9][a-z0-9-]{1,48}$/;
 
-/* ---------- Предпросмотр ---------- */
+/* Предпросмотр */
 
 /** Транспорт из формы для карточки-предпросмотра. Никогда не бросает ошибок: недозаполненные поля дают нули. */
 export function previewVehicle(form: FormState): Vehicle {
@@ -205,7 +205,7 @@ export function previewVehicle(form: FormState): Vehicle {
   };
 }
 
-/* ---------- Проверка и сборка данных ---------- */
+/* Проверка и сборка данных */
 
 export type FieldErrors = Record<string, string>;
 

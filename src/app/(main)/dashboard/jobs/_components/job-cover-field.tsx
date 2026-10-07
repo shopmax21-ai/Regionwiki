@@ -58,6 +58,7 @@ export function JobCoverField({
         }}
       />
 
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: зона перетаскивания файла, не интерактивный элемент */}
       <div
         data-cover-drop
         role="presentation"

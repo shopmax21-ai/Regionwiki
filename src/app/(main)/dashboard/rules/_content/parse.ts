@@ -52,7 +52,12 @@ const BULLET = /^[-•]\s+(.*)$/;
 export function splitPunishments(raw: string): string[] {
   return raw
     .split(/\s+\/\s+|\s+\|\s+/)
-    .map((part) => part.trim().replace(/[.;,]+$/, "").trim())
+    .map((part) =>
+      part
+        .trim()
+        .replace(/[.;,]+$/, "")
+        .trim(),
+    )
     .filter(Boolean);
 }
 

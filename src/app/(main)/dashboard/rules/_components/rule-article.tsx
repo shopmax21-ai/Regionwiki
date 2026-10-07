@@ -238,7 +238,9 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
         <div className="flex min-w-0 flex-col gap-6 sm:gap-8">
           {isFiltering && (
             <p className="text-sm text-muted-foreground">
-              {shownRules > 0 ? `Найдено пунктов: ${shownRules}` : "Ничего не найдено. Попробуйте другие слова или номер пункта."}
+              {shownRules > 0
+                ? `Найдено пунктов: ${shownRules}`
+                : "Ничего не найдено. Попробуйте другие слова или номер пункта."}
             </p>
           )}
 
@@ -249,7 +251,11 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
                 entry.type === "rule" ? (
                   <RuleCard key={entry.anchor} rule={entry} tag={article.tag} query={query} />
                 ) : (
-                  <TextBlock key={`${section.id}-${entry.text.slice(0, 32)}-${entry.items.length}`} entry={entry} query={query} />
+                  <TextBlock
+                    key={`${section.id}-${entry.text.slice(0, 32)}-${entry.items.length}`}
+                    entry={entry}
+                    query={query}
+                  />
                 ),
               )}
             </section>

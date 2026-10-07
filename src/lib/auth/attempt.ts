@@ -1,6 +1,5 @@
-import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
-
 import { CODE_LENGTH } from "./config";
+import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 
 /** Токен из ссылки t.me/<бот>?start=<токен>: 32 символа base64url, подходит под лимит Telegram. */
 export const newAttemptToken = () => randomBytes(24).toString("base64url");

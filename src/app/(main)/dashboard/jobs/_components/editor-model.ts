@@ -286,6 +286,8 @@ export function toGuideBlocks(blocks: readonly EditorBlock[], options: { preview
         const title = block.title.trim();
         return [{ type: "map", title: title || undefined, places }];
       }
+      default:
+        return [];
     }
   });
 }

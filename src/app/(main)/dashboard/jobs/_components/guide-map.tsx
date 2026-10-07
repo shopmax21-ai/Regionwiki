@@ -27,8 +27,7 @@ export const GameMapLazy = dynamic(() => import("@/app/(main)/dashboard/map/_com
   loading: () => <Skeleton className="size-full rounded-none" />,
 });
 
-export const asCategory = (value: string): PlaceCategoryId =>
-  placeCategoryIds.find((id) => id === value) ?? "other";
+export const asCategory = (value: string): PlaceCategoryId => placeCategoryIds.find((id) => id === value) ?? "other";
 
 /** Места гайда в том виде, в каком их ждёт карта: у каждого есть id (порядковый номер). */
 export const toMapPlaces = (places: readonly GuideMapPlace[]): MapPlace[] =>
@@ -84,7 +83,7 @@ export function GuideMap({ title, places }: { title?: string; places: readonly G
           selectedId={selected?.id ?? null}
           onSelect={(id) => choose(id)}
           isFullscreen={false}
-          onToggleFullscreen={() => {}}
+          onToggleFullscreen={() => undefined}
           fit={places}
           focus={focus}
           hideFullscreen
@@ -113,7 +112,13 @@ export function GuideMap({ title, places }: { title?: string; places: readonly G
             {selected.description && (
               <p className="whitespace-pre-line text-muted-foreground text-xs leading-5">{selected.description}</p>
             )}
-            <Button type="button" variant="outline" size="sm" className="justify-between" onClick={() => copy(selected)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="justify-between"
+              onClick={() => copy(selected)}
+            >
               <span className="text-muted-foreground">Координаты</span>
               <span className="flex items-center gap-2 tabular-nums">
                 {copied ? "Скопировано" : `${Math.round(selected.x)}, ${Math.round(selected.y)}`}

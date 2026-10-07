@@ -114,12 +114,9 @@ export const JOB_LIMITS = {
   placeDescription: 300,
 } as const;
 
-/**
- * TODO: точные суммы аренды, пороги рангов и размеры бонусов на сервере Region не заданы.
- * Добавляйте их в поля `conditions` / `income` или заведите отдельные поля, когда цифры будут утверждены.
- */
+// TODO: суммы аренды, пороги рангов и бонусы не заданы, их нужно вписать в `conditions` и `income`.
 export const jobs: Job[] = [
-  // ───────── Легальные ─────────
+  // Легальные
   {
     slug: "shahter",
     title: "Шахтёр",
@@ -568,7 +565,7 @@ export const jobs: Job[] = [
     navigator: "F3 → Работа → Дальнобойщик",
   },
 
-  // ───────── Нелегальные ─────────
+  // Нелегальные
   {
     slug: "zakladchik",
     title: "Закладчик",
@@ -655,8 +652,6 @@ export const jobs: Job[] = [
   },
 ];
 
-export const jobBySlug = new Map(jobs.map((job) => [job.slug, job] as const));
-
 export const levelLabel = (job: Job) => (job.level === 0 ? "Без уровня" : `С ${job.level} уровня`);
 
 /** Работы, которые открываются через 2 ранг на текущей */
@@ -704,33 +699,37 @@ export function jobBlocks(job: Job): GuideBlock[] {
 
 /** Текст блоков без разметки: для времени чтения и поиска */
 export function blocksText(blocks: readonly GuideBlock[]): string {
-  return blocks
-    .flatMap((block) => {
-      switch (block.type) {
-        case "heading":
-        case "text":
-        case "callout":
-          return [block.text];
-        case "list":
-          return block.items;
-        case "image":
-          return block.caption ? [block.caption] : [];
-        case "slider":
-          return block.slides.flatMap((slide) => (slide.caption ? [slide.caption] : []));
-        case "textImage":
-          return [block.text, ...(block.caption ? [block.caption] : [])];
-        case "map":
-          return [
-            ...(block.title ? [block.title] : []),
-            ...block.places.flatMap((place) => [place.name, ...(place.description ? [place.description] : [])]),
-          ];
-      }
-    })
-    .join(" ")
-    // Знаки форматирования (**жирный**, *курсив*, __подчёркнутый__, ~~зачёркнутый~~, ==выделение==) в поиск не попадают
-    .replace(/\*\*|__|~~|==|\*|`/g, "")
-    // Маршрут [[Телефон > Whaash]] читается как обычный текст, а «## » и «1. » в начале строки — служебные знаки
-    .replace(/\[\[|\]\]/g, "")
+  return (
+    blocks
+      .flatMap((block) => {
+        switch (block.type) {
+          case "heading":
+          case "text":
+          case "callout":
+            return [block.text];
+          case "list":
+            return block.items;
+          case "image":
+            return block.caption ? [block.caption] : [];
+          case "slider":
+            return block.slides.flatMap((slide) => (slide.caption ? [slide.caption] : []));
+          case "textImage":
+            return [block.text, ...(block.caption ? [block.caption] : [])];
+          case "map":
+            return [
+              ...(block.title ? [block.title] : []),
+              ...block.places.flatMap((place) => [place.name, ...(place.description ? [place.description] : [])]),
+            ];
+          default:
+            return [];
+        }
+      })
+      .join(" ")
+      // Знаки форматирования (**жирный**, *курсив*, __подчёркнутый__, ~~зачёркнутый~~, ==выделение==) в поиск не попадают
+      .replace(/\*\*|__|~~|==|\*|`/g, "")
+      // Маршрут [[Телефон > Whaash]] читается как обычный текст, а «## » и «1. » в начале строки — служебные знаки
+      .replace(/\[\[|\]\]/g, "")
+  );
 }
 
 /** Весь текст гайда для поиска */

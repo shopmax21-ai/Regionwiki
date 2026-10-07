@@ -45,7 +45,8 @@ function balancedDiv(html: string, openStart: number): Block | null {
       if (depth === 1) contentStart = match.index + match[0].length;
     } else {
       depth -= 1;
-      if (depth === 0) return { start: openStart, inner: html.slice(contentStart, match.index), end: match.index + match[0].length };
+      if (depth === 0)
+        return { start: openStart, inner: html.slice(contentStart, match.index), end: match.index + match[0].length };
     }
   }
   return null;
@@ -86,7 +87,8 @@ const ENTITIES: Record<string, string> = {
 function decodeEntities(text: string): string {
   return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (full, body: string) => {
     if (body.startsWith("#")) {
-      const code = body[1].toLowerCase() === "x" ? Number.parseInt(body.slice(2), 16) : Number.parseInt(body.slice(1), 10);
+      const code =
+        body[1].toLowerCase() === "x" ? Number.parseInt(body.slice(2), 16) : Number.parseInt(body.slice(1), 10);
       return Number.isFinite(code) && code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : full;
     }
     return ENTITIES[body.toLowerCase()] ?? full;
@@ -136,6 +138,7 @@ export function htmlToRulesText(html: string): string {
     .replace(/<[^>]+>/g, "");
   text = decodeEntities(text)
     .replace(new RegExp(`(?:${SOFT_BREAK} *)+\\n?`, "g"), "\n")
+    // biome-ignore lint/suspicious/noMisleadingCharacterClass: ZWJ входит в набор удаляемых невидимых символов
     .replace(/[\u200b\u200c\u200d\ufeff]/g, "")
     .replace(/\u00a0/g, " ");
 
@@ -148,12 +151,14 @@ export function htmlToRulesText(html: string): string {
     }
 
     const plain = line
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: \u0001 и \u0002 — служебные маркеры жирного текста
       .replace(/[\u0001\u0002]/g, "")
       .replace(/\s+/g, " ")
       .trim();
     if (!plain || /^Спойлер\s*:/i.test(plain)) continue;
 
     // Строка целиком жирная и не начинается с номера пункта — это заголовок раздела.
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: \u0001 и \u0002 — служебные маркеры жирного текста
     const withoutBold = line.replace(/\u0001[^\u0002]*\u0002/g, "").trim();
     if (withoutBold === "" && !RULE_NUMBER.test(`${plain} `)) {
       if (out.length > 0 && out[out.length - 1] !== "") out.push("");
@@ -170,13 +175,19 @@ export function htmlToRulesText(html: string): string {
     out.push(normalized);
   }
 
-  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  return out
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 /** Текст правил из первого сообщения темы. Бросает ForumError, если разметка не похожа на тему форума. */
 export function extractRulesText(threadHtml: string): string {
   const post = firstDivByClass(threadHtml, /bbWrapper/);
-  if (!post) throw new ForumError("В теме не найден текст первого сообщения (блок bbWrapper). Возможно, форум изменил разметку или требует вход.");
+  if (!post)
+    throw new ForumError(
+      "В теме не найден текст первого сообщения (блок bbWrapper). Возможно, форум изменил разметку или требует вход.",
+    );
   const text = htmlToRulesText(post.inner);
   if (!text) throw new ForumError("Первое сообщение темы пустое.");
   return text;

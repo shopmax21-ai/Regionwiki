@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-import { Check, Clock, LogOut, ShieldX } from "lucide-react";
 import { cn } from "cn";
+import { Check, Clock, LogOut, ShieldX } from "lucide-react";
 
 import { authButtonClass } from "./auth-styles";
 
@@ -108,7 +108,11 @@ export function PendingStatus({ initial, name }: { initial: Status; name: string
       </ol>
 
       {status === "pending" && (
-        <button type="button" onClick={logout} className="text-muted-foreground text-xs transition-colors hover:text-foreground">
+        <button
+          type="button"
+          onClick={logout}
+          className="text-muted-foreground text-xs transition-colors hover:text-foreground"
+        >
           Выйти из аккаунта
         </button>
       )}

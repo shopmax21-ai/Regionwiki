@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 
 import Link from "next/link";
 
-import { ArrowUpRight, Clock3, FileText, RefreshCw, Search, ShieldCheck, X } from "lucide-react";
+import { ArrowUpRight, Clock3, FileText, RefreshCw, Search, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { ChangelogFeed } from "./changelog-feed";
 import { Highlight, matchesQuery, PunishmentList } from "./rule-ui";
 import {
   articleHref,
+  type ChangelogEntry,
   formatRuleRef,
   type RuleArticleCard,
   type RuleGroup,
@@ -21,7 +22,6 @@ import {
   ruleGroups,
   type SyncStatus,
   syncInfo,
-  type ChangelogEntry,
 } from "./rules-meta";
 
 const MAX_RESULTS = 60;
@@ -40,8 +40,6 @@ export function RulesPage({
   const data = ruleGroups[group];
   const [query, setQuery] = useState("");
   const isSearching = query.trim().length > 0;
-
-  const totalRules = useMemo(() => cards.reduce((sum, card) => sum + card.ruleCount, 0), [cards]);
 
   const articles = useMemo(
     () => cards.filter((card) => matchesQuery(`${card.title} ${card.description}`, query)),

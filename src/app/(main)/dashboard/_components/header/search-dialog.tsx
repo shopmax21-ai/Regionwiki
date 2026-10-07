@@ -21,12 +21,7 @@ import {
 import { useSiteSearch } from "@/hooks/use-site-search";
 import type { SearchHit } from "@/lib/search/types";
 import type { NavMainItem } from "@/navigation/sidebar/sidebar-items";
-import {
-  type JobNavLink,
-  type NavGroup,
-  sidebarItems,
-  visibleSidebarItems,
-} from "@/navigation/sidebar/sidebar-items";
+import { type JobNavLink, type NavGroup, sidebarItems, visibleSidebarItems } from "@/navigation/sidebar/sidebar-items";
 
 type NavEntry = {
   id: string;
@@ -73,7 +68,7 @@ function buildNavEntries(groups: NavGroup[]): NavEntry[] {
   );
 }
 
-const isRecommended = (item: NavEntry) => !item.disabled && !item.url.includes("coming-soon");
+const isRecommended = (item: NavEntry) => !item.disabled;
 
 function groupNav(items: NavEntry[]) {
   const groups = [...new Set(items.map((item) => item.group))];

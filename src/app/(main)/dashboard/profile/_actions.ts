@@ -59,7 +59,10 @@ export async function saveIdentity(input: unknown): Promise<ActionResult> {
   try {
     const saved = await setUserIdentityOnce(admin.id, parsed.value.nickname, parsed.value.staticId);
     if (!saved) {
-      return { ok: false, error: "Никнейм и Static ID уже указаны. Изменить их может только вышестоящий администратор" };
+      return {
+        ok: false,
+        error: "Никнейм и Static ID уже указаны. Изменить их может только вышестоящий администратор",
+      };
     }
   } catch (error) {
     console.error("[profile] Не удалось сохранить Никнейм и Static ID", error);

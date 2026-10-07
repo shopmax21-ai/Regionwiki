@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getUser, setUserBackground } from "@/lib/auth/db";
 import { isSameOrigin } from "@/lib/auth/request";
-import { IMAGE_MAX_BYTES, ImageStoreError, saveImage } from "@/lib/jobs/images";
+import { IMAGE_MAX_BYTES, ImageStoreError, isBodyTooLarge, saveImage } from "@/lib/jobs/images";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +24,24 @@ const unavailable = (error: unknown) => {
   return NextResponse.json({ error: "База данных недоступна, попробуйте позже" }, { status: 503 });
 };
 
+const UPLOAD_WINDOW_MS = 10 * 60 * 1000;
+const UPLOAD_LIMIT = 10;
+const uploads = new Map<string, number[]>();
+
+/** Не больше 10 загрузок за 10 минут на человека: картинки хранятся в базе, и без лимита её можно забить. */
+function uploadLimitReached(userId: string): boolean {
+  const now = Date.now();
+  const recent = (uploads.get(userId) ?? []).filter((time) => now - time < UPLOAD_WINDOW_MS);
+  if (recent.length >= UPLOAD_LIMIT) {
+    uploads.set(userId, recent);
+    return true;
+  }
+  recent.push(now);
+  uploads.set(userId, recent);
+  if (uploads.size > 1000) uploads.delete(uploads.keys().next().value as string);
+  return false;
+}
+
 /** Загрузить фон блока профиля. Принимает multipart-форму с полем file. */
 export async function POST(request: NextRequest) {
   if (isForeignOrigin(request)) {
@@ -37,6 +55,13 @@ export async function POST(request: NextRequest) {
     return unavailable(error);
   }
   if (!user) return NextResponse.json({ error: "Войдите заново" }, { status: 401 });
+
+  if (uploadLimitReached(user.telegramId)) {
+    return NextResponse.json({ error: "Слишком много загрузок, попробуйте позже" }, { status: 429 });
+  }
+
+  if (isBodyTooLarge(request))
+    return NextResponse.json({ error: "Картинка больше 5 МБ, уменьшите её" }, { status: 413 });
 
   if (!request.headers.get("content-type")?.includes("multipart/form-data")) {
     return NextResponse.json({ error: "Ожидается файл" }, { status: 415 });

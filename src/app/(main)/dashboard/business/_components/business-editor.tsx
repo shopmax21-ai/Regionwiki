@@ -12,15 +12,7 @@ import { ConfirmCloseDialog } from "@/app/(main)/dashboard/_components/record-di
 import { isInsideWorld } from "@/app/(main)/dashboard/map/_components/map-data";
 import { Chip, Field, fieldId, Section } from "@/app/(main)/dashboard/transport/_components/vehicle-field";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 

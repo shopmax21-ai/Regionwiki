@@ -170,6 +170,8 @@ export function RichBlocks({ text }: { text: string }) {
                 <InlineText text={part.text} />
               </p>
             );
+          default:
+            return null;
         }
       })}
     </div>
@@ -269,7 +271,10 @@ export function BlockView({ block }: { block: Exclude<GuideBlock, { type: "headi
       if (!block.text) return <ImageFigure src={block.src} caption={block.caption} />;
       return (
         <div
-          className={cn("flex flex-col gap-4 sm:items-start", block.side === "left" ? "sm:flex-row" : "sm:flex-row-reverse")}
+          className={cn(
+            "flex flex-col gap-4 sm:items-start",
+            block.side === "left" ? "sm:flex-row" : "sm:flex-row-reverse",
+          )}
         >
           <div className="w-full shrink-0 sm:w-[38%] sm:max-w-sm">
             <ImageFigure src={block.src} caption={block.caption} />

@@ -84,9 +84,7 @@ export function PlaceCard({ place, onClose, canEdit = false, onEdit, onDeleted }
           </Button>
         </div>
 
-        {place.description && (
-          <p className="whitespace-pre-line text-muted-foreground text-sm">{place.description}</p>
-        )}
+        {place.description && <p className="whitespace-pre-line text-muted-foreground text-sm">{place.description}</p>}
 
         <Button variant="outline" className="h-11 justify-between px-3 text-sm" onClick={copyCoordinates}>
           <span className="text-muted-foreground">Координаты</span>

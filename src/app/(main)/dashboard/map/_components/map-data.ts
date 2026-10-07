@@ -1,9 +1,8 @@
-import { Car, HardHat, Landmark, MapPin, type LucideIcon, Store, Ticket } from "lucide-react";
+import { Car, HardHat, Landmark, type LucideIcon, MapPin, Store, Ticket } from "lucide-react";
 
 /**
- * Границы игрового мира, которые соответствуют краям картинки карты (4096×4096).
- * TODO: подставьте реальные координаты углов вашей карты, чтобы метки вставали точно.
- * Сейчас: центр карты = (0, 0), 1 игровая единица = 1 пиксель при нативном зуме.
+ * Границы игрового мира по краям картинки карты (4096×4096): центр (0, 0), одна единица = один пиксель.
+ * TODO: подставить реальные координаты углов карты.
  */
 export const MAP_WORLD = {
   minX: -2048,
@@ -11,21 +10,6 @@ export const MAP_WORLD = {
   minY: -2048,
   maxY: 2048,
 } as const;
-
-/** SVG-карта имеет размер 4096×4096 и масштабируется Leaflet без потери детализации. */
-export const MAP_ZOOM = { min: 0, max: 6, native: 4 } as const;
-
-// Коэффициенты L.Transformation: px(z) = 2^z * (a * x + b).
-// Мир занимает 256 * 2^native = 4096 пикселей на нативном зуме (4), отсюда a = 256 / ширина мира.
-const scaleX = 256 / (MAP_WORLD.maxX - MAP_WORLD.minX);
-const scaleY = 256 / (MAP_WORLD.maxY - MAP_WORLD.minY);
-
-export const MAP_TRANSFORMATION: [number, number, number, number] = [
-  scaleX,
-  -scaleX * MAP_WORLD.minX,
-  -scaleY,
-  scaleY * MAP_WORLD.maxY,
-];
 
 export const placeCategoryIds = ["job", "shop", "state", "transport", "leisure", "other"] as const;
 export type PlaceCategoryId = (typeof placeCategoryIds)[number];
@@ -90,12 +74,60 @@ export const PLACE_LIMITS = { name: 80, description: 500, icon: 300 } as const;
  * Сами компоненты иконок лежат в place-icons.tsx: тут только id, чтобы их мог использовать сервер.
  */
 export const placeIconIds = [
-  "pin", "home", "building", "store", "cart", "hospital", "cross", "shield", "siren", "bank",
-  "money", "fuel", "car", "bus", "truck", "bike", "plane", "ship", "train", "wrench",
-  "hammer", "helmet", "pickaxe", "food", "coffee", "bar", "gym", "ticket", "music", "game",
-  "film", "flag", "star", "heart", "key", "mail", "phone", "school", "warehouse", "factory",
-  "tractor", "fish", "tree", "mountain", "anchor", "skull", "package", "zap", "flame", "camera",
-  "paw", "scissors", "pill", "bed",
+  "pin",
+  "home",
+  "building",
+  "store",
+  "cart",
+  "hospital",
+  "cross",
+  "shield",
+  "siren",
+  "bank",
+  "money",
+  "fuel",
+  "car",
+  "bus",
+  "truck",
+  "bike",
+  "plane",
+  "ship",
+  "train",
+  "wrench",
+  "hammer",
+  "helmet",
+  "pickaxe",
+  "food",
+  "coffee",
+  "bar",
+  "gym",
+  "ticket",
+  "music",
+  "game",
+  "film",
+  "flag",
+  "star",
+  "heart",
+  "key",
+  "mail",
+  "phone",
+  "school",
+  "warehouse",
+  "factory",
+  "tractor",
+  "fish",
+  "tree",
+  "mountain",
+  "anchor",
+  "skull",
+  "package",
+  "zap",
+  "flame",
+  "camera",
+  "paw",
+  "scissors",
+  "pill",
+  "bed",
 ] as const;
 export type PlaceIconId = (typeof placeIconIds)[number];
 
@@ -117,8 +149,8 @@ export interface MapPlace {
   icon?: string;
 }
 
-// Начальный набор меток: при первом обращении к базе он копируется в таблицу map_places.
-// TODO: координаты перенесены со старой карты LA — замените на координаты вашей карты.
+// Начальный набор меток: при первом обращении к базе копируется в таблицу map_places.
+// TODO: координаты взяты со старой карты, заменить на координаты текущей.
 const allPlaces: MapPlace[] = [
   { id: "job-electrician", name: "Работа Электрик", x: 734.63855, y: 128.54727, category: "job" },
   { id: "job-bus", name: "Работа Автобусник", x: 432.01242, y: -628.3286, category: "job" },

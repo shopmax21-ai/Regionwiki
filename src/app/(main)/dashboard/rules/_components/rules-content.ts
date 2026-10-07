@@ -93,10 +93,7 @@ export async function getGroupCards(group: RuleGroup): Promise<RuleArticleCard[]
 }
 
 function toSearchEntry(article: RuleArticleView, sectionTitle: string, rule: RuleItem): RuleSearchEntry {
-  const extra = [
-    ...rule.items,
-    ...rule.fields.flatMap((field) => [field.label, field.text, ...field.items]),
-  ]
+  const extra = [...rule.items, ...rule.fields.flatMap((field) => [field.label, field.text, ...field.items])]
     .filter(Boolean)
     .join(" ");
 

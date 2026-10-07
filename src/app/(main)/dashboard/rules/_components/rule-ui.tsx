@@ -9,11 +9,7 @@ function escapeRegExp(value: string): string {
 }
 
 export function queryTerms(query: string): string[] {
-  return query
-    .trim()
-    .toLowerCase()
-    .split(/\s+/)
-    .filter(Boolean);
+  return query.trim().toLowerCase().split(/\s+/).filter(Boolean);
 }
 
 /** Все слова запроса должны встретиться в тексте (регистр не важен). */
@@ -52,7 +48,11 @@ function severityOf(punishment: string): Severity {
   if (/чёрный список|черный список|\bчс\b|hard\s?ban|снятие|обнуление|расформир|перманент/i.test(punishment)) {
     return "severe";
   }
-  if (/\bban\b|\bбан|warn|warm|gunban|выговор|изъятие|заморозк|kick|блокировка|аннулирование|откат|удаление/i.test(punishment)) {
+  if (
+    /\bban\b|\bбан|warn|warm|gunban|выговор|изъятие|заморозк|kick|блокировка|аннулирование|откат|удаление/i.test(
+      punishment,
+    )
+  ) {
     return "strict";
   }
   if (/mute|мут|demorgan|деморган|беседа/i.test(punishment)) return "light";
@@ -100,7 +100,10 @@ export function PunishmentLegend() {
       {entries.map(([severity, label]) => (
         <span
           key={severity}
-          className={cn("inline-flex max-w-full items-center whitespace-normal break-words rounded-md border px-2 py-0.5 font-medium", severityClass[severity])}
+          className={cn(
+            "inline-flex max-w-full items-center whitespace-normal break-words rounded-md border px-2 py-0.5 font-medium",
+            severityClass[severity],
+          )}
         >
           {label}
         </span>

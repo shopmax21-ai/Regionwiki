@@ -21,9 +21,9 @@ import {
 import { isPathVisible } from "@/lib/auth/protected-paths";
 import { getBusinessesVersion, listBusinesses } from "@/lib/businesses/store";
 import { getJobsVersion, listJobs } from "@/lib/jobs/store";
+import { getMapPlacesVersion, listMapPlaces } from "@/lib/map/store";
 import { getRealtiesVersion, listRealties } from "@/lib/realties/store";
 import { getRulesVersion } from "@/lib/rules/store";
-import { getMapPlacesVersion, listMapPlaces } from "@/lib/map/store";
 import { getVehiclesVersion, listVehicles } from "@/lib/vehicles/store";
 import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
 
@@ -62,7 +62,7 @@ function buildSections(): IndexEntry[] {
   for (const group of sidebarItems) {
     for (const item of group.items) {
       if (item.disabled) continue;
-      if ("url" in item && item.url && !item.url.includes("coming-soon")) {
+      if ("url" in item && item.url) {
         result.push(
           entry(
             { id: `section-${item.id}`, kind: "section", title: item.title, subtitle: group.label, href: item.url },

@@ -342,7 +342,5 @@ export const vehicleTitle = (vehicle: Vehicle) => `${vehicle.name} ${vehicle.mod
 
 export const getScrapPrice = (vehicle: Vehicle) => vehicle.scrapPrice ?? Math.round(vehicle.price / 2);
 
-export const getVehicle = (code: string) => vehicles.find((vehicle) => vehicle.code === code);
-
 export const formatTrunk = (vehicle: Vehicle) =>
   vehicle.loadTons ? `${vehicle.trunkKg} кг · ${vehicle.loadTons} т` : `${vehicle.trunkKg} кг`;

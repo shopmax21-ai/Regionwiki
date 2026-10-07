@@ -51,7 +51,7 @@ export function CatalogPage({ config, view }: CatalogPageProps) {
               ownerLabel={config.ownerColumn}
               sharedLabel={config.sharedLabel}
               addedMessage={config.entryAddedMessage}
-            sections={config.detailSections}
+              sections={config.detailSections}
             />
           </div>
         </div>
@@ -60,7 +60,14 @@ export function CatalogPage({ config, view }: CatalogPageProps) {
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-4">
             <h2 className="font-medium text-lg">{config.allTitle}</h2>
-            <ToggleGroup type="single" variant="outline" size="sm" spacing={0} value={view} aria-label={config.viewLabel}>
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              spacing={0}
+              value={view}
+              aria-label={config.viewLabel}
+            >
               <ToggleGroupItem value="grid" asChild>
                 <Link href="?view=grid" prefetch={false} replace scroll={false}>
                   <Grid2X2 />

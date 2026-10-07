@@ -10,7 +10,9 @@ export const dynamic = "force-dynamic";
 
 /** Проверка «это администратор» запоминается на минуту: страница со списком запрашивает десятки аватаров сразу. */
 const ADMIN_TTL_MS = 60 * 1000;
-const adminChecks = ((globalThis as { __avatarAdminChecks?: Map<string, number> }).__avatarAdminChecks ??= new Map());
+const checksStore = globalThis as { __avatarAdminChecks?: Map<string, number> };
+checksStore.__avatarAdminChecks ??= new Map();
+const adminChecks = checksStore.__avatarAdminChecks;
 
 async function isAdminTarget(id: string): Promise<boolean> {
   const checkedAt = adminChecks.get(id);

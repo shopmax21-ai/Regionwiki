@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { JOB_LIMITS, RESERVED_JOB_SLUGS } from "@/app/(main)/dashboard/jobs/_data/jobs";
+import { SLUG_PATTERN } from "@/app/(main)/dashboard/jobs/_data/slug";
 import {
   isPlaceIconImage,
   isPlaceIconPreset,
@@ -8,7 +9,6 @@ import {
   PLACE_LIMITS,
   placeCategoryIds,
 } from "@/app/(main)/dashboard/map/_components/map-data";
-import { SLUG_PATTERN } from "@/app/(main)/dashboard/jobs/_data/slug";
 
 const line = z.string().trim().min(1).max(JOB_LIMITS.item, "Один из пунктов слишком длинный");
 const lines = z.array(line).max(JOB_LIMITS.items, `Не больше ${JOB_LIMITS.items} пунктов в списке`);
@@ -20,7 +20,11 @@ const imageSrc = z
   .max(JOB_LIMITS.image, "Ссылка на картинку слишком длинная")
   .regex(/^(\/(?!\/)|https:\/\/)/, "Картинка: путь вида /api/jobs/images/... или ссылка https://");
 
-const blockText = z.string().trim().min(1, "Один из блоков пустой").max(JOB_LIMITS.blockText, "Текст блока слишком длинный");
+const blockText = z
+  .string()
+  .trim()
+  .min(1, "Один из блоков пустой")
+  .max(JOB_LIMITS.blockText, "Текст блока слишком длинный");
 
 const mapCoordinate = (label: string, min: number, max: number) =>
   z
@@ -29,7 +33,11 @@ const mapCoordinate = (label: string, min: number, max: number) =>
     .max(max, `Координата ${label} вне карты`);
 
 const mapPlaceSchema = z.object({
-  name: z.string().trim().min(1, "У места на карте нет названия").max(JOB_LIMITS.placeName, "Название места слишком длинное"),
+  name: z
+    .string()
+    .trim()
+    .min(1, "У места на карте нет названия")
+    .max(JOB_LIMITS.placeName, "Название места слишком длинное"),
   x: mapCoordinate("X", MAP_WORLD.minX, MAP_WORLD.maxX),
   y: mapCoordinate("Y", MAP_WORLD.minY, MAP_WORLD.maxY),
   category: z.enum(placeCategoryIds, { error: "Выберите категорию места" }),

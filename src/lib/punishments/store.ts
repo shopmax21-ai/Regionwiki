@@ -126,7 +126,7 @@ async function run<T>(task: () => Promise<T>): Promise<T> {
   }
 }
 
-/* ---------- Чтение ---------- */
+/* Чтение */
 
 type Row = {
   id: string;
@@ -309,7 +309,7 @@ export const countByStatus = () =>
     return result;
   });
 
-/* ---------- Действия ---------- */
+/* Действия */
 
 type Actor = { id: string; name: string };
 

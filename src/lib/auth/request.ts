@@ -1,8 +1,13 @@
 import type { NextRequest } from "next/server";
 
-/** IP клиента за прокси Vercel. */
-export const clientIp = (request: NextRequest) =>
-  request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
+/**
+ * IP клиента за прокси хостинга. Берём последний адрес из x-forwarded-for: его дописывает прокси,
+ * а первые адреса клиент может подставить сам и так обойти ограничение попыток.
+ */
+export const clientIp = (request: NextRequest) => {
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",");
+  return forwarded?.at(-1)?.trim() || request.headers.get("x-real-ip") || "unknown";
+};
 
 /**
  * Пришёл ли запрос со страницы этого же сайта (защита от отправки формы с чужого сайта).

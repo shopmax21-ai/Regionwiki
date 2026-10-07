@@ -5,14 +5,14 @@ import { useId, useState, useTransition } from "react";
 import { cn } from "cn";
 import { Crosshair, LoaderCircle, MapPinPlus, Move, Trash2 } from "lucide-react";
 
-import { IconPicker } from "@/app/(main)/dashboard/map/_components/place-editor";
 import {
   getCategory,
   isInsideWorld,
   type MapPlace,
-  placeCategories,
   type PlaceCategoryId,
+  placeCategories,
 } from "@/app/(main)/dashboard/map/_components/map-data";
+import { IconPicker } from "@/app/(main)/dashboard/map/_components/place-editor";
 import { MarkerBadge } from "@/app/(main)/dashboard/map/_components/place-icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -156,7 +156,7 @@ export function MapBody({ block, actions }: { block: MapBlock; actions: BlockAct
             if (id) setSelectedId(id);
           }}
           isFullscreen={false}
-          onToggleFullscreen={() => {}}
+          onToggleFullscreen={() => undefined}
           pickMode={pick !== null}
           onPick={handlePick}
           fit={initialFit.length > 0 ? initialFit : undefined}
@@ -202,7 +202,9 @@ export function MapBody({ block, actions }: { block: MapBlock; actions: BlockAct
               >
                 <MarkerBadge category={place.category} icon={place.icon} size="md" className="rounded-md" />
                 <span className="min-w-0 flex-1 truncate">{place.name}</span>
-                <span className="text-muted-foreground text-xs">{added ? "уже добавлено" : getCategory(place.category).label}</span>
+                <span className="text-muted-foreground text-xs">
+                  {added ? "уже добавлено" : getCategory(place.category).label}
+                </span>
               </button>
             );
           })}
@@ -223,7 +225,12 @@ export function MapBody({ block, actions }: { block: MapBlock; actions: BlockAct
                 onClick={() => setSelectedId(place.id)}
                 className="flex max-w-56 items-center gap-2 rounded-full border py-1 pr-3 pl-1 text-sm outline-none transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:border-primary/60 aria-pressed:bg-muted/60"
               >
-                <MarkerBadge category={asCategory(place.category)} icon={place.icon} size="sm" className="rounded-full" />
+                <MarkerBadge
+                  category={asCategory(place.category)}
+                  icon={place.icon}
+                  size="sm"
+                  className="rounded-full"
+                />
                 <span className="truncate">{place.name || "Без названия"}</span>
               </button>
             </li>
@@ -339,8 +346,8 @@ export function MapBody({ block, actions }: { block: MapBlock; actions: BlockAct
       )}
 
       <p className="text-muted-foreground text-xs">
-        До {JOB_LIMITS.mapPlaces} мест. Посетители гайда смогут двигать и масштабировать карту, а по нажатию на место увидят
-        его описание.
+        До {JOB_LIMITS.mapPlaces} мест. Посетители гайда смогут двигать и масштабировать карту, а по нажатию на место
+        увидят его описание.
       </p>
     </div>
   );

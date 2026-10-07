@@ -1,4 +1,4 @@
-import type { CatalogConfig, CatalogDetailSection, CatalogKind, CatalogSpecField, PluralForms } from "./catalog-types";
+import type { CatalogDetailSection, CatalogSpecField, PluralForms } from "./catalog-types";
 
 export function pluralize(count: number, forms: PluralForms) {
   const abs = Math.abs(count) % 100;
@@ -8,10 +8,6 @@ export function pluralize(count: number, forms: PluralForms) {
   if (last > 1 && last < 5) return forms[1];
   if (last === 1) return forms[0];
   return forms[2];
-}
-
-export function getKind(config: CatalogConfig, kind: string): CatalogKind {
-  return config.kinds.find((item) => item.value === kind) ?? config.kinds[0];
 }
 
 export function formatPrice(input: string) {

@@ -30,7 +30,11 @@ export async function proxy(request: NextRequest) {
   if (!isProtectedPath(request.nextUrl.pathname)) return NextResponse.next();
 
   const auth = getAuthConfig();
-  if (!auth) return NextResponse.next();
+  if (!auth) {
+    // Без настроенного входа в production закрытые разделы не открываем: иначе ошибка в переменных окружения отдала бы их всем.
+    if (isProduction) return new NextResponse("Вход не настроен", { status: 503 });
+    return NextResponse.next();
+  }
 
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   const session = token ? await readSessionToken(token, auth.secret) : null;

@@ -11,15 +11,7 @@ import { EstateImageDrop } from "@/app/(main)/dashboard/_components/estate-image
 import { ConfirmCloseDialog } from "@/app/(main)/dashboard/_components/record-dialogs";
 import { Chip, Field, fieldId, Section } from "@/app/(main)/dashboard/transport/_components/vehicle-field";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
 import { categories, formatPrice, type Realty, type RealtyCategory, realtyTitle } from "../_data/realties";

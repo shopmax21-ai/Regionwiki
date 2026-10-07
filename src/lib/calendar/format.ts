@@ -7,12 +7,6 @@ const dayTime = new Intl.DateTimeFormat("ru-RU", {
   minute: "2-digit",
   timeZone: MSK_ZONE,
 });
-const dayOnly = new Intl.DateTimeFormat("ru-RU", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-  timeZone: MSK_ZONE,
-});
 const timeOnly = new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit", timeZone: MSK_ZONE });
 const dateKey = new Intl.DateTimeFormat("en-CA", { timeZone: MSK_ZONE });
 
@@ -26,8 +20,6 @@ export function formatRange(startsAt: string, endsAt: string): string {
     ? `${dayTime.format(start)} – ${timeOnly.format(end)}`
     : `${dayTime.format(start)} – ${dayTime.format(end)}`;
 }
-
-export const formatDay = (iso: string) => dayOnly.format(new Date(iso));
 
 /** Для поля datetime-local: московское время в виде «2026-10-05T14:00» */
 export const toInputValue = (iso: string): string =>

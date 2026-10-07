@@ -36,7 +36,9 @@ const isLayout = (value: string | null): value is Layout => value === "rows" || 
 function readRecent(): string[] {
   try {
     const parsed: unknown = JSON.parse(getLocalStorageValue(RECENT_KEY) ?? "[]");
-    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string").slice(0, RECENT_LIMIT) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((id): id is string => typeof id === "string").slice(0, RECENT_LIMIT)
+      : [];
   } catch {
     return [];
   }
@@ -134,7 +136,8 @@ export function RepliesBoard({
   const normalized = query.trim().toLowerCase();
 
   const matchesQuery = useCallback(
-    (reply: QuickReply) => !normalized || `${reply.title} ${reply.text} ${reply.category}`.toLowerCase().includes(normalized),
+    (reply: QuickReply) =>
+      !normalized || `${reply.title} ${reply.text} ${reply.category}`.toLowerCase().includes(normalized),
     [normalized],
   );
 
@@ -185,7 +188,9 @@ export function RepliesBoard({
       >
         {hueFor && <Dot category={hueFor} />}
         {name}
-        <span className={cn("text-xs tabular-nums", active ? "text-background/70" : "text-muted-foreground")}>{count}</span>
+        <span className={cn("text-xs tabular-nums", active ? "text-background/70" : "text-muted-foreground")}>
+          {count}
+        </span>
       </button>
     );
   };
@@ -313,7 +318,8 @@ export function RepliesBoard({
                     style={hueStyle(categoryHue(reply.category))}
                     className={cn(
                       "flex max-w-full cursor-pointer items-center gap-2 rounded-full border bg-card py-1.5 pr-3.5 pl-3 text-sm outline-none transition-colors hover:border-[oklch(0.7_0.12_var(--h))] focus-visible:ring-3 focus-visible:ring-ring/50",
-                      copiedId === reply.id && "border-[oklch(0.7_0.12_var(--h))] bg-[oklch(0.965_0.025_var(--h))] dark:bg-[oklch(0.28_0.045_var(--h))]",
+                      copiedId === reply.id &&
+                        "border-[oklch(0.7_0.12_var(--h))] bg-[oklch(0.965_0.025_var(--h))] dark:bg-[oklch(0.28_0.045_var(--h))]",
                     )}
                   >
                     <Dot category={reply.category} />
@@ -332,7 +338,12 @@ export function RepliesBoard({
                   {group.name}
                   <span className="font-normal text-muted-foreground text-sm tabular-nums">{group.items.length}</span>
                 </h2>
-                <div className={cn("grid gap-4", layout === "columns" ? "grid-cols-1 md:grid-cols-2 2xl:grid-cols-3" : "grid-cols-1")}>
+                <div
+                  className={cn(
+                    "grid gap-4",
+                    layout === "columns" ? "grid-cols-1 md:grid-cols-2 2xl:grid-cols-3" : "grid-cols-1",
+                  )}
+                >
                   {group.items.map((reply) => (
                     <ReplyCard
                       key={reply.id}

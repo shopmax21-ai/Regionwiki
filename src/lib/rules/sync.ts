@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-
 import { getStaticSource } from "@/app/(main)/dashboard/rules/_components/rules-content";
 import { type RuleGroup, ruleGroups } from "@/app/(main)/dashboard/rules/_components/rules-meta";
 import { countRules, parseRules } from "@/app/(main)/dashboard/rules/_content/parse";
@@ -15,6 +13,7 @@ import {
   withSyncLock,
   writeArticle,
 } from "./store";
+import { createHash } from "node:crypto";
 
 /** Разделы форума, где лежат темы с правилами. Тема сопоставляется со статьёй по slug (он одинаковый на форуме и на сайте). */
 export const FORUM_SOURCES: Record<RuleGroup, string> = {

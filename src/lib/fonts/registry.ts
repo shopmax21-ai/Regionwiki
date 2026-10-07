@@ -25,8 +25,3 @@ export type FontKey = keyof typeof fontRegistry;
 export const fontKeys = Object.keys(fontRegistry) as FontKey[];
 
 export const fontVars = [roboto.variable, robotoMono.variable].join(" ");
-
-export const fontOptions = fontKeys.map((key) => ({
-  key,
-  label: fontRegistry[key].label,
-}));

@@ -190,7 +190,7 @@ const toUser = (row: UserRow): DbUser => ({
   loginCount: row.login_count,
 });
 
-/* ---------- Попытки входа (ссылка на бота → код) ---------- */
+/* Попытки входа (ссылка на бота → код) */
 
 export async function countRecentAttempts(ip: string): Promise<number> {
   await ensureSchema();
@@ -268,7 +268,7 @@ export async function consumeAttempt(tokenHash: string): Promise<boolean> {
   return rows.length > 0;
 }
 
-/* ---------- Пользователи ---------- */
+/* Пользователи */
 
 /**
  * Первый вход создаёт запись (заявка в статусе pending, у администраторов сразу approved).
@@ -434,7 +434,7 @@ export async function getLoginEvents(telegramId: string, limit = 8): Promise<Log
   return (rows as LoginEventRow[]).map(toLoginEvent);
 }
 
-/* ---------- Личные права ---------- */
+/* Личные права */
 
 function collectOverrides(rows: Record<string, unknown>[]): Map<string, PermissionOverrides> {
   const result = new Map<string, PermissionOverrides>();
@@ -483,7 +483,7 @@ export async function clearUserOverrides(telegramId: string): Promise<void> {
   await sql`DELETE FROM user_permissions WHERE telegram_id = ${telegramId}`;
 }
 
-/* ---------- Никнейм и Static ID ---------- */
+/* Никнейм и Static ID */
 
 /** Сохранить Никнейм и Static ID. null очищает поле. */
 export async function setUserIdentity(

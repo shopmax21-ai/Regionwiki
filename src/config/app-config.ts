@@ -12,6 +12,6 @@ export const APP_CONFIG = {
   copyright: `© ${currentYear}, Region WIKI.`,
   meta: {
     title: "Region WIKI",
-    description: "Region WIKI — сервис для управления региональной информацией.",
+    description: "База знаний для игроков проекта Region: правила, работы, транспорт, недвижимость, карта.",
   },
 };

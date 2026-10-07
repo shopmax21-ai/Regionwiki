@@ -63,7 +63,7 @@ function ensureReady(): Promise<void> {
   return ready;
 }
 
-/* ---------- Запись ---------- */
+/* Запись */
 
 export type AuditInput = {
   category: AuditCategory;
@@ -131,7 +131,7 @@ export const recordContentChange = (
     details,
   });
 
-/* ---------- Чтение ---------- */
+/* Чтение */
 
 export type AuditFilter = {
   category?: AuditCategory;

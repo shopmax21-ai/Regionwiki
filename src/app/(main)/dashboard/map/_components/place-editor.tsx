@@ -46,7 +46,6 @@ interface PlaceEditorProps {
   error: string | null;
 }
 
-
 /**
  * Выбор иконки метки: по умолчанию берётся иконка категории, можно выбрать готовую или загрузить свою картинку.
  * Загрузка идёт на тот же сервер, что и картинки гайдов.
@@ -120,7 +119,11 @@ export function IconPicker({
           disabled={disabled || uploading}
           onClick={() => input.current?.click()}
         >
-          {uploading ? <LoaderCircle data-icon="inline-start" className="animate-spin" /> : <ImageUp data-icon="inline-start" />}
+          {uploading ? (
+            <LoaderCircle data-icon="inline-start" className="animate-spin" />
+          ) : (
+            <ImageUp data-icon="inline-start" />
+          )}
           {custom ? "Заменить картинку" : "Своя картинка"}
         </Button>
       </div>
@@ -134,6 +137,7 @@ export function IconPicker({
           const { label, icon: Icon } = placeIconPresets[id];
           const active = isPlaceIconPreset(value) && value === id;
           return (
+            // biome-ignore lint/a11y/useSemanticElements: кнопки-иконки с role="radio" внутри radiogroup
             <button
               key={id}
               type="button"
@@ -153,7 +157,9 @@ export function IconPicker({
           );
         })}
       </div>
-      <p className="text-muted-foreground text-xs">PNG, JPEG, WebP или GIF до 5 МБ. Квадратная картинка смотрится лучше.</p>
+      <p className="text-muted-foreground text-xs">
+        PNG, JPEG, WebP или GIF до 5 МБ. Квадратная картинка смотрится лучше.
+      </p>
       {error && (
         <p role="alert" className="text-destructive text-sm">
           {error}

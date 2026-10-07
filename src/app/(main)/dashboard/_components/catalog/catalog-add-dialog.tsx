@@ -16,7 +16,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
@@ -203,7 +211,9 @@ export function CatalogAddDialog({
                 />
               </Field>
             </div>
-            <FieldDescription className="-mt-2">Цену можно оставить пустой, если позиция не продаётся.</FieldDescription>
+            <FieldDescription className="-mt-2">
+              Цену можно оставить пустой, если позиция не продаётся.
+            </FieldDescription>
             <Field>
               <FieldLabel htmlFor={`${id}-owner`}>{ownerLabel}</FieldLabel>
               <Input

@@ -32,7 +32,7 @@ export async function register() {
     const weakSecret =
       process.env.AUTH_SECRET && process.env.AUTH_SECRET.length < 32 ? " AUTH_SECRET короче 32 символов." : "";
     console.warn(
-      `[auth] Вход не настроен, защита /dashboard выключена. Не заданы: ${missing.join(", ") || "—"}.${weakSecret}`,
+      `[auth] Вход не настроен: в разработке /dashboard открыт, в production закрыт (503). Не заданы: ${missing.join(", ") || "—"}.${weakSecret}`,
     );
     return;
   }

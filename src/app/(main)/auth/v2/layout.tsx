@@ -11,7 +11,9 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
         {/* Левая колонка: форма */}
         <div className="relative order-1 flex h-full min-h-0 items-center justify-center overflow-hidden px-6">
           <div className="flex w-full max-w-[372px] flex-col gap-5 [@media(max-height:720px)]:gap-3">{children}</div>
-          <p className="absolute bottom-4 text-muted-foreground text-xs [@media(max-height:760px)]:hidden">{APP_CONFIG.copyright}</p>
+          <p className="absolute bottom-4 text-muted-foreground text-xs [@media(max-height:760px)]:hidden">
+            {APP_CONFIG.copyright}
+          </p>
         </div>
 
         {/* Правая панель: узор из букв R и большой логотип */}

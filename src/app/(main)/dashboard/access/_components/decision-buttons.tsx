@@ -1,9 +1,8 @@
 "use client";
 
-import { useFormStatus } from "react-dom";
-
 import { cn } from "cn";
 import { Check, LoaderCircle, X } from "lucide-react";
+import { useFormStatus } from "react-dom";
 
 import { Button } from "@/components/ui/button";
 
@@ -30,7 +29,10 @@ function Submit({
       size={size}
       disabled={pending}
       variant={approve ? "default" : "outline"}
-      className={cn(!approve && "hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive", className)}
+      className={cn(
+        !approve && "hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive",
+        className,
+      )}
     >
       {mine ? <LoaderCircle className="animate-spin" /> : approve ? <Check /> : <X />}
       {approve ? "Одобрить" : "Отклонить"}

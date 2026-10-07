@@ -235,7 +235,7 @@ export const deleteEvent = (id: string) =>
     await getPool().query("DELETE FROM calendar_tracking_sent WHERE event_id = $1", [id]);
   });
 
-/* ---------- Напоминания ---------- */
+/* Напоминания */
 
 export type DueReminder = {
   id: string;
@@ -287,7 +287,7 @@ export const releaseReminder = (id: string) =>
     );
   });
 
-/* ---------- Напоминания тем, кто следит за календарём ---------- */
+/* Напоминания тем, кто следит за календарём */
 
 export type DueTrackingReminder = DueReminder & { recipientId: string };
 

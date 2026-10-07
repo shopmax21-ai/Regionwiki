@@ -1,6 +1,6 @@
-import { createHash } from "node:crypto";
-
 import { getPool } from "@/lib/db/pool";
+
+import { createHash } from "node:crypto";
 
 /**
  * Картинки гайдов лежат в Postgres (таблица wiki_images, байты в bytea): отдельное файловое хранилище не нужно,
@@ -9,6 +9,15 @@ import { getPool } from "@/lib/db/pool";
  */
 
 export const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+/** Запас на служебные части multipart-формы поверх самой картинки. */
+const FORM_OVERHEAD_BYTES = 64 * 1024;
+
+/** Слишком ли большое тело запроса: проверяем заголовок до того, как сервер начнёт читать форму в память. */
+export function isBodyTooLarge(request: Request): boolean {
+  const length = Number(request.headers.get("content-length"));
+  return Number.isFinite(length) && length > IMAGE_MAX_BYTES + FORM_OVERHEAD_BYTES;
+}
 
 export type ImageMime = "image/png" | "image/jpeg" | "image/webp" | "image/gif";
 
@@ -29,7 +38,13 @@ export function sniffImage(bytes: Uint8Array): ImageMime | null {
   if (startsWith(0xff, 0xd8, 0xff)) return "image/jpeg";
   if (startsWith(0x47, 0x49, 0x46, 0x38)) return "image/gif";
   // WebP: «RIFF», 4 байта размера, «WEBP»
-  if (startsWith(0x52, 0x49, 0x46, 0x46) && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
+  if (
+    startsWith(0x52, 0x49, 0x46, 0x46) &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50
+  ) {
     return "image/webp";
   }
   return null;

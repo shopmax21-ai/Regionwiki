@@ -137,7 +137,7 @@ async function run<T>(task: () => Promise<T>): Promise<T> {
   }
 }
 
-/* ---------- Тесты ---------- */
+/* Тесты */
 
 type TestRow = {
   id: string;
@@ -239,7 +239,7 @@ export const deleteTest = (id: string) =>
     await getPool().query("DELETE FROM academy_attempts WHERE test_id = $1 AND status = 'in_progress'", [id]);
   });
 
-/* ---------- Прохождение ---------- */
+/* Прохождение */
 
 function shuffle<T>(items: readonly T[]): T[] {
   const result = [...items];
@@ -389,7 +389,7 @@ export const submitAttempt = (attemptId: string, userId: string, chosen: readonl
     }
   });
 
-/* ---------- Результаты ---------- */
+/* Результаты */
 
 export type AttemptFilter = { userId?: string; testId?: string; limit?: number };
 

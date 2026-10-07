@@ -36,7 +36,7 @@ export type AuthConfig = {
 
 /**
  * Возвращает настройки входа или null, если вход не настроен.
- * Пока переменные окружения не заданы, защита раздела /dashboard выключена.
+ * Пока переменные окружения не заданы, в разработке раздел /dashboard открыт, а в production закрыт (ответ 503).
  */
 export function getAuthConfig(): AuthConfig | null {
   const secret = process.env.AUTH_SECRET;
@@ -62,7 +62,9 @@ export function getAuthConfig(): AuthConfig | null {
 
 /** Разрешаем только внутренние пути, чтобы нельзя было увести пользователя на чужой сайт. */
 export function safeNext(value: string | null | undefined): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) return DEFAULT_REDIRECT;
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return DEFAULT_REDIRECT;
+  // Табуляцию и переводы строк браузер вырезает из адреса, поэтому "/<tab>/сайт" превратился бы в "//сайт"
+  if ([...value].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)) return DEFAULT_REDIRECT;
   if (value.startsWith("/api/") || value.startsWith("/auth/")) return DEFAULT_REDIRECT;
   return value;
 }

@@ -53,7 +53,13 @@ const FIELD_ALIASES: Record<string, string> = {
   иконка: "icon",
 };
 
-const normalizeKey = (key: string) => FIELD_ALIASES[key.trim().toLowerCase().replace(/^\uFEFF/, "")];
+const normalizeKey = (key: string) =>
+  FIELD_ALIASES[
+    key
+      .trim()
+      .toLowerCase()
+      .replace(/^\uFEFF/, "")
+  ];
 
 function resolveCategory(value: unknown): PlaceCategoryId | null {
   const text = typeof value === "string" ? value.trim().toLowerCase() : "";
@@ -130,7 +136,7 @@ function parseJson(text: string): ParseResult {
     : data && typeof data === "object"
       ? ((data as Record<string, unknown>).places ?? (data as Record<string, unknown>).markers)
       : null;
-  if (!Array.isArray(list)) return fatal("В JSON ожидается список меток: [ { \"name\": ... }, ... ]");
+  if (!Array.isArray(list)) return fatal('В JSON ожидается список меток: [ { "name": ... }, ... ]');
 
   return finish(
     list.map((item, index) => {

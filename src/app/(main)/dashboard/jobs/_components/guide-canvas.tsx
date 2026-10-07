@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 
 import { type CalloutVariant, calloutVariants, JOB_LIMITS } from "../_data/jobs";
 import type { EditorBlock } from "./editor-model";
+import { FormatToolbar, handleFormatShortcut } from "./format-toolbar";
 import { calloutStyle, InlineText, RichBlocks } from "./guide-blocks";
 import { MapBody } from "./guide-map-editor";
-import { FormatToolbar, handleFormatShortcut } from "./format-toolbar";
 import { type BlockActions, FloatingAddBlock, ImageBody, InsertSlot, SideToggle, SliderBody } from "./job-block-editor";
 
 type InlineFieldProps = {

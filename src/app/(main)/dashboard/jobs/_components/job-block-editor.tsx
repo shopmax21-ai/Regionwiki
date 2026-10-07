@@ -194,7 +194,10 @@ export function ImageBody({
       {shown ? (
         <div className="relative overflow-hidden rounded-lg border bg-muted/30">
           {/* biome-ignore lint/performance/noImgElement: размеры загружаемой картинки заранее неизвестны */}
-          <img src={shown} alt="" className={cn("mx-auto object-contain", compact ? "max-h-52" : "max-h-80", block.uploading && "opacity-50")}
+          <img
+            src={shown}
+            alt=""
+            className={cn("mx-auto object-contain", compact ? "max-h-52" : "max-h-80", block.uploading && "opacity-50")}
           />
           {block.uploading && (
             <div className="absolute inset-0 flex items-center justify-center gap-2 text-sm">
@@ -214,7 +217,9 @@ export function ImageBody({
           <ImagePlus className="size-6" aria-hidden="true" />
           <span>{compact ? "Добавьте картинку" : "Перетащите картинку сюда или вставьте её через Ctrl+V"}</span>
           <span className="text-xs">
-            {compact ? "Нажмите, перетащите файл или Ctrl+V" : "или нажмите, чтобы выбрать файл · PNG, JPEG, WebP, GIF до 5 МБ"}
+            {compact
+              ? "Нажмите, перетащите файл или Ctrl+V"
+              : "или нажмите, чтобы выбрать файл · PNG, JPEG, WebP, GIF до 5 МБ"}
           </span>
         </button>
       )}
@@ -265,6 +270,7 @@ export function SideToggle({
   ] as const;
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: группа кнопок выбора, fieldset сломает вёрстку
     <div className="flex flex-wrap gap-1.5" role="group" aria-label="Сторона картинки">
       {options.map(({ side, label, icon: Icon }) => (
         <Button
@@ -452,6 +458,7 @@ function BlockBody({ block, actions }: { block: EditorBlock; actions: BlockActio
     case "callout":
       return (
         <div className="flex flex-col gap-2">
+          {/* biome-ignore lint/a11y/useSemanticElements: группа кнопок выбора, fieldset сломает вёрстку */}
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="Вид выделения">
             {(Object.keys(calloutVariants) as (keyof typeof calloutVariants)[]).map((variant) => (
               <Button

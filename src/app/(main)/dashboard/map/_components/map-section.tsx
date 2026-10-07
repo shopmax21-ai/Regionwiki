@@ -168,8 +168,7 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
     setListOpen(false);
   };
 
-  // ---------- Свёрнутая боковая панель ----------
-
+  // Свёрнутая боковая панель
   useEffect(() => {
     try {
       if (window.localStorage.getItem(PANEL_STORAGE_KEY) === "1") setCollapsed(true);
@@ -187,7 +186,7 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
     }
   }, []);
 
-  // ---------- Полноэкранный режим ----------
+  // Полноэкранный режим
   // На весь экран разворачивается весь раздел, а не только картинка: так в нём остаются боковая панель,
   // карточка метки, форма редактора и все кнопки.
 
@@ -203,7 +202,7 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
   useEffect(() => {
     const section = sectionRef.current;
     return () => {
-      if (section && document.fullscreenElement === section) void document.exitFullscreen().catch(() => {});
+      if (section && document.fullscreenElement === section) void document.exitFullscreen().catch(() => undefined);
     };
   }, []);
 
@@ -220,7 +219,7 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
 
   const toggleFullscreen = useCallback(async () => {
     if (fullscreen !== "off") {
-      if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
+      if (document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
       setFullscreen("off");
       return;
     }
@@ -238,8 +237,7 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
     setFullscreen("css");
   }, [fullscreen]);
 
-  // ---------- Редактор меток ----------
-
+  // Редактор меток
   const startCreate = () => {
     setSelectedId(null);
     setListOpen(false);

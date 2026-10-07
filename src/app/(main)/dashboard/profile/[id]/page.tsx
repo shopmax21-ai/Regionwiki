@@ -56,5 +56,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     console.error("[profile] Не удалось загрузить статистику Академии", error);
   }
 
-  return <StaffProfileView user={user} group={group} academy={academy} canEditIdentity={admin.level > groupLevel(group)} />;
+  return (
+    <StaffProfileView user={user} group={group} academy={academy} canEditIdentity={admin.level > groupLevel(group)} />
+  );
 }

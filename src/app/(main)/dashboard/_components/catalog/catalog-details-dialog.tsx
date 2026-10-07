@@ -73,7 +73,11 @@ export function CatalogDetailsDialog({
                   <h3 className="font-medium text-sm">{section.title}</h3>
                   <dl className="rounded-lg border px-3">
                     {fields.map((field) => (
-                      <Row key={field.key} label={field.label} value={formatSpecValue(field, entry.details?.[field.key])} />
+                      <Row
+                        key={field.key}
+                        label={field.label}
+                        value={formatSpecValue(field, entry.details?.[field.key])}
+                      />
                     ))}
                     {section.totalLabel && total > 0 && (
                       <Row label={section.totalLabel} value={formatPrice(String(total))} />

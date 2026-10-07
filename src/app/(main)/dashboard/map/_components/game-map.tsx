@@ -81,7 +81,10 @@ function clampView(view: View, size: Size): View {
 function zoomView(view: View, size: Size, nextZoom: number, anchor: { x: number; y: number }): View {
   const zoom = clamp(nextZoom, MIN_ZOOM, MAX_ZOOM);
   const ratio = zoom / view.zoom;
-  return clampView({ zoom, x: anchor.x - (anchor.x - view.x) * ratio, y: anchor.y - (anchor.y - view.y) * ratio }, size);
+  return clampView(
+    { zoom, x: anchor.x - (anchor.x - view.x) * ratio, y: anchor.y - (anchor.y - view.y) * ratio },
+    size,
+  );
 }
 
 const CENTER = { x: 0, y: 0 };
@@ -353,7 +356,6 @@ export default function GameMap({
       }}
       role="application"
       aria-label="Интерактивная карта штата. Стрелки двигают карту, плюс и минус меняют масштаб."
-
     >
       {pickMode && (
         <p className="pointer-events-none absolute inset-x-16 top-20 z-10 mx-auto w-fit max-w-full rounded-lg bg-foreground px-3 py-1.5 text-center text-background text-xs shadow-lg md:inset-x-auto md:top-4 md:left-1/2 md:-translate-x-1/2">
@@ -362,6 +364,7 @@ export default function GameMap({
       )}
 
       {/* Кнопки управления лежат внутри окна карты, поэтому работают и в полноэкранном режиме */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: обработчики только останавливают всплытие событий карты */}
       <div
         className={cn(
           "absolute z-10 flex flex-col overflow-hidden rounded-lg border border-border/60 bg-background/90 shadow-lg backdrop-blur-sm",

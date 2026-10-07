@@ -5,7 +5,6 @@ import { ChevronRight } from "lucide-react";
 import { PersonAvatar } from "@/components/person-avatar";
 import { PersonName } from "@/components/person-name";
 import { ProfileBanner } from "@/components/profile-banner";
-import { RoleBadge } from "@/components/role-icon";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Person } from "@/lib/auth/person";
 

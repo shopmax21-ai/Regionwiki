@@ -68,7 +68,11 @@ function isBlock(value: unknown): value is GuideBlock {
       return (
         Array.isArray(value.places) &&
         value.places.every(
-          (place) => isRecord(place) && typeof place.name === "string" && typeof place.x === "number" && typeof place.y === "number",
+          (place) =>
+            isRecord(place) &&
+            typeof place.name === "string" &&
+            typeof place.x === "number" &&
+            typeof place.y === "number",
         )
       );
     default:

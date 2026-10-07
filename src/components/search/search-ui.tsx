@@ -7,7 +7,6 @@ import {
   BookText,
   BriefcaseBusiness,
   CarFront,
-  FileText,
   HardHat,
   House,
   LayoutGrid,
@@ -29,7 +28,6 @@ export const searchKindIcons: Record<SearchKind, ComponentType<{ className?: str
   term: BookText,
 };
 
-export const SearchFallbackIcon = FileText;
 export const SearchExternalIcon = ArrowUpRight;
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { getAdmin } from "@/lib/auth/admin";
 import { isSameOrigin } from "@/lib/auth/request";
-import { IMAGE_MAX_BYTES, ImageStoreError, saveImage } from "@/lib/jobs/images";
+import { IMAGE_MAX_BYTES, ImageStoreError, isBodyTooLarge, saveImage } from "@/lib/jobs/images";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +23,9 @@ export async function POST(request: NextRequest) {
   if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "Запрос с другого сайта отклонён" }, { status: 403 });
   }
+
+  if (isBodyTooLarge(request))
+    return NextResponse.json({ error: "Картинка больше 5 МБ, уменьшите её" }, { status: 413 });
 
   if (!request.headers.get("content-type")?.includes("multipart/form-data")) {
     return NextResponse.json({ error: "Ожидается файл" }, { status: 415 });

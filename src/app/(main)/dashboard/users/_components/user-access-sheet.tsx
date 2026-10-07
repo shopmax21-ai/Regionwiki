@@ -67,7 +67,11 @@ export function UserAccessSheet({
             <SheetHeader className="border-b p-4 pr-12">
               <div className="flex items-center gap-3">
                 {user.adminGroup ? (
-                  <PersonAvatar id={user.telegramId} name={personLabel(user)} className="size-10 rounded-full text-sm" />
+                  <PersonAvatar
+                    id={user.telegramId}
+                    name={personLabel(user)}
+                    className="size-10 rounded-full text-sm"
+                  />
                 ) : (
                   <Avatar className="size-10">
                     <AvatarFallback>{getInitials(personLabel(user))}</AvatarFallback>

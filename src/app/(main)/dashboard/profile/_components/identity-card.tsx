@@ -53,7 +53,8 @@ export function IdentityCard({ person, mode }: IdentityCardProps) {
   // В своём профиле поля закрываются, как только значения сохранены
   const locked = own && identityLocked(person);
 
-  const check = own && !locked ? validateFirstIdentity({ nickname, staticId }) : validateIdentity({ nickname, staticId });
+  const check =
+    own && !locked ? validateFirstIdentity({ nickname, staticId }) : validateIdentity({ nickname, staticId });
   const dirty = (person.nickname ?? "") !== nickname.trim() || (person.staticId ?? "") !== staticId.trim();
 
   // Предпросмотр строится из того, что сейчас в полях; пока значение некорректно, показываем сохранённое
@@ -183,8 +184,8 @@ export function IdentityCard({ person, mode }: IdentityCardProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Сохранить Никнейм и Static ID?</AlertDialogTitle>
             <AlertDialogDescription>
-              Указать их можно только один раз. Потом исправить их сможет лишь вышестоящий администратор. Проверьте,
-              что всё написано верно.
+              Указать их можно только один раз. Потом исправить их сможет лишь вышестоящий администратор. Проверьте, что
+              всё написано верно.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm">

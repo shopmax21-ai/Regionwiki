@@ -41,11 +41,11 @@ import {
   Scissors,
   Shield,
   Ship,
+  ShoppingCart,
   Siren,
   Skull,
   Star,
   Store,
-  ShoppingCart,
   Ticket,
   Tractor,
   TrainFront,
@@ -150,7 +150,11 @@ export function MarkerBadge({
   if (isPlaceIconImage(icon)) {
     return (
       <span
-        className={cn("flex shrink-0 items-center justify-center overflow-hidden bg-background", metrics.image, className)}
+        className={cn(
+          "flex shrink-0 items-center justify-center overflow-hidden bg-background",
+          metrics.image,
+          className,
+        )}
       >
         {/* biome-ignore lint/performance/noImgElement: размеры своей иконки заранее неизвестны, next/image здесь не подходит */}
         <img src={icon ?? ""} alt="" draggable={false} loading="lazy" className="size-full object-cover" />

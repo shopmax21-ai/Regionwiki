@@ -68,10 +68,7 @@ const categoryOrder = new Map<string, number>(categories.map((category, index) =
 export const compareByCategory = (a: Business, b: Business) =>
   (categoryOrder.get(a.category) ?? 0) - (categoryOrder.get(b.category) ?? 0);
 
-/**
- * TODO: временные данные для оформления. Замените на реальный список бизнесов штата.
- * Для каждого типа задаётся количество объектов и набор цен, по которым они циклично раздаются.
- */
+// TODO: временные данные, заменить реальным списком. Для каждого типа задано число объектов и набор цен по кругу.
 const seed: Record<BusinessCategory, { count: number; prices: number[] }> = {
   "Магазин 24/7": { count: 22, prices: [750_000, 1_000_000, 1_200_000, 1_500_000, 1_750_000, 2_250_000] },
   Заправка: { count: 28, prices: [500_000, 600_000, 750_000, 800_000] },

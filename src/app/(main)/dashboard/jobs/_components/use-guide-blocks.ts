@@ -130,7 +130,10 @@ export function useGuideBlocks(initial: () => EditorBlock[], enabled: boolean) {
       const found = targetIndex >= 0 ? next[targetIndex] : undefined;
 
       // Пустой блок с картинкой заполняется первым файлом; при «Заменить» заменяется и заполненный
-      if ((found?.type === "image" || found?.type === "textImage") && (options?.replace || (!found.src && !found.local))) {
+      if (
+        (found?.type === "image" || found?.type === "textImage") &&
+        (options?.replace || (!found.src && !found.local))
+      ) {
         const first = queue.shift();
         if (first) next[targetIndex] = { ...found, src: "", local: first.local, uploading: true, error: undefined };
       }
@@ -152,10 +155,7 @@ export function useGuideBlocks(initial: () => EditorBlock[], enabled: boolean) {
       return next;
     });
 
-    const finish = (
-      local: string,
-      patch: { src?: string; local?: string; uploading?: boolean; error?: string },
-    ) =>
+    const finish = (local: string, patch: { src?: string; local?: string; uploading?: boolean; error?: string }) =>
       setBlocks((prev) =>
         prev.map((block) =>
           (block.type === "image" || block.type === "textImage") && block.local === local

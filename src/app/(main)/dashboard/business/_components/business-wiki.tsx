@@ -2,21 +2,20 @@
 
 import { useMemo, useState } from "react";
 
-import { ChevronLeft, ChevronRight, Funnel, Search, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Funnel, Search } from "lucide-react";
 
 import { FilterDropdown } from "@/app/(main)/dashboard/_components/filter-dropdown";
 import { DeleteRecordButton } from "@/app/(main)/dashboard/_components/record-dialogs";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
 import {
   type Business,
-  type Category,
   businessCode,
   businessKey,
   businessTitle,
+  type Category,
   categories,
   compareByCategory,
   pluralBusinesses,

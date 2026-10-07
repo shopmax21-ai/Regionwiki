@@ -156,15 +156,6 @@ const CSS = `
 @media (prefers-reduced-motion:reduce){.wk-accent,.wk-rise,.wk-ping{animation:none}}
 `;
 
-function StatItem({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="flex flex-col">
-      <span className="font-semibold text-2xl tabular-nums tracking-tight">{value.toLocaleString("ru-RU")}</span>
-      <span className="text-muted-foreground text-xs">{label}</span>
-    </div>
-  );
-}
-
 function SectionCard({ section, index }: { section: Section; index: number }) {
   const Icon = section.icon;
   const soon = !section.href;
@@ -304,7 +295,6 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
 
         <div className="relative px-6 py-10 md:px-12 md:py-14">
           <div className="max-w-2xl">
-
             <h1 className="wk-rise mt-5 text-balance font-extrabold text-4xl leading-[1.05] tracking-tight [animation-delay:60ms] md:text-6xl">
               Всё о жизни на <span className="wk-accent italic">Region</span>
             </h1>

@@ -1,4 +1,10 @@
-import { type ChangelogEntry, type RuleChange, type RuleGroup, ruleGroups, type SyncStatus } from "@/app/(main)/dashboard/rules/_components/rules-meta";
+import {
+  type ChangelogEntry,
+  type RuleChange,
+  type RuleGroup,
+  ruleGroups,
+  type SyncStatus,
+} from "@/app/(main)/dashboard/rules/_components/rules-meta";
 import { getPool } from "@/lib/db/pool";
 
 /**
@@ -49,7 +55,9 @@ async function init(): Promise<void> {
       detected_at timestamptz NOT NULL DEFAULT now(),
       changes     jsonb NOT NULL
     )`);
-    await client.query("CREATE INDEX IF NOT EXISTS rule_changes_detected_idx ON rule_changes (detected_at DESC, id DESC)");
+    await client.query(
+      "CREATE INDEX IF NOT EXISTS rule_changes_detected_idx ON rule_changes (detected_at DESC, id DESC)",
+    );
     await client.query(`CREATE TABLE IF NOT EXISTS rule_sync_runs (
       id          bigserial PRIMARY KEY,
       started_at  timestamptz NOT NULL,
@@ -213,7 +221,9 @@ export async function withSyncLock<T>(fn: () => Promise<T>): Promise<{ locked: t
     try {
       return { locked: false, value: await fn() };
     } finally {
-      await client.query("SELECT pg_advisory_unlock($1)", [SYNC_LOCK_ID]).catch((error) => console.error("[rules] unlock failed", error));
+      await client
+        .query("SELECT pg_advisory_unlock($1)", [SYNC_LOCK_ID])
+        .catch((error) => console.error("[rules] unlock failed", error));
     }
   } finally {
     client.release();

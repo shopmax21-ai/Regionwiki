@@ -4,15 +4,7 @@ import { ArrowLeft, ArrowRight, ChevronRight, Clock3, Lock } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge";
 
-import {
-  type Job,
-  type JobEditorState,
-  jobBlocks,
-  levelLabel,
-  previousStages,
-  readMinutes,
-  unlockedBy,
-} from "../_data/jobs";
+import { type Job, jobBlocks, levelLabel, previousStages, readMinutes, unlockedBy } from "../_data/jobs";
 import { GuideSections, groupGuideSections } from "./guide-blocks";
 import { KindBadge } from "./job-badges";
 import { fallbackJobIcon, jobIcons } from "./job-icons";

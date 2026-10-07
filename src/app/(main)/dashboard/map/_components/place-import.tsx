@@ -231,8 +231,14 @@ export function PlaceImport({ places, onClose, onImported }: PlaceImportProps) {
               <Button variant="outline" className="h-10 flex-1" onClick={onClose} disabled={pending}>
                 Отмена
               </Button>
-              <Button className="h-10 flex-1" onClick={upload} disabled={pending || !parsed || parsed.rows.length === 0}>
-                {pending ? "Загрузка..." : `Загрузить${parsed && parsed.rows.length > 0 ? ` (${parsed.rows.length})` : ""}`}
+              <Button
+                className="h-10 flex-1"
+                onClick={upload}
+                disabled={pending || !parsed || parsed.rows.length === 0}
+              >
+                {pending
+                  ? "Загрузка..."
+                  : `Загрузить${parsed && parsed.rows.length > 0 ? ` (${parsed.rows.length})` : ""}`}
               </Button>
             </div>
           </>

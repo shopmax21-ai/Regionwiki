@@ -88,7 +88,7 @@ async function auditDecision(
 const NO_ACCESS = { ok: false, error: "Недостаточно прав" } as const;
 const UNKNOWN = { ok: false, error: "Неизвестная заявка" } as const;
 
-/* ---------- Хелпер ---------- */
+/* Хелпер */
 
 export async function createRequestAction(input: unknown): Promise<ActionResult> {
   const helper = await getAdmin("punishments.request");
@@ -137,7 +137,7 @@ export async function searchRulesAction(query: unknown): Promise<RulePointHit[]>
   }
 }
 
-/* ---------- Администратор ---------- */
+/* Администратор */
 
 async function reviewer() {
   const admin = await getAdmin("punishments.review");

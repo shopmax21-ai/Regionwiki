@@ -35,6 +35,7 @@ export function PersonName({
           <TooltipTrigger asChild>
             {/* Тихая приписка: мельче и бледнее имени, без иконки и рамки */}
             <span
+              role="img"
               aria-label={`Static ID ${person.staticId}`}
               className="shrink-0 cursor-default font-normal text-[0.85em] text-muted-foreground/70 tabular-nums"
             >

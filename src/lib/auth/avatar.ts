@@ -16,8 +16,10 @@ const store = globalThis as typeof globalThis & {
   __avatarCache?: Map<string, AvatarEntry>;
   __avatarInflight?: Map<string, Promise<AvatarEntry>>;
 };
-const cache = (store.__avatarCache ??= new Map());
-const inflight = (store.__avatarInflight ??= new Map());
+store.__avatarCache ??= new Map();
+store.__avatarInflight ??= new Map();
+const cache = store.__avatarCache;
+const inflight = store.__avatarInflight;
 
 /** Вызов Bot API. Токен остаётся только в URL запроса и в логи не попадает. */
 async function telegram<T>(token: string, method: string, params: Record<string, string>): Promise<TgResponse<T>> {

@@ -36,14 +36,6 @@ export type SidebarUser = {
   readonly background: string | null;
 };
 
-const personOf = (user: SidebarUser) => ({
-  id: user.id,
-  name: user.name,
-  nickname: user.nickname,
-  staticId: user.staticId,
-  group: user.group,
-});
-
 function UserAvatar({ user, className }: { user: SidebarUser; className?: string }) {
   return (
     <Avatar className={className}>
@@ -85,8 +77,6 @@ export function NavUser({
     );
   }
 
-  const person = personOf(user);
-
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -105,7 +95,7 @@ export function NavUser({
                 />
               )}
               <UserAvatar user={user} className="relative z-10 h-8 w-8 rounded-lg" />
-              
+
               <div className="relative z-10 grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.nickname}</span>
                 <span className="truncate text-muted-foreground text-xs">

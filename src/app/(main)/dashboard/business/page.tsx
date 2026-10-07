@@ -27,7 +27,9 @@ export default async function Page({ searchParams }: PageProps) {
   // Метки карты нужны только редактору: из них берутся готовые координаты
   const mapPlaces =
     editor === "on"
-      ? (await listMapPlaces()).places.map(({ id, name, x, y }) => ({ id, name, x, y })).sort((a, b) => a.name.localeCompare(b.name, "ru"))
+      ? (await listMapPlaces()).places
+          .map(({ id, name, x, y }) => ({ id, name, x, y }))
+          .sort((a, b) => a.name.localeCompare(b.name, "ru"))
       : [];
 
   return (

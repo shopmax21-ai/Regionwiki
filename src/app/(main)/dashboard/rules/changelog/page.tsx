@@ -1,7 +1,7 @@
 import { getLastRun, hasRulesDatabase, listChangelogFromDb } from "@/lib/rules/store";
 
-import { ChangelogPage } from "../_components/rules-page";
 import { changelog } from "../_components/rules-meta";
+import { ChangelogPage } from "../_components/rules-page";
 
 export const dynamic = "force-dynamic";
 

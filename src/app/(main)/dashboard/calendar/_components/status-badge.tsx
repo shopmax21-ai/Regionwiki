@@ -3,13 +3,6 @@ import { CheckCircle2, Clock3, Radio } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { type EventStatus, STATUS_LABELS } from "@/lib/calendar/types";
 
-/** Цвета статусов общие для бейджей, списка и самого календаря. */
-export const STATUS_COLOR: Record<EventStatus, string> = {
-  upcoming: "var(--primary)",
-  live: "var(--chart-2)",
-  finished: "var(--muted-foreground)",
-};
-
 export function StatusBadge({ status }: { status: EventStatus }) {
   if (status === "live") {
     return (

@@ -74,6 +74,7 @@ export function MembersList({ rows }: { rows: MemberRow[] }) {
             aria-label="Поиск участников"
           />
         </div>
+        {/* biome-ignore lint/a11y/useSemanticElements: фильтр-кнопки: role="group" на div, fieldset сломает вёрстку */}
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Фильтр по статусу">
           {FILTERS.map(({ key, label, icon: Icon }) => (
             <button
@@ -113,7 +114,9 @@ export function MembersList({ rows }: { rows: MemberRow[] }) {
                   <div className="min-w-0 leading-tight">
                     <p className="flex items-center gap-1.5 font-medium text-sm">
                       <span className="truncate">{row.name}</span>
-                      {row.admin && <ShieldCheck className="size-3.5 shrink-0 text-primary" aria-label="Администратор" />}
+                      {row.admin && (
+                        <ShieldCheck className="size-3.5 shrink-0 text-primary" aria-label="Администратор" />
+                      )}
                     </p>
                     <p className="truncate text-muted-foreground text-xs">
                       {row.username ? `@${row.username}` : "Без username"}
@@ -136,7 +139,10 @@ export function MembersList({ rows }: { rows: MemberRow[] }) {
                   )}
                 >
                   <span
-                    className={cn("size-1.5 rounded-full", row.status === "approved" ? "bg-green-500" : "bg-destructive")}
+                    className={cn(
+                      "size-1.5 rounded-full",
+                      row.status === "approved" ? "bg-green-500" : "bg-destructive",
+                    )}
                   />
                   {row.status === "approved" ? "Одобрен" : "Отклонён"}
                 </Badge>

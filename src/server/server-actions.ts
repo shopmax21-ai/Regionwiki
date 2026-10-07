@@ -10,20 +10,20 @@ import {
   parsePreference,
 } from "@/lib/preferences/preferences-config";
 
-export async function getValueFromCookie(key: string): Promise<string | undefined> {
-  const cookieStore = await cookies();
-  return cookieStore.get(key)?.value;
-}
+const PREFERENCE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
-export async function setValueToCookie(
-  key: string,
-  value: string,
-  options: { path?: string; maxAge?: number } = {},
-): Promise<void> {
+/** Сохраняет только настройки оформления из реестра и только допустимые значения: произвольные cookie через это действие ставить нельзя. */
+export async function setValueToCookie(key: string, value: string): Promise<void> {
+  if (!Object.hasOwn(PREFERENCE_REGISTRY, key)) return;
+  const preference = key as PreferenceKey;
+  if (!(PREFERENCE_REGISTRY[preference].values as readonly string[]).includes(value)) return;
+
   const cookieStore = await cookies();
-  cookieStore.set(key, value, {
-    path: options.path ?? "/",
-    maxAge: options.maxAge ?? 60 * 60 * 24 * 7, // default: 7 days
+  cookieStore.set(preference, value, {
+    path: "/",
+    maxAge: PREFERENCE_COOKIE_MAX_AGE,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
   });
 }
 

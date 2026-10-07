@@ -40,7 +40,8 @@
       "!dist",
       "!out",
       "!src/components/ui",
-      "!src/components/calendar"
+      "!src/components/calendar",
+      "!**/*.svg"
     ]
   },
   "formatter": {
@@ -67,7 +68,7 @@
       },
       "nursery": {
         "useSortedClasses": "on",
-        "useNullishCoalescing": "error",
+        "useNullishCoalescing": "off",
         "noFloatingPromises": "error",
         "noMisusedPromises": "error"
       },

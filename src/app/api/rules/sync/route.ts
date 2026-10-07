@@ -1,8 +1,8 @@
-import { timingSafeEqual } from "node:crypto";
-
 import { type NextRequest, NextResponse } from "next/server";
 
 import { runRulesSync } from "@/lib/rules/sync";
+
+import { timingSafeEqual } from "node:crypto";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
