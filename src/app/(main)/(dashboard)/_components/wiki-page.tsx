@@ -23,7 +23,6 @@ import {
   X,
 } from "lucide-react";
 
-import { RegionMarkOutline } from "@/app/(main)/auth/_components/region-mark-outline";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Kbd } from "@/components/ui/kbd";
@@ -146,14 +145,8 @@ function buildSections(stats: WikiStats): Section[] {
 const suggestions = ["такси", "заправка", "ограбление", "Superior"];
 
 const CSS = `
-.wk-accent{display:inline-block;padding:.04em .16em .04em .08em;margin:-.04em -.16em -.04em -.08em;color:transparent;background-image:linear-gradient(100deg,var(--primary) 38%,#e63f3f 50%,var(--primary) 62%);background-size:300% 100%;background-position:100% 0;-webkit-background-clip:text;background-clip:text;animation:wk-drop .8s cubic-bezier(.2,.9,.3,1.25) both,wk-shine 3.4s ease-in-out .8s infinite}
-.wk-rise{animation:wk-rise .55s cubic-bezier(.2,.8,.2,1) both}
-.wk-ping{animation:wk-ping 2s cubic-bezier(0,0,.2,1) infinite}
-@keyframes wk-drop{from{opacity:0;transform:translateY(-.5em) rotate(-6deg)}to{opacity:1;transform:none}}
-@keyframes wk-shine{from{background-position:100% 0}to{background-position:0% 0}}
-@keyframes wk-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-@keyframes wk-ping{75%,100%{transform:scale(2.2);opacity:0}}
-@media (prefers-reduced-motion:reduce){.wk-accent,.wk-rise,.wk-ping{animation:none}}
+.wk-accent{color:var(--primary)}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 `;
 
 function SectionCard({ section, index }: { section: Section; index: number }) {
@@ -164,10 +157,8 @@ function SectionCard({ section, index }: { section: Section; index: number }) {
     <div
       style={{ animationDelay: `${index * 45}ms` }}
       className={cn(
-        "wk-rise group relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl border p-5 transition-all",
-        soon
-          ? "border-dashed bg-muted/30"
-          : "bg-card hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5",
+        "group relative flex h-full flex-col gap-4 overflow-hidden rounded-xl border bg-card p-5 transition-colors",
+        soon ? "border-dashed bg-muted/30" : "hover:border-primary/50",
       )}
     >
       <div className="flex items-start justify-between">
@@ -254,82 +245,66 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
   else if (search.total > 0) statusText = pluralResults(search.total);
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 pb-10">
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 pb-10">
       <style>{CSS}</style>
 
-      <section className="relative isolate overflow-hidden border bg-card shadow-sm">
-        <div className="absolute inset-y-0 right-0 -z-10 hidden w-[42%] bg-muted/50 lg:block" />
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_22rem]">
-          <div className="relative px-6 py-10 md:px-12 md:py-14">
-            <div className="mb-8 flex items-center gap-3 text-muted-foreground text-xs uppercase tracking-[0.22em]">
-              <span className="size-2 rounded-full bg-primary" />
-              Региональная энциклопедия
-            </div>
-            <h1 className="wk-rise max-w-3xl text-balance font-extrabold text-4xl leading-[1.02] tracking-[-0.04em] [animation-delay:60ms] md:text-6xl">
-              Всё о жизни на <span className="wk-accent italic">Region</span>
-            </h1>
-            <p className="wk-rise mt-5 max-w-xl text-base text-muted-foreground leading-7 [animation-delay:120ms] md:text-lg">
-              Правила, экономика, транспорт и карта штата — собраны в одном понятном справочнике.
-            </p>
-            <div className="wk-rise relative mt-8 max-w-2xl [animation-delay:180ms]">
-              <Search className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                ref={inputRef}
-                value={query}
-                onChange={(event) => changeQuery(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") changeQuery("");
-                  if (event.key === "Enter") openFirstResult();
-                }}
-                placeholder="Найти правило, работу, машину или раздел"
-                aria-label="Поиск по всем разделам"
-                className="h-14 rounded-none border-foreground/20 bg-background pr-14 pl-12 text-base shadow-none focus-visible:border-primary"
-              />
-              {query ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    changeQuery("");
-                    inputRef.current?.focus();
-                  }}
-                  aria-label="Очистить поиск"
-                  className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <X className="size-4" />
-                </button>
-              ) : (
-                <Kbd className="absolute top-1/2 right-4 -translate-y-1/2">/</Kbd>
-              )}
-            </div>
-            <div className="wk-rise mt-4 flex max-w-xl flex-wrap items-center gap-2 text-sm [animation-delay:230ms]">
-              <span className="text-muted-foreground">Популярное:</span>
-              {suggestions.map((word) => (
-                <button
-                  key={word}
-                  type="button"
-                  onClick={() => {
-                    changeQuery(word);
-                    inputRef.current?.focus();
-                  }}
-                  className="border-b border-foreground/20 px-1 py-0.5 transition-colors hover:border-primary hover:text-primary"
-                >
-                  {word}
-                </button>
-              ))}
-            </div>
+      <section className="border-b pb-8 pt-2 md:pb-10">
+        <div className="flex max-w-3xl flex-col gap-5">
+          <div className="flex items-center gap-3 text-muted-foreground text-xs uppercase tracking-[0.18em]">
+            <span className="size-1.5 rounded-full bg-primary" />
+            Региональная энциклопедия
           </div>
-          <div className="relative hidden min-h-72 overflow-hidden px-8 py-10 lg:flex lg:flex-col lg:justify-between">
-            <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.18em]">
-              <span>В фокусе</span>
-              <span>01 / 03</span>
-            </div>
-            <RegionMarkOutline id="rmo-home" className="absolute -right-12 -bottom-20 w-80 opacity-80" />
-            <div className="relative mt-auto max-w-xs border-l-2 border-primary pl-4">
-              <p className="font-semibold text-lg tracking-tight">Справочник для уверенной игры</p>
-              <p className="mt-2 text-muted-foreground text-sm leading-6">
-                Актуальные данные и ясные ответы без лишнего шума.
-              </p>
-            </div>
+          <h1 className="max-w-2xl text-balance font-bold text-4xl leading-tight tracking-[-0.035em] md:text-6xl">
+            Всё о жизни на <span className="wk-accent">Region</span>
+          </h1>
+          <p className="max-w-xl text-base text-muted-foreground leading-7 md:text-lg">
+            Правила, экономика, транспорт и карта штата — собраны в одном понятном справочнике.
+          </p>
+          <div className="relative mt-2 max-w-2xl">
+            <Search className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              ref={inputRef}
+              value={query}
+              onChange={(event) => changeQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") changeQuery("");
+                if (event.key === "Enter") openFirstResult();
+              }}
+              placeholder="Поиск по разделам и материалам"
+              aria-label="Поиск по всем разделам"
+              className="h-12 rounded-xl border bg-background pr-14 pl-12 text-sm shadow-none focus-visible:border-primary md:h-14 md:text-base"
+            />
+            {query ? (
+              <button
+                type="button"
+                onClick={() => {
+                  changeQuery("");
+                  inputRef.current?.focus();
+                }}
+                aria-label="Очистить поиск"
+                className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <X className="size-4" />
+              </button>
+            ) : (
+              <Kbd className="absolute top-1/2 right-4 -translate-y-1/2">/</Kbd>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+            <span className="text-muted-foreground">Популярное:</span>
+            {suggestions.map((word) => (
+              <button
+                key={word}
+                type="button"
+                onClick={() => {
+                  changeQuery(word);
+                  inputRef.current?.focus();
+                }}
+                className="text-muted-foreground underline decoration-border underline-offset-4 transition-colors hover:text-primary"
+              >
+                {word}
+              </button>
+            ))}
           </div>
         </div>
       </section>
