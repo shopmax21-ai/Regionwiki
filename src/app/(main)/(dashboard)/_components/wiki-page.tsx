@@ -257,52 +257,21 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
     <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 pb-10">
       <style>{CSS}</style>
 
-      <section className="relative isolate overflow-hidden rounded-3xl border bg-card">
-        {/* Узор из «R», затухающий к тексту */}
-        <svg
-          aria-hidden="true"
-          className="absolute inset-0 -z-10 size-full text-foreground [mask-image:linear-gradient(to_right,transparent_35%,black)]"
-        >
-          <defs>
-            <pattern id="region-home-pattern" width="98" height="64" patternUnits="userSpaceOnUse">
-              <g fill="currentColor" fillOpacity="0.06" fontSize="20" fontStyle="italic" fontWeight="800">
-                <text x="0" y="24">
-                  R
-                </text>
-                <text x="49" y="24">
-                  R
-                </text>
-                <text x="24" y="56">
-                  R
-                </text>
-                <text x="73" y="56">
-                  R
-                </text>
-              </g>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#region-home-pattern)" />
-        </svg>
-
-        {/* Фирменная R с бегущей «жидкостью», уходящая за нижний край */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-12 -bottom-20 hidden md:block lg:right-10 lg:-bottom-24"
-        >
-          <div className="absolute inset-10 rounded-full bg-primary/25 blur-3xl" />
-          <RegionMarkOutline id="rmo-home" className="relative w-72 lg:w-[23rem]" />
-        </div>
-
-        <div className="relative px-6 py-10 md:px-12 md:py-14">
-          <div className="max-w-2xl">
-            <h1 className="wk-rise mt-5 text-balance font-extrabold text-4xl leading-[1.05] tracking-tight [animation-delay:60ms] md:text-6xl">
+      <section className="relative isolate overflow-hidden border bg-card shadow-sm">
+        <div className="absolute inset-y-0 right-0 -z-10 hidden w-[42%] bg-muted/50 lg:block" />
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="relative px-6 py-10 md:px-12 md:py-14">
+            <div className="mb-8 flex items-center gap-3 text-muted-foreground text-xs uppercase tracking-[0.22em]">
+              <span className="size-2 rounded-full bg-primary" />
+              Региональная энциклопедия
+            </div>
+            <h1 className="wk-rise max-w-3xl text-balance font-extrabold text-4xl leading-[1.02] tracking-[-0.04em] [animation-delay:60ms] md:text-6xl">
               Всё о жизни на <span className="wk-accent italic">Region</span>
             </h1>
             <p className="wk-rise mt-5 max-w-xl text-base text-muted-foreground leading-7 [animation-delay:120ms] md:text-lg">
-              Здесь Вы можете найти любую информацию о проекте Region, его игровых системах
+              Правила, экономика, транспорт и карта штата — собраны в одном понятном справочнике.
             </p>
-
-            <div className="wk-rise relative mt-8 max-w-xl [animation-delay:180ms]">
+            <div className="wk-rise relative mt-8 max-w-2xl [animation-delay:180ms]">
               <Search className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 ref={inputRef}
@@ -314,7 +283,7 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
                 }}
                 placeholder="Найти правило, работу, машину или раздел"
                 aria-label="Поиск по всем разделам"
-                className="h-14 rounded-2xl bg-background pr-14 pl-12 text-base shadow-sm"
+                className="h-14 rounded-none border-foreground/20 bg-background pr-14 pl-12 text-base shadow-none focus-visible:border-primary"
               />
               {query ? (
                 <button
@@ -332,9 +301,8 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
                 <Kbd className="absolute top-1/2 right-4 -translate-y-1/2">/</Kbd>
               )}
             </div>
-
             <div className="wk-rise mt-4 flex max-w-xl flex-wrap items-center gap-2 text-sm [animation-delay:230ms]">
-              <span className="text-muted-foreground">Например:</span>
+              <span className="text-muted-foreground">Популярное:</span>
               {suggestions.map((word) => (
                 <button
                   key={word}
@@ -343,11 +311,24 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
                     changeQuery(word);
                     inputRef.current?.focus();
                   }}
-                  className="rounded-full border bg-background/70 px-3 py-1 transition-colors hover:border-primary/60 hover:text-primary"
+                  className="border-b border-foreground/20 px-1 py-0.5 transition-colors hover:border-primary hover:text-primary"
                 >
                   {word}
                 </button>
               ))}
+            </div>
+          </div>
+          <div className="relative hidden min-h-72 overflow-hidden px-8 py-10 lg:flex lg:flex-col lg:justify-between">
+            <div className="flex items-center justify-between text-muted-foreground text-xs uppercase tracking-[0.18em]">
+              <span>В фокусе</span>
+              <span>01 / 03</span>
+            </div>
+            <RegionMarkOutline id="rmo-home" className="absolute -right-12 -bottom-20 w-80 opacity-80" />
+            <div className="relative mt-auto max-w-xs border-l-2 border-primary pl-4">
+              <p className="font-semibold text-lg tracking-tight">Справочник для уверенной игры</p>
+              <p className="mt-2 text-muted-foreground text-sm leading-6">
+                Актуальные данные и ясные ответы без лишнего шума.
+              </p>
             </div>
           </div>
         </div>
