@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 
+import { RegionMark } from "@/app/(main)/auth/_components/region-mark";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Kbd } from "@/components/ui/kbd";
@@ -250,9 +251,9 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
 
       <section className="border-b pb-8 pt-2 md:pb-10">
         <div className="flex max-w-3xl flex-col gap-5">
-          <div className="flex items-center gap-3 text-muted-foreground text-xs uppercase tracking-[0.18em]">
-            <span className="size-1.5 rounded-full bg-primary" />
-            Региональная энциклопедия
+          <div role="img" aria-label="Region" className="flex items-center gap-2.5 text-foreground">
+            <RegionMark gradientId="region-r-grad-home" className="size-8" />
+            <span className="font-black text-2xl uppercase italic leading-none tracking-[-0.08em]">Region</span>
           </div>
           <h1 className="max-w-2xl text-balance font-bold text-4xl leading-tight tracking-[-0.035em] md:text-6xl">
             Всё о жизни на <span className="wk-accent">Region</span>
