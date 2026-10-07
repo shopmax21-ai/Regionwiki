@@ -56,26 +56,28 @@ export function AppSidebar({
 
   return (
     <Sidebar {...props} variant={variant} collapsible={collapsible}>
-      <SidebarHeader>
+      <SidebarHeader className="border-b border-sidebar-border/60 px-2 pb-3">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton asChild size="lg" className="rounded-xl px-3 hover:bg-sidebar-accent">
               <Link prefetch={false} href="/">
-                <RegionMarkOutline
-                  id={markId}
-                  strokeWidth={1.5}
-                  className="size-5! group-data-[collapsible=icon]:size-4!"
-                />
-                <span className="font-semibold text-base">{APP_CONFIG.name}</span>
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary ring-1 ring-primary/20">
+                  <RegionMarkOutline
+                    id={markId}
+                    strokeWidth={1.5}
+                    className="size-5! group-data-[collapsible=icon]:size-4!"
+                  />
+                </span>
+                <span className="truncate font-semibold text-base tracking-tight">{APP_CONFIG.name}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="py-2">
         <NavMain items={items} />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="gap-2 border-t border-sidebar-border/60 p-2 pt-3">
         <SupportCard />
         <NavUser user={user} permissions={permissions} />
       </SidebarFooter>

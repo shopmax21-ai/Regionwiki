@@ -105,7 +105,7 @@ export function NavMain({ items }: NavMainProps) {
       {items.map((group) => (
         <SidebarGroup key={group.id}>
           {group.label && (
-            <SidebarGroupLabel className="group-data-[collapsible=icon]:pointer-events-none">
+            <SidebarGroupLabel className="px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/45 group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
               {group.label}
             </SidebarGroupLabel>
           )}
