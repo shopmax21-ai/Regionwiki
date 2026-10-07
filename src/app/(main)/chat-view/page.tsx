@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description:
     "Explore an open source chat interface with conversation search, message threads, internal notes, and contact details.",
   alternates: {
-    canonical: "/chat",
+    canonical: "/chat-view",
   },
 };
 

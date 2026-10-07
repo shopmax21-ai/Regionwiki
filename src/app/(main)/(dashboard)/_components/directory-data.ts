@@ -1,4 +1,4 @@
-import type { FileManagerFile, FileManagerFolder } from "@/app/(main)/dashboard/file-manager/_components/data";
+import type { FileManagerFile, FileManagerFolder } from "@/app/(main)/(dashboard)/file-manager/_components/data";
 
 const owners = [
   ["Алексей Иванов", "АИ"],

@@ -7,11 +7,11 @@ import type {
   FileManagerFile,
   FileManagerFolder,
   FileManagerView,
-} from "@/app/(main)/dashboard/file-manager/_components/data";
-import { FileGridView } from "@/app/(main)/dashboard/file-manager/_components/file-grid-view";
-import { FileListView } from "@/app/(main)/dashboard/file-manager/_components/file-list-view";
-import { FileManagerToolbar } from "@/app/(main)/dashboard/file-manager/_components/file-manager-toolbar";
-import { FoldersSection } from "@/app/(main)/dashboard/file-manager/_components/folders-section";
+} from "@/app/(main)/(dashboard)/file-manager/_components/data";
+import { FileGridView } from "@/app/(main)/(dashboard)/file-manager/_components/file-grid-view";
+import { FileListView } from "@/app/(main)/(dashboard)/file-manager/_components/file-list-view";
+import { FileManagerToolbar } from "@/app/(main)/(dashboard)/file-manager/_components/file-manager-toolbar";
+import { FoldersSection } from "@/app/(main)/(dashboard)/file-manager/_components/folders-section";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
