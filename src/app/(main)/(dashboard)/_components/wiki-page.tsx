@@ -23,7 +23,6 @@ import {
   X,
 } from "lucide-react";
 
-import { RegionMarkOutline } from "@/app/(main)/auth/_components/region-mark-outline";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Kbd } from "@/components/ui/kbd";
@@ -147,8 +146,68 @@ const suggestions = ["такси", "заправка", "ограбление", "
 
 const CSS = `
 .wk-accent{color:var(--primary)}
-@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+.wk-wordmark-wave{animation:wk-wordmark-flow 3.2s linear infinite}
+.wk-wordmark-wave-back{animation:wk-wordmark-flow-reverse 5.4s linear infinite}
+@keyframes wk-wordmark-flow{from{transform:translateX(0)}to{transform:translateX(24px)}}
+@keyframes wk-wordmark-flow-reverse{from{transform:translateX(24px)}to{transform:translateX(0)}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.wk-wordmark-wave,.wk-wordmark-wave-back{animation:none}}
 `;
+
+function RegionWordmark() {
+  return (
+    <svg
+      viewBox="0 0 188 44"
+      role="img"
+      aria-label="Region"
+      className="h-11 w-[188px] overflow-visible text-foreground"
+    >
+      <defs>
+        <clipPath id="region-wordmark-clip">
+          <text
+            x="0"
+            y="36"
+            fontFamily="inherit"
+            fontSize="38"
+            fontStyle="italic"
+            fontWeight="900"
+            letterSpacing="-2.4"
+          >
+            REGION
+          </text>
+        </clipPath>
+      </defs>
+      <text
+        x="0"
+        y="36"
+        fill="currentColor"
+        fillOpacity="0.035"
+        fontFamily="inherit"
+        fontSize="38"
+        fontStyle="italic"
+        fontWeight="900"
+        letterSpacing="-2.4"
+        stroke="currentColor"
+        strokeOpacity="0.9"
+        strokeWidth="1.35"
+        paintOrder="stroke"
+      >
+        REGION
+      </text>
+      <g clipPath="url(#region-wordmark-clip)" opacity="0.95">
+        <g className="wk-wordmark-wave-back">
+          <path
+            d="M-24 25q6-4 12 0t12 0t12 0t12 0t12 0t12 0t12 0t12 0t12 0v20H-24Z"
+            fill="currentColor"
+            opacity="0.32"
+          />
+        </g>
+        <g className="wk-wordmark-wave">
+          <path d="M-24 29q6-4 12 0t12 0t12 0t12 0t12 0t12 0t12 0t12 0t12 0v20H-24Z" fill="var(--primary)" />
+        </g>
+      </g>
+    </svg>
+  );
+}
 
 function SectionCard({ section, index }: { section: Section; index: number }) {
   const Icon = section.icon;
@@ -251,10 +310,7 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
 
       <section className="border-b pb-8 pt-2 md:pb-10">
         <div className="flex max-w-3xl flex-col gap-5">
-          <div role="img" aria-label="Region" className="flex items-center gap-2.5 text-foreground">
-            <RegionMarkOutline id="region-wordmark-outline" className="size-8" strokeWidth={1.6} />
-            <span className="font-black text-2xl uppercase italic leading-none tracking-[-0.08em]">Region</span>
-          </div>
+          <RegionWordmark />
           <h1 className="max-w-2xl text-balance font-bold text-4xl leading-tight tracking-[-0.035em] md:text-6xl">
             Всё о жизни на <span className="wk-accent">Region</span>
           </h1>
