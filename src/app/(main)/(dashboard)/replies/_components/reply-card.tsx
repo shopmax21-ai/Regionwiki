@@ -26,7 +26,7 @@ export function ReplyCard({ reply, categories, editable, copied, onCopy, query }
     <article
       style={hueStyle(categoryHue(reply.category))}
       className={cn(
-        "group/reply flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-xs transition-[border-color,box-shadow] duration-200",
+        "group/reply relative flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-xs transition-[border-color,box-shadow] duration-200",
         "hover:border-[oklch(0.72_0.1_var(--h))] hover:shadow-md",
         copied && "border-[oklch(0.62_0.16_var(--h))] shadow-md ring-2 ring-[oklch(0.62_0.16_var(--h)/0.35)]",
       )}
@@ -44,7 +44,7 @@ export function ReplyCard({ reply, categories, editable, copied, onCopy, query }
           >
             <MessageSquareText className="size-4.5" />
           </span>
-          <span className="min-w-0 flex-1 font-semibold leading-snug tracking-tight">
+          <span className="min-w-0 flex-1 pr-8 font-semibold leading-snug tracking-tight">
             <Highlight text={reply.title} query={query} />
           </span>
         </span>
@@ -56,14 +56,13 @@ export function ReplyCard({ reply, categories, editable, copied, onCopy, query }
         <span
           aria-hidden="true"
           className={cn(
-            "mt-auto flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 font-medium text-xs transition-colors",
+            "absolute top-3 right-3 flex size-8 items-center justify-center rounded-full border transition-colors",
             copied
               ? "border-transparent bg-[oklch(0.55_0.16_var(--h))] text-white dark:bg-[oklch(0.7_0.14_var(--h))] dark:text-[oklch(0.2_0.03_var(--h))]"
-              : "text-muted-foreground group-hover/reply:text-foreground",
+              : "bg-card text-muted-foreground group-hover/reply:text-foreground",
           )}
         >
-          {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-          {copied ? "Скопировано" : "Копировать"}
+          {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
         </span>
       </button>
 
