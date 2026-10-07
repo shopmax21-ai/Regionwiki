@@ -94,7 +94,7 @@ export async function getViewerAccess(): Promise<{ isAdmin: boolean; permissions
  * остальных отправляет на страницу «нет доступа». Без настроенной авторизации раздел закрыт для всех.
  */
 export async function requireAdmin(): Promise<AdminContext> {
-  if (!getAuthConfig()) redirect("/dashboard");
+  if (!getAuthConfig()) redirect("/");
   const admin = await getAdminContext();
   if (!admin) redirect("/unauthorized");
   return admin;

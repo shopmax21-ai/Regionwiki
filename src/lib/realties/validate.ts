@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { categories, type Realty, type RealtyCategory } from "@/app/(main)/dashboard/real-estate/_data/realties";
+import { categories, type Realty, type RealtyCategory } from "@/app/(main)/(dashboard)/real-estate/_data/realties";
 
 const emptyToUndefined = (value: unknown) => (value === "" || value === null ? undefined : value);
 

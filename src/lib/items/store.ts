@@ -1,4 +1,4 @@
-import { defaultItemFlags, type Item, type ItemFlags, seedItems } from "@/app/(main)/dashboard/items/_data/items";
+import { defaultItemFlags, type Item, type ItemFlags, seedItems } from "@/app/(main)/(dashboard)/items/_data/items";
 import { getPool } from "@/lib/db/pool";
 
 import type { ItemInput } from "./validate";

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { REPLY_LIMITS } from "@/app/(main)/dashboard/replies/_data/replies";
+import { REPLY_LIMITS } from "@/app/(main)/(dashboard)/replies/_data/replies";
 
 export const replySchema = z.object({
   category: z.string().trim().min(1, "Укажите категорию").max(REPLY_LIMITS.category, "Категория слишком длинная"),

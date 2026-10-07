@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { businessCode } from "@/app/(main)/dashboard/business/_data/businesses";
+import { businessCode } from "@/app/(main)/(dashboard)/business/_data/businesses";
 import { actorOf, recordContentChange } from "@/lib/audit/store";
 import { getAdmin } from "@/lib/auth/admin";
 import { BusinessStoreError, deleteBusiness, listBusinesses, updateBusiness } from "@/lib/businesses/store";

@@ -74,5 +74,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  // Разделы лежат в корне сайта, поэтому прокси смотрит все адреса, кроме API и служебных файлов Next.js.
+  // Нужен ли вход для конкретной страницы, решает isProtectedPath.
+  matcher: ["/((?!api/|_next/).*)"],
 };

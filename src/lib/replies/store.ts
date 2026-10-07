@@ -1,4 +1,4 @@
-import { type QuickReply, seedReplies } from "@/app/(main)/dashboard/replies/_data/replies";
+import { type QuickReply, seedReplies } from "@/app/(main)/(dashboard)/replies/_data/replies";
 import { getPool } from "@/lib/db/pool";
 
 import type { ReplyInput } from "./validate";

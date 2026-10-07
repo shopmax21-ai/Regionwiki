@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { type Business, type BusinessCategory, categories } from "@/app/(main)/dashboard/business/_data/businesses";
-import { isInsideWorld } from "@/app/(main)/dashboard/map/_components/map-data";
+import { type Business, type BusinessCategory, categories } from "@/app/(main)/(dashboard)/business/_data/businesses";
+import { isInsideWorld } from "@/app/(main)/(dashboard)/map/_components/map-data";
 
 const emptyToUndefined = (value: unknown) => (value === "" || value === null ? undefined : value);
 

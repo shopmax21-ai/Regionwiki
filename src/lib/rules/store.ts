@@ -4,7 +4,7 @@ import {
   type RuleGroup,
   ruleGroups,
   type SyncStatus,
-} from "@/app/(main)/dashboard/rules/_components/rules-meta";
+} from "@/app/(main)/(dashboard)/rules/_components/rules-meta";
 import { getPool } from "@/lib/db/pool";
 
 /**

@@ -2,7 +2,7 @@
  * Разделы только для администрации: их видят и открывают участники любой админ-группы (хелпер и выше).
  * Остальным они не показываются в меню и поиске, а страница дополнительно проверяет доступ на сервере.
  */
-export const ADMIN_ONLY_PATHS: readonly string[] = ["/dashboard/academy", "/dashboard/calendar", "/dashboard/staff"];
+export const ADMIN_ONLY_PATHS: readonly string[] = ["/academy", "/calendar", "/staff"];
 
 /**
  * Разделы, для которых нужен вход и одобрение администратора. Всё остальное открыто без авторизации.
@@ -10,13 +10,13 @@ export const ADMIN_ONLY_PATHS: readonly string[] = ["/dashboard/academy", "/dash
  * Закрытые разделы также скрываются из меню и поиска у тех, кто не вошёл.
  */
 export const PROTECTED_PATHS: readonly string[] = [
-  "/dashboard/profile",
-  "/dashboard/users",
-  "/dashboard/access",
-  "/dashboard/roles",
-  "/dashboard/audit",
-  "/dashboard/replies",
-  "/dashboard/punishments",
+  "/profile",
+  "/users",
+  "/access",
+  "/roles",
+  "/audit",
+  "/replies",
+  "/punishments",
   ...ADMIN_ONLY_PATHS,
 ];
 
@@ -28,16 +28,16 @@ export const isProtectedPath = (pathname: string) =>
  * а сама страница проверяет право ещё раз). Права настраиваются в разделе «Роли и права».
  */
 export const PATH_PERMISSIONS: Readonly<Record<string, string>> = {
-  "/dashboard/access": "access.decide",
-  "/dashboard/users": "users.view",
-  "/dashboard/roles": "permissions.view",
-  "/dashboard/audit": "audit.view",
-  "/dashboard/replies": "replies.view",
-  "/dashboard/academy/results": "academy.results",
+  "/access": "access.decide",
+  "/users": "users.view",
+  "/roles": "permissions.view",
+  "/audit": "audit.view",
+  "/replies": "replies.view",
+  "/academy/results": "academy.results",
   // Вложенные страницы раньше корневой: проверка идёт по порядку и берёт первое совпадение
-  "/dashboard/punishments/all": "punishments.all",
-  "/dashboard/punishments/review": "punishments.review",
-  "/dashboard/punishments": "punishments.request",
+  "/punishments/all": "punishments.all",
+  "/punishments/review": "punishments.review",
+  "/punishments": "punishments.request",
 };
 
 export const isAdminOnlyPath = (pathname: string) =>

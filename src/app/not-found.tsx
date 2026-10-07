@@ -13,11 +13,11 @@ export const metadata: Metadata = {
 };
 
 const links = [
-  { title: "Работы", href: "/dashboard/jobs", icon: HardHat },
-  { title: "Бизнес", href: "/dashboard/business", icon: BriefcaseBusiness },
-  { title: "Недвижимость", href: "/dashboard/real-estate", icon: House },
-  { title: "Транспорт", href: "/dashboard/transport", icon: CarFront },
-  { title: "Карта штата", href: "/dashboard/map", icon: MapIcon },
+  { title: "Работы", href: "/jobs", icon: HardHat },
+  { title: "Бизнес", href: "/business", icon: BriefcaseBusiness },
+  { title: "Недвижимость", href: "/real-estate", icon: House },
+  { title: "Транспорт", href: "/transport", icon: CarFront },
+  { title: "Карта штата", href: "/map", icon: MapIcon },
 ];
 
 const CSS = `
@@ -92,7 +92,7 @@ export default function NotFound() {
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/dashboard" prefetch={false} className={buttonVariants({ size: "lg", className: "h-11 px-5" })}>
+            <Link href="/" prefetch={false} className={buttonVariants({ size: "lg", className: "h-11 px-5" })}>
               На главную
               <ArrowRight data-icon="inline-end" />
             </Link>

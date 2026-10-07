@@ -1,4 +1,4 @@
-import { vehicles as seedVehicles, type Vehicle } from "@/app/(main)/dashboard/transport/_data/vehicles";
+import { vehicles as seedVehicles, type Vehicle } from "@/app/(main)/(dashboard)/transport/_data/vehicles";
 import { getPool } from "@/lib/db/pool";
 
 /**

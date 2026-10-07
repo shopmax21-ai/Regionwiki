@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ruleGroups } from "@/app/(main)/dashboard/rules/_components/rules-meta";
+import { ruleGroups } from "@/app/(main)/(dashboard)/rules/_components/rules-meta";
 
 import {
   DEFAULT_PASS_PERCENT,

@@ -2,7 +2,7 @@ import {
   type Business,
   businessCode,
   businesses as seedBusinesses,
-} from "@/app/(main)/dashboard/business/_data/businesses";
+} from "@/app/(main)/(dashboard)/business/_data/businesses";
 import { createJsonStore, RecordStoreError } from "@/lib/db/json-store";
 
 export { RecordStoreError as BusinessStoreError };

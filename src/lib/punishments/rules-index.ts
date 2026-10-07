@@ -1,4 +1,4 @@
-import { getGroupArticles } from "@/app/(main)/dashboard/rules/_components/rules-content";
+import { getGroupArticles } from "@/app/(main)/(dashboard)/rules/_components/rules-content";
 
 import type { RulePointHit } from "./types";
 

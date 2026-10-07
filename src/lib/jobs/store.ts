@@ -6,8 +6,8 @@ import {
   type GuideSection,
   type Job,
   jobs as seedJobs,
-} from "@/app/(main)/dashboard/jobs/_data/jobs";
-import { isInsideWorld, placeCategoryIds } from "@/app/(main)/dashboard/map/_components/map-data";
+} from "@/app/(main)/(dashboard)/jobs/_data/jobs";
+import { isInsideWorld, placeCategoryIds } from "@/app/(main)/(dashboard)/map/_components/map-data";
 import { getPool } from "@/lib/db/pool";
 
 import type { JobInput } from "./validate";

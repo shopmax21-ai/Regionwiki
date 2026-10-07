@@ -25,7 +25,7 @@ export default async function PendingV2() {
 
   const user = await getUser(session.id);
   if (!user) redirect(LOGIN_PATH);
-  if (user.status === "approved") redirect("/dashboard");
+  if (user.status === "approved") redirect("/");
 
   return (
     <>

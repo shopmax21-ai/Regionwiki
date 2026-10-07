@@ -30,11 +30,11 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      {
-        source: "/dashboard",
-        destination: "/dashboard/default",
-        permanent: false,
-      },
+      // Раньше разделы жили под /dashboard: старые ссылки и закладки ведут на новые адреса.
+      { source: "/dashboard", destination: "/", permanent: true },
+      { source: "/dashboard/default", destination: "/", permanent: true },
+      { source: "/dashboard/:path*", destination: "/:path*", permanent: true },
+      { source: "/default", destination: "/", permanent: true },
     ];
   },
 };

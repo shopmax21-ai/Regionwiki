@@ -1,14 +1,14 @@
 import { z } from "zod";
 
-import { JOB_LIMITS, RESERVED_JOB_SLUGS } from "@/app/(main)/dashboard/jobs/_data/jobs";
-import { SLUG_PATTERN } from "@/app/(main)/dashboard/jobs/_data/slug";
+import { JOB_LIMITS, RESERVED_JOB_SLUGS } from "@/app/(main)/(dashboard)/jobs/_data/jobs";
+import { SLUG_PATTERN } from "@/app/(main)/(dashboard)/jobs/_data/slug";
 import {
   isPlaceIconImage,
   isPlaceIconPreset,
   MAP_WORLD,
   PLACE_LIMITS,
   placeCategoryIds,
-} from "@/app/(main)/dashboard/map/_components/map-data";
+} from "@/app/(main)/(dashboard)/map/_components/map-data";
 
 const line = z.string().trim().min(1).max(JOB_LIMITS.item, "Один из пунктов слишком длинный");
 const lines = z.array(line).max(JOB_LIMITS.items, `Не больше ${JOB_LIMITS.items} пунктов в списке`);

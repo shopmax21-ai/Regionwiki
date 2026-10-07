@@ -1,4 +1,4 @@
-import { type MapPlace, type PlaceCategoryId, seedPlaces } from "@/app/(main)/dashboard/map/_components/map-data";
+import { type MapPlace, type PlaceCategoryId, seedPlaces } from "@/app/(main)/(dashboard)/map/_components/map-data";
 import { getPool } from "@/lib/db/pool";
 
 import type { PlaceInput } from "./validate";

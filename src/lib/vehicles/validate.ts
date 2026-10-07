@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { fuelTypes, type Vehicle, vehicleCategories } from "@/app/(main)/dashboard/transport/_data/vehicles";
+import { fuelTypes, type Vehicle, vehicleCategories } from "@/app/(main)/(dashboard)/transport/_data/vehicles";
 
 const emptyToUndefined = (value: unknown) => (value === "" || value === null ? undefined : value);
 

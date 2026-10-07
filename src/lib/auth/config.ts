@@ -8,7 +8,7 @@ export const LOGIN_PATH = "/auth/v2/login";
 
 export { isProtectedPath, PROTECTED_PATHS } from "./protected-paths";
 export const PENDING_PATH = "/auth/v2/pending";
-export const DEFAULT_REDIRECT = "/dashboard";
+export const DEFAULT_REDIRECT = "/";
 
 /** Код: 6 цифр, живёт 5 минут, на один код даётся 5 попыток. */
 export const CODE_LENGTH = 6;
@@ -36,7 +36,7 @@ export type AuthConfig = {
 
 /**
  * Возвращает настройки входа или null, если вход не настроен.
- * Пока переменные окружения не заданы, в разработке раздел /dashboard открыт, а в production закрыт (ответ 503).
+ * Пока переменные окружения не заданы, в разработке защищённые разделы открыты, а в production закрыты (ответ 503).
  */
 export function getAuthConfig(): AuthConfig | null {
   const secret = process.env.AUTH_SECRET;

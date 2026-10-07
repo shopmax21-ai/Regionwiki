@@ -1,4 +1,4 @@
-import { type Realty, realties as seedRealties } from "@/app/(main)/dashboard/real-estate/_data/realties";
+import { type Realty, realties as seedRealties } from "@/app/(main)/(dashboard)/real-estate/_data/realties";
 import { createJsonStore, RecordStoreError } from "@/lib/db/json-store";
 
 export { RecordStoreError as RealtyStoreError };

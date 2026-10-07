@@ -1,6 +1,6 @@
-import { getStaticSource } from "@/app/(main)/dashboard/rules/_components/rules-content";
-import { type RuleGroup, ruleGroups } from "@/app/(main)/dashboard/rules/_components/rules-meta";
-import { countRules, parseRules } from "@/app/(main)/dashboard/rules/_content/parse";
+import { getStaticSource } from "@/app/(main)/(dashboard)/rules/_components/rules-content";
+import { type RuleGroup, ruleGroups } from "@/app/(main)/(dashboard)/rules/_components/rules-meta";
+import { countRules, parseRules } from "@/app/(main)/(dashboard)/rules/_content/parse";
 
 import { diffRules } from "./diff";
 import { discoverThreads, extractRulesText, fetchForumHtml } from "./forum";

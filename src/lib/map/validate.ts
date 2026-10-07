@@ -8,7 +8,7 @@ import {
   PLACE_LIMITS,
   type PlaceCategoryId,
   placeCategoryIds,
-} from "@/app/(main)/dashboard/map/_components/map-data";
+} from "@/app/(main)/(dashboard)/map/_components/map-data";
 
 const coordinate = (label: string, min: number, max: number) =>
   z

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { defaultItemFlags, type Item, isItemCategory, itemFlagDefs } from "@/app/(main)/dashboard/items/_data/items";
+import { defaultItemFlags, type Item, isItemCategory, itemFlagDefs } from "@/app/(main)/(dashboard)/items/_data/items";
 
 const emptyToUndefined = (value: unknown) => (value === "" || value === null ? undefined : value);
 

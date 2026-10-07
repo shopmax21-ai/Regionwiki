@@ -2,22 +2,22 @@ import {
   type Business,
   businessTitle,
   formatPrice as formatBusinessPrice,
-} from "@/app/(main)/dashboard/business/_data/businesses";
-import { type Job, jobKinds, jobText } from "@/app/(main)/dashboard/jobs/_data/jobs";
-import type { MapPlace } from "@/app/(main)/dashboard/map/_components/map-data";
+} from "@/app/(main)/(dashboard)/business/_data/businesses";
+import { type Job, jobKinds, jobText } from "@/app/(main)/(dashboard)/jobs/_data/jobs";
+import type { MapPlace } from "@/app/(main)/(dashboard)/map/_components/map-data";
 import {
   formatPrice as formatRealtyPrice,
   type Realty,
   realtyTitle,
-} from "@/app/(main)/dashboard/real-estate/_data/realties";
-import { terms } from "@/app/(main)/dashboard/rp-terms/_data/terms";
-import { getSearchIndex } from "@/app/(main)/dashboard/rules/_components/rules-content";
-import { articleHref, formatRuleRef, ruleGroups } from "@/app/(main)/dashboard/rules/_components/rules-meta";
+} from "@/app/(main)/(dashboard)/real-estate/_data/realties";
+import { terms } from "@/app/(main)/(dashboard)/rp-terms/_data/terms";
+import { getSearchIndex } from "@/app/(main)/(dashboard)/rules/_components/rules-content";
+import { articleHref, formatRuleRef, ruleGroups } from "@/app/(main)/(dashboard)/rules/_components/rules-meta";
 import {
   formatPrice as formatVehiclePrice,
   type Vehicle,
   vehicleTitle,
-} from "@/app/(main)/dashboard/transport/_data/vehicles";
+} from "@/app/(main)/(dashboard)/transport/_data/vehicles";
 import { isPathVisible } from "@/lib/auth/protected-paths";
 import { getBusinessesVersion, listBusinesses } from "@/lib/businesses/store";
 import { getJobsVersion, listJobs } from "@/lib/jobs/store";
@@ -136,7 +136,7 @@ function buildJobs(jobs: Job[]): IndexEntry[] {
         kind: "job",
         title: job.title,
         subtitle: `${jobKinds[job.kind].title} · ${job.tagline}`,
-        href: `/dashboard/jobs/${job.slug}`,
+        href: `/jobs/${job.slug}`,
       },
       { body: jobText(job), weight: 20 },
     ),
@@ -151,7 +151,7 @@ function buildVehicles(vehicles: Vehicle[]): IndexEntry[] {
         kind: "vehicle",
         title: vehicleTitle(vehicle),
         subtitle: `${vehicle.category} · ${formatVehiclePrice(vehicle.price)}`,
-        href: `/dashboard/transport/${vehicle.code}`,
+        href: `/transport/${vehicle.code}`,
       },
       {
         body: [vehicle.code, vehicle.fuel, ...vehicle.sources, ...(vehicle.upgrades?.map((u) => u.name) ?? [])].join(
@@ -172,7 +172,7 @@ function buildBusinesses(businesses: Business[]): IndexEntry[] {
         kind: "business",
         title,
         subtitle: formatBusinessPrice(business.price),
-        href: `/dashboard/business?q=${encodeURIComponent(title)}`,
+        href: `/business?q=${encodeURIComponent(title)}`,
       },
       { weight: 5 },
     );
@@ -188,7 +188,7 @@ function buildRealties(realties: Realty[]): IndexEntry[] {
         kind: "realty",
         title,
         subtitle: `${formatRealtyPrice(realty.price)} · гаражей: ${realty.garage}${realty.residents ? ` · жильцов: ${realty.residents}` : ""}`,
-        href: `/dashboard/real-estate?q=${encodeURIComponent(String(realty.id))}`,
+        href: `/real-estate?q=${encodeURIComponent(String(realty.id))}`,
       },
       { extraKeys: realty.category, weight: 5 },
     );
@@ -203,7 +203,7 @@ function buildTerms(): IndexEntry[] {
         kind: "term",
         title: item.term,
         subtitle: item.title,
-        href: `/dashboard/rp-terms?q=${encodeURIComponent(item.term)}`,
+        href: `/rp-terms?q=${encodeURIComponent(item.term)}`,
       },
       { body: `${item.description} ${item.example ?? ""}`, weight: 10 },
     ),
@@ -213,7 +213,7 @@ function buildTerms(): IndexEntry[] {
 function buildPlaces(places: MapPlace[]): IndexEntry[] {
   return places.map((place) =>
     entry(
-      { id: `place-${place.id}`, kind: "place", title: place.name, subtitle: "Метка на карте", href: "/dashboard/map" },
+      { id: `place-${place.id}`, kind: "place", title: place.name, subtitle: "Метка на карте", href: "/map" },
       { body: place.description, weight: 12 },
     ),
   );

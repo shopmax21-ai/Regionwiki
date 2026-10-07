@@ -6,17 +6,17 @@ const SITE_URL = APP_CONFIG.siteUrl;
 
 /** Открытые страницы без входа. Закрытые разделы (PROTECTED_PATHS) и редиректы сюда не попадают. */
 const PUBLIC_ROUTES = [
-  "/dashboard/default",
-  "/dashboard/transport",
-  "/dashboard/items",
-  "/dashboard/real-estate",
-  "/dashboard/business",
-  "/dashboard/jobs",
-  "/dashboard/map",
-  "/dashboard/rules/general",
-  "/dashboard/rules/government",
-  "/dashboard/rules/changelog",
-  "/dashboard/rp-terms",
+  "/",
+  "/transport",
+  "/items",
+  "/real-estate",
+  "/business",
+  "/jobs",
+  "/map",
+  "/rules/general",
+  "/rules/government",
+  "/rules/changelog",
+  "/rp-terms",
 ] as const;
 
 export default function sitemap(): MetadataRoute.Sitemap {

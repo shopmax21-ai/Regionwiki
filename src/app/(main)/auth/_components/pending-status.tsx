@@ -35,7 +35,7 @@ export function PendingStatus({ initial, name }: { initial: Status; name: string
 
   useEffect(() => {
     if (status === "approved") {
-      const timer = setTimeout(() => window.location.assign("/dashboard"), 1200);
+      const timer = setTimeout(() => window.location.assign("/"), 1200);
       return () => clearTimeout(timer);
     }
   }, [status]);
