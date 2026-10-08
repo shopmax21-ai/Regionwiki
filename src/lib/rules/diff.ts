@@ -1,5 +1,6 @@
 import type { RuleChange } from "@/app/(main)/(dashboard)/rules/_components/rules-meta";
-import { parseRules, type RuleItem } from "@/app/(main)/(dashboard)/rules/_content/parse";
+
+import { parseRules, type RuleItem } from "./parse";
 
 /** Пункт в виде строки так же, как в ленте изменений: «Текст. | Наказание 1 / Наказание 2», затем списки и примечания. */
 export function serializeRule(rule: RuleItem): string {

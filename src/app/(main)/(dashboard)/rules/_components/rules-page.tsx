@@ -155,7 +155,9 @@ export function RulesPage({
       <section className="flex flex-col gap-3">
         {articles.length === 0 ? (
           <p className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-            Разделов с таким названием нет. Поиск выше ищет и по отдельным пунктам правил.
+            {cards.length === 0
+              ? "Тексты правил пока не загружены из базы данных. Проверьте подключение и запуск синхронизации."
+              : "Разделов с таким названием нет. Поиск выше ищет и по отдельным пунктам правил."}
           </p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">

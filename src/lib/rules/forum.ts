@@ -114,7 +114,7 @@ function previousBlockIsRule(out: string[]): boolean {
 }
 
 /**
- * Превращает HTML сообщения форума в текст в формате rules/_content/*.ts:
+ * Превращает HTML сообщения форума в текстовый формат, который понимает парсер правил:
  * жирная строка → «## Раздел», <br> → перенос строки, <li> → «- пункт», пустая строка завершает пункт.
  */
 export function htmlToRulesText(html: string): string {

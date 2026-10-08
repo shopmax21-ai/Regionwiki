@@ -11,11 +11,10 @@ import { getPool } from "@/lib/db/pool";
 
 /**
  * Собственная база правил REGION.HELP в Postgres. Сайт читает правила только отсюда:
- *  - rule_articles   — актуальный текст каждой статьи. Сначала заполняется встроенными текстами из _content,
- *                      дальше обновляется фоновой проверкой (см. sync.ts);
+ *  - rule_articles   — текст каждой статьи, загруженный фоновой проверкой (см. sync.ts);
  *  - rule_changes    — история изменений («было / стало» по пунктам);
  *  - rule_sync_runs  — журнал проверок (время, результат, ошибки): по нему считается статус актуальности.
- * Если DATABASE_URL не задан или база недоступна, сайт показывает встроенные тексты, а история берётся из rules-meta.ts.
+ * Если DATABASE_URL не задан или база недоступна, тексты правил не показываются.
  */
 
 const SCHEMA_LOCK_ID = 727_003;
@@ -35,7 +34,7 @@ function staleAfterMs(): number {
 
 export const hasRulesDatabase = () => Boolean(process.env.DATABASE_URL);
 
-/** builtin — текст пока взят из встроенных файлов и ещё не сверялся; sync — текст уже прошёл проверку. */
+/** builtin оставлен для обновления старых записей; новые статьи загружаются только из источника. */
 export type ArticleOrigin = "builtin" | "sync";
 
 export type StoredArticle = {
@@ -69,7 +68,7 @@ async function init(): Promise<void> {
       changed_at    timestamptz,
       created_at    timestamptz NOT NULL DEFAULT now()
     )`);
-    // Миграция: собственная база правил. Текст может быть встроенным (ещё не сверенным), поэтому checked_at необязателен.
+    // Старые записи могут ещё не пройти сверку, поэтому checked_at необязателен.
     await client.query("ALTER TABLE rule_articles ALTER COLUMN checked_at DROP NOT NULL");
     await client.query("ALTER TABLE rule_articles ADD COLUMN IF NOT EXISTS origin text NOT NULL DEFAULT 'sync'");
     await client.query("ALTER TABLE rule_articles ADD COLUMN IF NOT EXISTS last_error text");
@@ -142,7 +141,7 @@ export async function listStoredArticles(): Promise<Map<string, StoredArticle>> 
 let overridesCache: { at: number; value: Map<string, StoredArticle> } | null = null;
 let warned = false;
 
-/** Тексты из базы для показа на сайте. Любая ошибка → пустой набор, то есть сайт покажет встроенные тексты. */
+/** Тексты статей для показа на сайте загружаются только из базы. */
 export async function loadOverrides(): Promise<Map<string, StoredArticle>> {
   if (!hasRulesDatabase()) return new Map();
   if (overridesCache && Date.now() - overridesCache.at < OVERRIDES_TTL_MS) return overridesCache.value;
@@ -152,7 +151,7 @@ export async function loadOverrides(): Promise<Map<string, StoredArticle>> {
     warned = false;
     return value;
   } catch (error) {
-    if (!warned) console.error("[rules] База недоступна, показываю встроенные тексты правил", error);
+    if (!warned) console.error("[rules] База недоступна, тексты правил из неё не загружены", error);
     warned = true;
     return overridesCache?.value ?? new Map();
   }
@@ -238,28 +237,6 @@ export async function markArticleErrors(failures: { slug: string; message: strin
       failure.message.slice(0, 500),
     ]);
   }
-}
-
-export type BuiltInArticle = { slug: string; group: RuleGroup; rawText: string; hash: string };
-
-/**
- * Кладёт во встроенные тексты в базу всё, чего там ещё нет, — так база правил полна с первого запуска и не зависит
- * от внешнего источника. Уже сохранённые статьи не трогаются. Возвращает число добавленных.
- */
-export async function seedBuiltInArticles(items: BuiltInArticle[]): Promise<number> {
-  let added = 0;
-  for (const item of items) {
-    const rows = await query(
-      `INSERT INTO rule_articles (slug, grp, raw_text, content_hash, forum_url, updated_label, checked_at, origin)
-       VALUES ($1, $2, $3, $4, NULL, NULL, NULL, 'builtin')
-       ON CONFLICT (slug) DO NOTHING
-       RETURNING slug`,
-      [item.slug, item.group, item.rawText, item.hash],
-    );
-    added += rows.length;
-  }
-  if (added > 0) invalidateRulesCache();
-  return added;
 }
 
 export type RunRecord = {
@@ -372,11 +349,13 @@ const emptyStatus = (total: number): RulesStatus => ({
 
 /**
  * Общий статус актуальности правил: худший из статусов разделов плюс время последней фоновой проверки.
- * Без базы или при её сбое статус «неизвестно», а сайт показывает встроенные тексты.
+ * Без базы или при её сбое тексты не загружаются, а статус указывает на ошибку.
  */
 export async function getRulesStatus(): Promise<RulesStatus> {
   const metas = Object.values(ruleGroups).flatMap((group) => group.articles);
-  if (!hasRulesDatabase()) return emptyStatus(metas.length);
+  if (!hasRulesDatabase()) {
+    return { ...emptyStatus(metas.length), state: "error", ok: false, needsAttention: metas.length };
+  }
 
   try {
     const [stored, lastRun] = await Promise.all([listStoredArticles(), readLastRun()]);
@@ -386,14 +365,14 @@ export async function getRulesStatus(): Promise<RulesStatus> {
 
     const total = metas.length;
     let state: RuleFreshness;
-    if (total === 0 || counts.unknown === total) state = "unknown";
-    else if (counts.error > 0) state = "error";
+    if (!lastRun.ok || counts.error > 0) state = "error";
+    else if (total === 0 || counts.unknown === total) state = "unknown";
     else if (counts.stale + counts.unknown > 0) state = "stale";
     else state = "fresh";
 
     return { state, ...lastRun, total, fresh: counts.fresh, needsAttention: total - counts.fresh };
   } catch (error) {
     console.error("[rules] Не удалось определить статус актуальности правил", error);
-    return emptyStatus(metas.length);
+    return { ...emptyStatus(metas.length), state: "error", ok: false, needsAttention: metas.length };
   }
 }

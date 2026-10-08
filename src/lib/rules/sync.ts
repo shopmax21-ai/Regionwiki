@@ -1,17 +1,14 @@
-import { getStaticSource } from "@/app/(main)/(dashboard)/rules/_components/rules-content";
 import { type RuleGroup, ruleGroups } from "@/app/(main)/(dashboard)/rules/_components/rules-meta";
-import { countRules, parseRules } from "@/app/(main)/(dashboard)/rules/_content/parse";
 
 import { diffRules } from "./diff";
 import { discoverThreads, extractRulesText, fetchForumHtml } from "./forum";
+import { countRules, parseRules } from "./parse";
 import {
-  type BuiltInArticle,
   hasRulesDatabase,
   invalidateRulesCache,
   listStoredArticles,
   markArticleErrors,
   recordRun,
-  seedBuiltInArticles,
   touchArticles,
   withSyncLock,
   writeArticle,
@@ -53,22 +50,8 @@ function todayMoscow(): string {
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-/** Встроенные тексты всех разделов: из них собирается начальное содержимое базы. */
-function builtInArticles(): BuiltInArticle[] {
-  const items: BuiltInArticle[] = [];
-  for (const group of Object.keys(ruleGroups) as RuleGroup[]) {
-    for (const article of ruleGroups[group].articles) {
-      const rawText = getStaticSource(article.slug);
-      if (rawText !== undefined) items.push({ slug: article.slug, group, rawText, hash: sha256(rawText) });
-    }
-  }
-  return items;
-}
-
 async function synchronize(): Promise<Exclude<SyncResult, { skipped: string }>> {
   const startedAt = new Date();
-  // База правил самостоятельна: сначала убеждаемся, что в ней есть все разделы, и только потом сверяемся с источником.
-  await seedBuiltInArticles(builtInArticles());
   const stored = await listStoredArticles();
   const errors: string[] = [];
   const failures: { slug: string; message: string }[] = [];
@@ -104,7 +87,7 @@ async function synchronize(): Promise<Exclude<SyncResult, { skipped: string }>> 
         checked += 1;
 
         const previous = stored.get(article.slug);
-        const baseline = previous?.rawText ?? getStaticSource(article.slug) ?? "";
+        const baseline = previous?.rawText ?? "";
         const before = countRules(parseRules(baseline));
         const after = countRules(parseRules(text));
         if (before > 0 && after < before * MIN_RULES_RATIO) {

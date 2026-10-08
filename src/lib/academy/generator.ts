@@ -1,5 +1,5 @@
 import { getGroupArticles } from "@/app/(main)/(dashboard)/rules/_components/rules-content";
-import type { RuleItem } from "@/app/(main)/(dashboard)/rules/_content/parse";
+import type { RuleItem } from "@/lib/rules/parse";
 
 import type { QuestionDef, RulesConfig } from "./types";
 

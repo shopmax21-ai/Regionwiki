@@ -2,7 +2,7 @@
 
 import { cn } from "cn";
 
-import type { RuleFieldKind } from "../_content/parse";
+import type { RuleFieldKind } from "@/lib/rules/parse";
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

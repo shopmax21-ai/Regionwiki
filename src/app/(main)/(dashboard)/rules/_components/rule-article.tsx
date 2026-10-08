@@ -7,8 +7,8 @@ import Link from "next/link";
 import { ArrowLeft, Check, Copy, Search, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import type { RuleItem, RuleSectionData, SectionEntry } from "@/lib/rules/parse";
 
-import type { RuleItem, RuleSectionData, SectionEntry } from "../_content/parse";
 import { RuleStatusBlock } from "./rule-status";
 import { fieldStyles, Highlight, matchesQuery, PunishmentLegend, PunishmentList } from "./rule-ui";
 import { formatRuleRef, type RuleArticleView, ruleGroups } from "./rules-meta";
