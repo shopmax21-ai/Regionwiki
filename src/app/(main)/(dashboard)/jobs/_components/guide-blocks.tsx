@@ -8,10 +8,14 @@ import { GuideMap } from "./guide-map";
 
 /**
  * Знаки форматирования в тексте: **жирный**, *курсив*, __подчёркнутый__, ~~зачёркнутый~~, ==выделение==,
- * `команда` и маршрут [[Телефон > Whaash]]. Больше никакой разметки нет, чтобы чужой текст не мог сломать страницу.
+ * `команда`, маршрут [[Настройки > Защита аккаунта]] (разделитель >, → или ->) и клавиши {{F10}}, {{Ctrl+C}}.
+ * Больше никакой разметки нет, чтобы чужой текст не мог сломать страницу.
  */
 const INLINE =
-  /\[\[([^\]\n]+?)\]\]|`([^`\n]+?)`|\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|==(.+?)==|\*([^*\s](?:[^*]*[^*\s])?)\*/g;
+  /\[\[([^\]\n]+?)\]\]|\{\{([^}\n]+?)\}\}|`([^`\n]+?)`|\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|==(.+?)==|\*([^*\s](?:[^*]*[^*\s])?)\*/g;
+
+/** Шаги маршрута разделяются знаками >, → или ->, чтобы можно было вставить путь как есть. */
+const ROUTE_SEPARATOR = /\s*(?:->|→|>)\s*/;
 
 function renderInline(text: string, depth = 0): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
@@ -25,19 +29,39 @@ function renderInline(text: string, depth = 0): React.ReactNode[] {
     if (index > last) push(text.slice(last, index));
     last = index + match[0].length;
 
-    const [, route, code, bold, underline, strike, highlight, italic] = match;
+    const [, route, keys, code, bold, underline, strike, highlight, italic] = match;
     if (route !== undefined) {
       const steps = route
-        .split(">")
+        .split(ROUTE_SEPARATOR)
         .map((step) => step.trim())
         .filter(Boolean);
       push(
-        <span className="inline-flex flex-wrap items-center gap-0.5 align-middle">
+        <span className="inline-flex max-w-full flex-wrap items-center gap-1 align-middle">
           {steps.map((step, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: шаги маршрута не переставляются
-            <span key={i} className="inline-flex items-center gap-0.5">
-              {i > 0 && <ChevronRight className="size-3 text-muted-foreground" aria-hidden="true" />}
-              <span className="rounded-md border bg-muted px-1.5 py-0.5 font-medium text-xs">{step}</span>
+            <span key={i} className="inline-flex max-w-full items-center gap-1">
+              {i > 0 && <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />}
+              <span className="max-w-full break-words rounded-md border bg-muted px-2 py-0.5 font-medium text-xs leading-5">
+                {step}
+              </span>
+            </span>
+          ))}
+        </span>,
+      );
+    } else if (keys !== undefined) {
+      const combo = keys
+        .split("+")
+        .map((key) => key.trim())
+        .filter(Boolean);
+      push(
+        <span className="inline-flex flex-wrap items-center gap-1 align-middle">
+          {combo.map((key, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: клавиши сочетания не переставляются
+            <span key={i} className="inline-flex items-center gap-1">
+              {i > 0 && <span className="text-muted-foreground text-xs">+</span>}
+              <kbd className="inline-flex min-w-7 items-center justify-center rounded-md border border-b-2 bg-muted px-2 py-0.5 font-medium font-sans text-foreground text-xs leading-5 shadow-xs">
+                {key}
+              </kbd>
             </span>
           ))}
         </span>,

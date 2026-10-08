@@ -8,6 +8,7 @@ import {
   Code,
   Highlighter,
   Italic,
+  Keyboard,
   List,
   ListOrdered,
   type LucideIcon,
@@ -234,6 +235,32 @@ export function insertRoute(element: HTMLTextAreaElement, onChange: (value: stri
   });
 }
 
+/**
+ * Оформляет выделенный текст как клавишу или сочетание: «Ctrl+C» превращается в {{Ctrl+C}}.
+ * Без выделения вставляет заготовку с выделенным примером.
+ */
+export function insertKey(element: HTMLTextAreaElement, onChange: (value: string) => void) {
+  const { value, selectionStart, selectionEnd } = element;
+  const selected = value.slice(selectionStart, selectionEnd).trim();
+
+  const wrapped = /^\{\{([\s\S]+)\}\}$/.exec(selected);
+  if (wrapped?.[1]) {
+    onChange(value.slice(0, selectionStart) + wrapped[1] + value.slice(selectionEnd));
+    requestAnimationFrame(() => {
+      element.focus();
+      element.setSelectionRange(selectionStart, selectionStart + wrapped[1].length);
+    });
+    return;
+  }
+
+  const body = selected.replace(/\n+/g, " ") || "F10";
+  onChange(`${value.slice(0, selectionStart)}{{${body}}}${value.slice(selectionEnd)}`);
+  requestAnimationFrame(() => {
+    element.focus();
+    element.setSelectionRange(selectionStart + 2, selectionStart + 2 + body.length);
+  });
+}
+
 /** Ctrl/Cmd + B, I, U работают и на русской раскладке (проверяем физическую клавишу). */
 export function handleFormatShortcut(
   event: React.KeyboardEvent<HTMLTextAreaElement>,
@@ -266,7 +293,7 @@ export function FormatToolbar({ getTextarea, onChange, perLine, className, block
     <div
       role="toolbar"
       aria-label="Форматирование текста"
-      className={cn("flex w-fit items-center gap-0.5 rounded-md border bg-background p-0.5 shadow-xs", className)}
+      className={cn("flex w-fit max-w-full items-center gap-0.5 overflow-x-auto rounded-md border bg-background p-0.5 shadow-xs", className)}
     >
       {FORMATS.map(({ id, delimiter, label, key, icon: Icon }) => (
         <Button
@@ -320,7 +347,7 @@ export function FormatToolbar({ getTextarea, onChange, perLine, className, block
             type="button"
             variant="ghost"
             size="icon-xs"
-            title="Маршрут по меню: Телефон > Whaash"
+            title="Маршрут по меню: Настройки > Защита аккаунта (каждый пункт в своём блоке)"
             aria-label="Маршрут по меню"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => {
@@ -329,6 +356,20 @@ export function FormatToolbar({ getTextarea, onChange, perLine, className, block
             }}
           >
             <Route />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            title="Клавиша: {{F10}} или сочетание {{Ctrl+C}}"
+            aria-label="Клавиша"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              const element = getTextarea();
+              if (element) insertKey(element, onChange);
+            }}
+          >
+            <Keyboard />
           </Button>
         </>
       )}

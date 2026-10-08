@@ -53,6 +53,8 @@ function InlineField({
 }: InlineFieldProps) {
   const [editing, setEditing] = useState(focusToken > 0);
   const area = useRef<HTMLTextAreaElement>(null);
+  /** Касание панели на телефоне уводит фокус из поля: без этой отметки поле закрывается раньше, чем сработает кнопка */
+  const toolbarTouched = useRef(false);
 
   useEffect(() => {
     if (focusToken > 0) setEditing(true);
@@ -108,12 +110,17 @@ function InlineField({
   return (
     <div className="relative">
       {rich && (
-        <FormatToolbar
-          getTextarea={() => area.current}
-          onChange={onChange}
-          blockTools={blocks}
-          className="absolute -top-9 left-0 z-30"
-        />
+        <div
+          className="absolute -top-9 left-0 z-30 max-w-full"
+          onPointerDownCapture={() => {
+            toolbarTouched.current = true;
+            setTimeout(() => {
+              toolbarTouched.current = false;
+            }, 400);
+          }}
+        >
+          <FormatToolbar getTextarea={() => area.current} onChange={onChange} blockTools={blocks} />
+        </div>
       )}
       <textarea
         ref={area}
@@ -123,7 +130,14 @@ function InlineField({
         aria-label={label}
         placeholder={placeholder}
         onChange={(event) => onChange(singleLine ? event.target.value.replace(/\n/g, " ") : event.target.value)}
-        onBlur={() => setEditing(false)}
+        onBlur={() => {
+          if (toolbarTouched.current) {
+            toolbarTouched.current = false;
+            requestAnimationFrame(() => area.current?.focus());
+            return;
+          }
+          setEditing(false);
+        }}
         onKeyDown={(event) => {
           if (rich && handleFormatShortcut(event, onChange)) return;
           if (event.key === "Escape") {
