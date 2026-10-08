@@ -6,11 +6,10 @@ import Link from "next/link";
 
 import { ArrowLeft, Check, Copy, Search, X } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 
 import type { RuleItem, RuleSectionData, SectionEntry } from "../_content/parse";
-import { RuleStatusBadge } from "./rule-status";
+import { RuleStatusBlock } from "./rule-status";
 import { fieldStyles, Highlight, matchesQuery, PunishmentLegend, PunishmentList } from "./rule-ui";
 import { formatRuleRef, type RuleArticleView, ruleGroups } from "./rules-meta";
 
@@ -186,52 +185,56 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
   const isFiltering = query.trim().length > 0;
 
   return (
-    <main className="mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-6 pb-10">
-      <section className="rounded-3xl border bg-card px-4 py-6 shadow-sm sm:px-6 sm:py-7 md:px-10">
+    <main className="flex w-full min-w-0 flex-col gap-6 pb-10">
+      <section className="relative px-2 pt-12 pb-2 sm:pt-6 md:px-6 md:pt-8">
+        <RuleStatusBlock
+          state={article.status.state}
+          lastChecked={article.status.checkedAt}
+          showTime={false}
+          className="absolute top-0 right-0 sm:top-1 md:top-2"
+        />
         <Link
           href={`/rules/${article.group}`}
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+          className="absolute top-14 left-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground sm:top-7 md:top-9 md:left-6"
         >
           <ArrowLeft className="size-4" /> {groupMeta.title}
         </Link>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Badge variant="secondary" className="rounded-full px-3 py-1">
-            Обновлено {article.updatedAt}
-          </Badge>
-          <Badge variant="outline" className="rounded-full px-3 py-1">
-            {article.ruleCount} пунктов
-          </Badge>
-          <RuleStatusBadge state={article.status.state} className="px-3 py-1" />
-          {article.status.checkedAt && (
-            <span className="text-muted-foreground text-xs">Проверено {article.status.checkedAt}</span>
-          )}
-        </div>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight">{article.title}</h1>
-        <p className="mt-2 max-w-2xl text-muted-foreground">{article.description}</p>
-
-        <div className="relative mt-6 max-w-xl">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            ref={inputRef}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Номер пункта или слова из правила, например 4.9 или DM (Ctrl + F)"
-            className="pl-9 pr-9"
-            aria-label="Поиск по пунктам раздела"
-          />
-          {isFiltering && (
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              aria-label="Очистить поиск"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <X className="size-4" />
-            </button>
-          )}
-        </div>
-        <div className="mt-4">
-          <PunishmentLegend />
+        <div className="mx-auto flex max-w-2xl flex-col items-center pt-8 text-center sm:pt-0">
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{article.title}</h1>
+          <p className="mt-3 max-w-xl text-muted-foreground">{article.description}</p>
+          <div className="relative mt-7 w-full">
+            <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              ref={inputRef}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Номер пункта или слова из правила, например 4.9 или DM"
+              className="h-11 rounded-xl pl-10 pr-24"
+              aria-label="Поиск по пунктам раздела"
+            />
+            <div className="absolute right-2.5 top-1/2 flex -translate-y-1/2 items-center gap-1">
+              {isFiltering ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery("");
+                    inputRef.current?.focus();
+                  }}
+                  aria-label="Очистить поиск"
+                  className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <X className="size-4" />
+                </button>
+              ) : (
+                <kbd className="pointer-events-none hidden rounded-md border bg-muted/50 px-1.5 py-0.5 font-sans text-[11px] text-muted-foreground sm:inline-block">
+                  Ctrl + F
+                </kbd>
+              )}
+            </div>
+          </div>
+          <div className="mt-4">
+            <PunishmentLegend />
+          </div>
         </div>
       </section>
 

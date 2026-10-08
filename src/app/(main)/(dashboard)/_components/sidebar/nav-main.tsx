@@ -69,6 +69,10 @@ interface NavCollapsibleItemProps {
   readonly isSubItemActive: (url: string) => boolean;
 }
 
+/** Иконки неактивных пунктов сайдбара приглушены до 25%; при наведении, фокусе и у активного пункта — полная яркость. */
+const inactiveIconClass =
+  "[&>svg:first-child]:opacity-25 [&>svg:first-child]:transition-opacity hover:[&>svg:first-child]:opacity-100 focus-visible:[&>svg:first-child]:opacity-100 data-[active=true]:[&>svg:first-child]:opacity-100";
+
 function CollapsedIconFallback({ title }: { title: string }) {
   return (
     <span className="flex size-4 shrink-0 items-center justify-center rounded-xs font-medium text-[10px] outline">
@@ -153,7 +157,13 @@ function NavItem({ item, isItemActive, isSubItemActive, isSubmenuOpen }: NavItem
 function NavLinkItem({ item, isActive, showIconFallback }: NavLinkItemProps) {
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton asChild aria-disabled={item.disabled} tooltip={item.title} isActive={isActive}>
+      <SidebarMenuButton
+        asChild
+        aria-disabled={item.disabled}
+        tooltip={item.title}
+        isActive={isActive}
+        className={inactiveIconClass}
+      >
         <Link
           prefetch={false}
           href={item.url}
@@ -190,7 +200,12 @@ function NavDropdownItem({ item, isActive, isSubItemActive }: NavDropdownItemPro
     <SidebarMenuItem>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <SidebarMenuButton tooltip={item.title} isActive={isActive} disabled={item.disabled}>
+          <SidebarMenuButton
+            tooltip={item.title}
+            isActive={isActive}
+            disabled={item.disabled}
+            className={inactiveIconClass}
+          >
             {Icon ? <Icon /> : <CollapsedIconFallback title={item.title} />}
             <span>{item.title}</span>
           </SidebarMenuButton>
@@ -231,7 +246,12 @@ function NavCollapsibleItem({ item, isActive, defaultOpen, isSubItemActive }: Na
     <Collapsible asChild defaultOpen={defaultOpen} className="group/collapsible">
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
-          <SidebarMenuButton tooltip={item.title} isActive={isActive} disabled={item.disabled}>
+          <SidebarMenuButton
+            tooltip={item.title}
+            isActive={isActive}
+            disabled={item.disabled}
+            className={inactiveIconClass}
+          >
             {Icon && <Icon />}
             <span>{item.title}</span>
             <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -250,6 +270,7 @@ function NavCollapsibleItem({ item, isActive, defaultOpen, isSubItemActive }: Na
                     asChild
                     aria-disabled={subItem.disabled}
                     isActive={isSubItemActive(subItem.url)}
+                    className={inactiveIconClass}
                   >
                     <Link
                       prefetch={false}

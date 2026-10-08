@@ -66,11 +66,14 @@ const blockIcon: Record<RuleFreshness, LucideIcon> = {
 export function RuleStatusBlock({
   state,
   lastChecked,
+  showTime = true,
   className,
 }: {
   state: RuleFreshness;
   /** «04.10.2026, 11:00 МСК» или null, если проверка ещё не выполнялась */
   lastChecked: string | null;
+  /** false — показывать только статус, без времени проверки */
+  showTime?: boolean;
   className?: string;
 }) {
   const Icon = blockIcon[state];
@@ -90,9 +93,11 @@ export function RuleStatusBlock({
         aria-hidden="true"
       />
       <span className="relative font-semibold text-sm leading-tight">{meta.label}</span>
-      <span className="relative text-xs leading-tight opacity-80">
-        {lastChecked ? `Проверено ${lastChecked}` : "Проверка ещё не выполнялась"}
-      </span>
+      {showTime && (
+        <span className="relative text-xs leading-tight opacity-80">
+          {lastChecked ? `Проверено ${lastChecked}` : "Проверка ещё не выполнялась"}
+        </span>
+      )}
     </div>
   );
 }
