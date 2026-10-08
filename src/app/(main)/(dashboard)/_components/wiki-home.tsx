@@ -5,7 +5,6 @@ import { listRealties } from "@/lib/realties/store";
 import { getRulesStatus } from "@/lib/rules/store";
 import { listVehicles } from "@/lib/vehicles/store";
 
-import { getGroupCards } from "../rules/_components/rules-content";
 import { articleHref, ruleFreshnessMeta, ruleGroups } from "../rules/_components/rules-meta";
 import WikiPage, { type RecentArticle } from "./wiki-page";
 
@@ -23,23 +22,7 @@ export async function WikiHome() {
     listBusinesses(),
     listRealties(),
   ]);
-  const [general, government, status] = await Promise.all([
-    getGroupCards("general"),
-    getGroupCards("government"),
-    getRulesStatus(),
-  ]);
 
-  const recent: RecentArticle[] = [...general, ...government]
-    .sort((a, b) => dateValue(b.updatedAt) - dateValue(a.updatedAt))
-    .slice(0, 5)
-    .map((card) => ({
-      title: card.title,
-      href: articleHref(card.group, card.slug),
-      tag: card.tag,
-      group: ruleGroups[card.group].title,
-      updatedAt: card.updatedAt,
-      ruleCount: card.ruleCount,
-    }));
 
   return (
     <WikiPage
