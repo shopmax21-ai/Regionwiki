@@ -5,9 +5,11 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
-  // Проверка правил по умолчанию идёт фоновой задачей по cron (GET /api/rules/sync, см. scripts/rules-sync-cron.mjs).
-  // Встроенное расписание внутри сайта — запасной вариант без внешнего cron: включается RULES_SYNC=internal.
-  if (process.env.DATABASE_URL && process.env.RULES_SYNC === "internal") {
+  // Правила обновляются автоматически раз в 3 часа встроенным расписанием (при нескольких экземплярах сайта
+  // параллельный запуск пропускается блокировкой в базе). Если проверку запускает внешний cron
+  // (GET /api/rules/sync, см. scripts/rules-sync-cron.mjs), встроенное расписание отключается: RULES_SYNC=external или off.
+  const rulesSync = process.env.RULES_SYNC;
+  if (process.env.DATABASE_URL && rulesSync !== "external" && rulesSync !== "off") {
     const { startRulesScheduler } = await import("@/lib/rules/sync");
     startRulesScheduler();
   }

@@ -1,6 +1,10 @@
+"use client";
+
 import { cn } from "cn";
 import { CircleAlert, CircleCheck, CircleHelp, Clock3, type LucideIcon, ShieldCheck } from "lucide-react";
 
+import { RuleRefreshButton } from "./rule-refresh-button";
+import { useCanRefreshRules } from "./rules-admin-context";
 import { type RuleFreshness, ruleFreshnessMeta } from "./rules-meta";
 
 const stateStyle: Record<RuleFreshness, { icon: LucideIcon; className: string }> = {
@@ -78,13 +82,14 @@ export function RuleStatusBlock({
 }) {
   const Icon = blockIcon[state];
   const meta = ruleFreshnessMeta[state];
-  return (
+  const canRefresh = useCanRefreshRules();
+  const block = (
     <div
       title={meta.hint}
       className={cn(
         "relative flex shrink-0 select-none flex-col justify-center gap-0.5 overflow-hidden rounded-xl border py-2 pr-14 pl-4 opacity-90",
         blockStyle[state],
-        className,
+        !canRefresh && className,
       )}
     >
       <Icon
@@ -98,6 +103,15 @@ export function RuleStatusBlock({
           {lastChecked ? `Проверено ${lastChecked}` : "Проверка ещё не выполнялась"}
         </span>
       )}
+    </div>
+  );
+
+  if (!canRefresh) return block;
+  // Для Гл.Администратора кнопка обновления стоит слева от блока статуса
+  return (
+    <div className={cn("flex items-stretch gap-2", className)}>
+      <RuleRefreshButton />
+      {block}
     </div>
   );
 }
