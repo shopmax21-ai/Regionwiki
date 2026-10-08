@@ -1,15 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import Link from "next/link";
 
-import { ArrowUpRight, Clock3, FileText, Search, X } from "lucide-react";
+import { ArrowUpRight, Search, X } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 import { ChangelogFeed } from "./changelog-feed";
+import { getRuleIcon } from "./rule-icons";
 import { RuleStatusBadge, RuleStatusBlock } from "./rule-status";
 import { Highlight, matchesQuery, PunishmentList } from "./rule-ui";
 import {
@@ -39,6 +40,20 @@ export function RulesPage({
   const data = ruleGroups[group];
   const [query, setQuery] = useState("");
   const isSearching = query.trim().length > 0;
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Ctrl+F (⌘F на Mac) вместо поиска браузера фокусирует поиск по правилам
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.code === "KeyF") {
+        event.preventDefault();
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const articles = useMemo(
     () => cards.filter((card) => matchesQuery(`${card.title} ${card.description}`, query)),
@@ -57,24 +72,49 @@ export function RulesPage({
 
   return (
     <main className="mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-6 pb-10">
-      <section className="rounded-3xl border bg-card px-4 py-6 shadow-sm sm:px-6 sm:py-8 md:px-10">
-        <div className="flex min-w-0 flex-col gap-5 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight">{data.title}</h1>
-            <p className="mt-3 max-w-2xl text-muted-foreground">{data.description}</p>
+      <section className="relative px-2 pt-12 pb-2 sm:pt-6 md:px-6 md:pt-8">
+        <RuleStatusBlock
+          state={status.state}
+          lastChecked={status.lastChecked}
+          className="absolute top-0 right-0 sm:top-1 md:top-2"
+        />
+        <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{data.title}</h1>
+          <p className="mt-3 max-w-xl text-muted-foreground">{data.description}</p>
+          <div className="relative mt-7 w-full">
+            <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              ref={inputRef}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Найти пункт: например DM, 4.9, Demorgan, перекрытие"
+              className="h-11 rounded-xl pl-10 pr-24"
+              aria-label="Поиск по всем пунктам правил"
+            />
+            <div className="absolute right-2.5 top-1/2 flex -translate-y-1/2 items-center gap-1">
+              {isSearching ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery("");
+                    inputRef.current?.focus();
+                  }}
+                  aria-label="Очистить поиск"
+                  className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <X className="size-4" />
+                </button>
+              ) : (
+                <kbd className="pointer-events-none hidden rounded-md border bg-muted/50 px-1.5 py-0.5 font-sans text-[11px] text-muted-foreground sm:inline-block">
+                  Ctrl + F
+                </kbd>
+              )}
+            </div>
           </div>
-          <RuleStatusBlock state={status.state} lastChecked={status.lastChecked} />
         </div>
-        <div className="relative mt-7 max-w-xl">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Найти пункт: например DM, 4.9, Demorgan, перекрытие"
-            className="pl-9 pr-9"
-            aria-label="Поиск по всем пунктам правил"
-          />
-          {isSearching && (
+      </section>
+
+      {isSearching && (
             <button
               type="button"
               onClick={() => setQuery("")}
@@ -125,60 +165,43 @@ export function RulesPage({
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <CardTitle>Разделы правил</CardTitle>
-              <CardDescription className="mt-1">{articles.length} разделов</CardDescription>
-            </div>
-            <RuleStatusBadge state={status.state} />
-          </div>
-        </CardHeader>
-        <CardContent className="grid gap-2 md:grid-cols-2">
-          {articles.map((article, index) => (
-            <Link
-              key={article.slug}
-              href={articleHref(article.group, article.slug)}
-              className="group flex items-start gap-3 rounded-xl border p-3 transition-colors hover:border-primary/50 hover:bg-muted/40"
-            >
-              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-sm font-medium text-primary">
-                {index + 1}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium">{article.title}</span>
-                <span className="mt-1 block text-xs leading-5 text-muted-foreground">{article.description}</span>
-                <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                  <span>
+      <section className="flex flex-col gap-3">
+        <p className="px-1 text-sm text-muted-foreground">
+          {articles.length} {articles.length === 1 ? "раздел" : "разделов"}
+        </p>
+        {articles.length === 0 ? (
+          <p className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+            Разделов с таким названием нет. Поиск выше ищет и по отдельным пунктам правил.
+          </p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {articles.map((article) => {
+              const Icon = getRuleIcon(article.slug);
+              return (
+                <Link
+                  key={article.slug}
+                  href={articleHref(article.group, article.slug)}
+                  className="group relative flex min-w-0 flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm transition-colors hover:border-primary/50"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                      <Icon className="size-5" aria-hidden="true" />
+                    </span>
+                    <ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="font-medium leading-snug">{article.title}</h2>
+                    <p className="mt-1.5 line-clamp-3 text-sm leading-5 text-muted-foreground">{article.description}</p>
+                  </div>
+                  <p className="border-t pt-3 text-xs text-muted-foreground">
                     {article.ruleCount} пунктов · обновлено {article.updatedAt}
-                  </span>
-                  {article.status.state !== "fresh" && <RuleStatusBadge state={article.status.state} />}
-                </span>
-              </span>
-              <ArrowUpRight className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-            </Link>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Актуальность правил</CardTitle>
-          <CardDescription>Разделы сверяются автоматически в фоновом режиме</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
-          <span className="flex items-center gap-2">
-            <FileText className="size-4" /> Последняя проверка: {status.lastChecked ?? "ещё не выполнялась"}
-            {status.lastChecked && !status.ok ? " (были ошибки)" : ""}
-          </span>
-          <span className="flex items-center gap-2">
-            <Clock3 className="size-4" />
-            {status.total > 0
-              ? `Актуально ${status.fresh} из ${status.total} разделов${status.needsAttention > 0 ? `, требуют проверки: ${status.needsAttention}` : ""}`
-              : "Разделов нет"}
-          </span>
-        </CardContent>
-      </Card>
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </main>
   );
 }

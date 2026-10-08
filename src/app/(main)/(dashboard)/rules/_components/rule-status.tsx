@@ -58,9 +58,10 @@ const blockIcon: Record<RuleFreshness, LucideIcon> = {
 };
 
 /**
- * Блок статуса актуальности в шапке раздела правил: полупрозрачный цветной фон, обводка тем же цветом
- * и крупная полупрозрачная иконка слева по центру блока, наполовину уходящая за его край.
- * У «Актуально» цвет зелёный.
+ * Блок статуса актуальности в правом верхнем углу раздела правил — «водяной знак»:
+ * лёгкий полупрозрачный цветной фон, крупная блёклая иконка справа, уходящая за край блока.
+ * Показывает любое состояние (актуально, давно не проверялось, ошибка, ещё не проверялось)
+ * и время последней проверки — других мест со статусом на странице нет.
  */
 export function RuleStatusBlock({
   state,
@@ -78,13 +79,13 @@ export function RuleStatusBlock({
     <div
       title={meta.hint}
       className={cn(
-        "relative flex shrink-0 flex-col justify-center gap-0.5 overflow-hidden rounded-xl border py-2.5 pr-5 pl-12",
+        "relative flex shrink-0 select-none flex-col justify-center gap-0.5 overflow-hidden rounded-xl border py-2 pr-14 pl-4 opacity-90",
         blockStyle[state],
         className,
       )}
     >
       <Icon
-        className="pointer-events-none absolute top-1/2 -left-7 size-14 -translate-y-1/2 opacity-30"
+        className="pointer-events-none absolute top-1/2 -right-4 size-16 -translate-y-1/2 -rotate-12 opacity-25"
         strokeWidth={1.5}
         aria-hidden="true"
       />

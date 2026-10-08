@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import Link from "next/link";
 
@@ -159,6 +159,20 @@ function ruleCountOf(section: RuleSectionData): number {
 export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
   const [query, setQuery] = useState("");
   const groupMeta = ruleGroups[article.group];
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Ctrl+F (⌘F на Mac) вместо поиска браузера фокусирует поиск по разделу
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.code === "KeyF") {
+        event.preventDefault();
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const sections = useMemo(
     () =>
@@ -198,9 +212,10 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
         <div className="relative mt-6 max-w-xl">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            ref={inputRef}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Номер пункта или слова из правила, например 4.9 или DM"
+            placeholder="Номер пункта или слова из правила, например 4.9 или DM (Ctrl + F)"
             className="pl-9 pr-9"
             aria-label="Поиск по пунктам раздела"
           />
