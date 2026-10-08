@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -34,6 +36,8 @@ import type {
   NavMainLinkItem,
   NavMainParentItem,
 } from "@/navigation/sidebar/sidebar-items";
+
+const COLLAPSED_GROUPS_KEY = "region:sidebar:collapsed-groups";
 
 interface NavMainProps {
   readonly items: readonly NavGroup[];
@@ -87,6 +91,33 @@ function hasSubItems(item: NavMainItem): item is NavMainParentItem {
 
 export function NavMain({ items }: NavMainProps) {
   const path = usePathname();
+  const { state, isMobile } = useSidebar();
+  const isIconMode = state === "collapsed" && !isMobile;
+  const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<number>>(() => new Set());
+
+  // Какие категории свёрнуты, запоминается в браузере. Читаем после монтирования, чтобы не ломать гидратацию.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(COLLAPSED_GROUPS_KEY);
+      const ids: unknown = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(ids)) {
+        setCollapsedGroups(new Set(ids.filter((id): id is number => typeof id === "number")));
+      }
+    } catch {
+      // хранилище недоступно — остаёмся с развёрнутыми категориями
+    }
+  }, []);
+
+  const toggleGroup = (id: number) => {
+    const next = new Set(collapsedGroups);
+    if (!next.delete(id)) next.add(id);
+    setCollapsedGroups(next);
+    try {
+      window.localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify([...next]));
+    } catch {
+      // не критично: состояние просто не сохранится
+    }
+  };
 
   const isItemActive = (item: NavMainItem) => {
     if (hasSubItems(item)) {
@@ -106,28 +137,57 @@ export function NavMain({ items }: NavMainProps) {
 
   return (
     <>
-      {items.map((group) => (
-        <SidebarGroup key={group.id}>
-          {group.label && (
-            <SidebarGroupLabel className="group-data-[collapsible=icon]:pointer-events-none">
-              {group.label}
-            </SidebarGroupLabel>
-          )}
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {group.items.map((item) => (
-                <NavItem
-                  key={item.id}
-                  item={item}
-                  isItemActive={isItemActive}
-                  isSubItemActive={isSubItemActive}
-                  isSubmenuOpen={isSubmenuOpen}
+      {items.map((group, index) => {
+        // В свёрнутом (иконочном) сайдбаре категории не прячутся: показываются все пункты, между категориями — разделитель.
+        const isOpen = !group.label || isIconMode || !collapsedGroups.has(group.id);
+
+        return (
+          <Collapsible
+            key={group.id}
+            asChild
+            open={isOpen}
+            onOpenChange={() => group.label && toggleGroup(group.id)}
+            className="group/nav-group"
+          >
+            <SidebarGroup>
+              {index > 0 && (
+                <div
+                  aria-hidden="true"
+                  className="mx-auto mb-1 hidden h-px w-5 bg-sidebar-border group-data-[collapsible=icon]:block"
                 />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      ))}
+              )}
+              {group.label && (
+                <CollapsibleTrigger asChild>
+                  <SidebarGroupLabel asChild className="group-data-[collapsible=icon]:pointer-events-none">
+                    <button
+                      type="button"
+                      className="w-full cursor-pointer justify-between text-left hover:text-sidebar-foreground"
+                    >
+                      <span className="truncate">{group.label}</span>
+                      <ChevronRight className="transition-transform duration-200 group-data-[state=open]/nav-group:rotate-90" />
+                    </button>
+                  </SidebarGroupLabel>
+                </CollapsibleTrigger>
+              )}
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {group.items.map((item) => (
+                      <NavItem
+                        key={item.id}
+                        item={item}
+                        isItemActive={isItemActive}
+                        isSubItemActive={isSubItemActive}
+                        isSubmenuOpen={isSubmenuOpen}
+                      />
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
+        );
+      })}
     </>
   );
 }

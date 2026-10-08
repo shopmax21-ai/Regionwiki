@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 
 import { ChangelogFeed } from "./changelog-feed";
 import { getRuleIcon } from "./rule-icons";
-import { RuleStatusBadge, RuleStatusBlock } from "./rule-status";
+import { RuleStatusBlock } from "./rule-status";
 import { Highlight, matchesQuery, PunishmentList } from "./rule-ui";
 import {
   articleHref,
@@ -168,10 +168,10 @@ export function RulesPage({
                 <Link
                   key={article.slug}
                   href={articleHref(article.group, article.slug)}
-                  className="group relative flex min-w-0 flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm transition-colors hover:border-primary/50"
+                  className="group relative flex min-w-0 flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm transition-colors hover:bg-muted/40"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                       <Icon className="size-5" aria-hidden="true" />
                     </span>
                     <ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
@@ -195,12 +195,16 @@ export function RulesPage({
 
 export function ChangelogPage({ entries, status }: { entries: ChangelogEntry[]; status: RulesStatus }) {
   return (
-    <main className="mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-6 pb-10">
-      <section className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl font-semibold tracking-tight">История изменений</h1>
-        <div className="flex items-center gap-2">
-          <RuleStatusBadge state={status.state} />
-          {status.lastChecked && <span className="text-muted-foreground text-xs">Проверено {status.lastChecked}</span>}
+    <main className="flex w-full min-w-0 flex-col gap-6 pb-10">
+      <section className="relative px-2 pt-12 pb-2 sm:pt-6 md:px-6 md:pt-8">
+        <RuleStatusBlock
+          state={status.state}
+          lastChecked={status.lastChecked}
+          className="absolute top-0 right-0 sm:top-1 md:top-2"
+        />
+        <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">История изменений</h1>
+          <p className="mt-3 max-w-xl text-muted-foreground">Что менялось в правилах проекта и когда.</p>
         </div>
       </section>
       <ChangelogFeed entries={entries} />

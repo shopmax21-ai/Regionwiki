@@ -78,7 +78,17 @@ async function copyText(value: string): Promise<boolean> {
   }
 }
 
-function RuleCard({ rule, tag, query }: { rule: RuleItem; tag?: string; query: string }) {
+function RuleCard({
+  rule,
+  tag,
+  query,
+  highlighted,
+}: {
+  rule: RuleItem;
+  tag?: string;
+  query: string;
+  highlighted: boolean;
+}) {
   const [copied, setCopied] = useState(false);
   const reference = formatRuleRef(tag, rule.number);
 
@@ -93,7 +103,9 @@ function RuleCard({ rule, tag, query }: { rule: RuleItem; tag?: string; query: s
   return (
     <article
       id={rule.anchor}
-      className="group/rule min-w-0 scroll-mt-24 break-words rounded-xl border bg-card p-3 sm:p-4 shadow-xs transition-colors target:border-primary target:ring-2 target:ring-primary/30 md:p-5"
+      className={`group/rule min-w-0 scroll-mt-24 break-words rounded-xl border bg-card p-3 sm:p-4 shadow-xs transition-[background-color,border-color,box-shadow] duration-700 md:p-5 ${
+        highlighted ? "border-primary bg-primary/5 ring-2 ring-primary/40" : ""
+      }`}
     >
       <div className="flex flex-col items-start gap-2 sm:flex-row sm:gap-3">
         <button
@@ -159,6 +171,32 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
   const [query, setQuery] = useState("");
   const groupMeta = ruleGroups[article.group];
   const inputRef = useRef<HTMLInputElement>(null);
+  const [highlighted, setHighlighted] = useState<string | null>(null);
+
+  // Переход по ссылке вида #rule-1-3 (из истории изменений или поиска) подсвечивает пункт на несколько секунд
+  useEffect(() => {
+    let timer: number | undefined;
+    const apply = () => {
+      let id = window.location.hash.slice(1);
+      try {
+        id = decodeURIComponent(id);
+      } catch {
+        // оставляем как есть
+      }
+      if (!id) return;
+      setHighlighted(id);
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setHighlighted(null), 4000);
+    };
+    apply();
+    window.addEventListener("hashchange", apply);
+    window.addEventListener("popstate", apply);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("hashchange", apply);
+      window.removeEventListener("popstate", apply);
+    };
+  }, []);
 
   // Ctrl+F (⌘F на Mac) вместо поиска браузера фокусирует поиск по разделу
   useEffect(() => {
@@ -274,7 +312,13 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
               <h2 className="text-xl font-semibold tracking-tight">{section.title}</h2>
               {section.entries.map((entry) =>
                 entry.type === "rule" ? (
-                  <RuleCard key={entry.anchor} rule={entry} tag={article.tag} query={query} />
+                  <RuleCard
+                    key={entry.anchor}
+                    rule={entry}
+                    tag={article.tag}
+                    query={query}
+                    highlighted={highlighted === entry.anchor}
+                  />
                 ) : (
                   <TextBlock
                     key={`${section.id}-${entry.text.slice(0, 32)}-${entry.items.length}`}
