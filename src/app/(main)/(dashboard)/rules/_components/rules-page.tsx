@@ -153,6 +153,9 @@ export function RulesPage({
       )}
 
       <section className="flex flex-col gap-3">
+        <p className="px-1 text-sm text-muted-foreground">
+          {articles.length} {articles.length === 1 ? "раздел" : "разделов"}
+        </p>
         {articles.length === 0 ? (
           <p className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
             Разделов с таким названием нет. Поиск выше ищет и по отдельным пунктам правил.
@@ -165,7 +168,7 @@ export function RulesPage({
                 <Link
                   key={article.slug}
                   href={articleHref(article.group, article.slug)}
-                  className="group relative flex min-w-0 flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm transition-colors hover:bg-[color-mix(in_oklab,var(--card),black_4%)] dark:hover:bg-[color-mix(in_oklab,var(--card),white_6%)]"
+                  className="group relative flex min-w-0 flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm transition-colors hover:bg-[color-mix(in_oklab,var(--card),black_1.5%)] dark:hover:bg-[color-mix(in_oklab,var(--card),white_6%)]"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
@@ -177,6 +180,9 @@ export function RulesPage({
                     <h2 className="font-medium leading-snug">{article.title}</h2>
                     <p className="mt-1.5 line-clamp-3 text-sm leading-5 text-muted-foreground">{article.description}</p>
                   </div>
+                  <p className="border-t pt-3 text-xs text-muted-foreground">
+                    {article.ruleCount} пунктов · обновлено {article.updatedAt}
+                  </p>
                 </Link>
               );
             })}

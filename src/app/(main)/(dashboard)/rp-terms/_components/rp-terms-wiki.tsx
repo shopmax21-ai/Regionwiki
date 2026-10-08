@@ -148,7 +148,6 @@ export function RpTermsWiki({ initialQuery = "" }: { initialQuery?: string }) {
       </section>
 
       <section className="flex flex-col gap-3">
-        <p className="px-1 text-sm text-muted-foreground">Найдено терминов: {filtered.length}</p>
         {filtered.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {filtered.map((item) => {
@@ -157,7 +156,7 @@ export function RpTermsWiki({ initialQuery = "" }: { initialQuery?: string }) {
                 <article
                   key={item.id}
                   id={item.id}
-                  className={`group relative flex min-w-0 scroll-mt-24 flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm transition-[background-color,border-color,box-shadow] duration-700 hover:bg-[color-mix(in_oklab,var(--card),black_4%)] dark:hover:bg-[color-mix(in_oklab,var(--card),white_6%)] ${
+                  className={`group relative flex min-w-0 scroll-mt-24 flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm transition-[background-color,border-color,box-shadow] duration-700 hover:bg-[color-mix(in_oklab,var(--card),black_1.5%)] dark:hover:bg-[color-mix(in_oklab,var(--card),white_6%)] ${
                     highlighted === item.id ? "border-primary bg-primary/5 ring-2 ring-primary/40" : ""
                   }`}
                 >
