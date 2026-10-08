@@ -61,6 +61,7 @@ export const AUDIT_ENTITIES = {
   place: { noun: "метка на карте", fem: true, category: "content" },
   job: { noun: "работа", fem: true, category: "content" },
   reply: { noun: "быстрый ответ", fem: false, category: "content" },
+  command: { noun: "команда сервера", fem: true, category: "content" },
   test: { noun: "тест", fem: false, category: "academy" },
 } as const satisfies Record<string, { noun: string; fem: boolean; category: AuditCategory }>;
 

@@ -55,6 +55,7 @@ export type Permission =
   | "items.edit"
   | "replies.view"
   | "replies.edit"
+  | "commands.edit"
   | "jobs.edit"
   | "academy.edit"
   | "academy.results"
@@ -152,6 +153,12 @@ export const permissionDefs: readonly PermissionDef[] = [
     category: "Контент",
   },
   {
+    key: "commands.edit",
+    label: "Редактирование команд сервера",
+    description: "Добавлять, изменять и удалять команды в разделе «Команды сервера».",
+    category: "Контент",
+  },
+  {
     key: "jobs.edit",
     label: "Редактирование работ и гайдов",
     description: "Добавлять, изменять и удалять работы и их гайды в разделе «Всё о работах».",
@@ -226,6 +233,7 @@ export const defaultPermissions: Record<EditableGroup, readonly Permission[]> = 
     "items.edit",
     "replies.view",
     "replies.edit",
+    "commands.edit",
     "jobs.edit",
     "academy.edit",
     "punishments.request",

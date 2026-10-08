@@ -56,7 +56,7 @@ export function ReplyCard({ reply, categories, editable, copied, onCopy, query }
         <span
           aria-hidden="true"
           className={cn(
-            "absolute top-3 right-3 flex size-8 items-center justify-center rounded-full border transition-colors",
+            "absolute top-3 right-3 flex size-8 items-center justify-center rounded-md border transition-colors",
             copied
               ? "border-transparent bg-[oklch(0.55_0.16_var(--h))] text-white dark:bg-[oklch(0.7_0.14_var(--h))] dark:text-[oklch(0.2_0.03_var(--h))]"
               : "bg-card text-muted-foreground group-hover/reply:text-foreground",

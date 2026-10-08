@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 import { requireAdmin } from "@/lib/auth/admin";
+import { listCommands } from "@/lib/commands/store";
 
 import { CommandsTable } from "./_components/commands-table";
-import { serverCommands } from "./_data/commands";
 
 export const metadata: Metadata = {
   title: "Команды сервера | Region WIKI",
@@ -13,6 +13,11 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  await requireAdmin();
-  return <CommandsTable commands={serverCommands} />;
+  const admin = await requireAdmin();
+  const { commands, editable, problem } = await listCommands();
+
+  let editor: "on" | "off" | "unavailable" = "off";
+  if (admin.permissions.includes("commands.edit")) editor = editable ? "on" : "unavailable";
+
+  return <CommandsTable commands={commands} editor={editor} problem={problem} />;
 }

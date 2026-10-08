@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Kbd } from "@/components/ui/kbd";
 
 import { levelLabel, type ServerCommand } from "../_data/commands";
+import { CommandActions } from "./command-actions";
+import { CommandEditor } from "./command-editor";
 
 /** Цвет каждого уровня. Классы записаны целиком, чтобы Tailwind их увидел. Уровни выше шестого берут цвета по кругу. */
 const LEVEL_TONES = [
@@ -25,6 +27,10 @@ const LEVEL_TONES = [
 const toneFor = (level: number) => LEVEL_TONES[(Math.max(level, 1) - 1) % LEVEL_TONES.length];
 
 const GRID = "md:grid md:grid-cols-[5.5rem_minmax(0,14rem)_minmax(0,1fr)_minmax(0,1.4fr)] md:gap-x-4";
+const GRID_EDITABLE =
+  "md:grid md:grid-cols-[5.5rem_minmax(0,14rem)_minmax(0,1fr)_minmax(0,1.4fr)_5rem] md:gap-x-4";
+
+export type EditorState = "on" | "off" | "unavailable";
 
 const normalize = (value: string) => value.toLowerCase().replaceAll("ё", "е");
 
@@ -54,7 +60,17 @@ function LevelBadge({ level, className }: { level: number; className?: string })
 }
 
 /** Таблица команд сервера: сортировка по уровню, фильтр по уровням и поиск (Ctrl + F переводит фокус в поле поиска). */
-export function CommandsTable({ commands }: { commands: readonly ServerCommand[] }) {
+export function CommandsTable({
+  commands,
+  editor = "off",
+  problem = null,
+}: {
+  commands: readonly ServerCommand[];
+  /** on: можно добавлять и менять; unavailable: право есть, но база недоступна; off: только чтение */
+  editor?: EditorState;
+  problem?: string | null;
+}) {
+  const grid = editor === "on" ? GRID_EDITABLE : GRID;
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<readonly number[]>([]);
   const [descending, setDescending] = useState(false);
@@ -96,12 +112,22 @@ export function CommandsTable({ commands }: { commands: readonly ServerCommand[]
 
   return (
     <div className="flex w-full flex-col gap-4 md:gap-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="font-semibold text-2xl tracking-tight">Команды сервера</h1>
-        <p className="max-w-2xl text-muted-foreground text-sm">
-          Команды сгруппированы по уровню доступа. Цвет уровня одинаков в таблице и в фильтре.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="font-semibold text-2xl tracking-tight">Команды сервера</h1>
+          <p className="max-w-2xl text-muted-foreground text-sm">
+            Команды сгруппированы по уровню доступа. Цвет уровня одинаков в таблице и в фильтре.
+          </p>
+        </div>
+        {editor === "on" && <CommandEditor mode="create" defaultLevel={selected.length === 1 ? selected[0] : 1} />}
       </header>
+
+      {editor === "unavailable" && (
+        <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-700 text-sm dark:text-amber-300">
+          Редактирование недоступно: нет связи с базой данных{problem ? ` (${problem})` : ""}. Показаны встроенные
+          команды.
+        </p>
+      )}
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative w-full lg:max-w-md">
@@ -200,21 +226,22 @@ export function CommandsTable({ commands }: { commands: readonly ServerCommand[]
               aria-hidden="true"
               className={cn(
                 "hidden border-b bg-muted/40 px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wide",
-                GRID,
+                grid,
               )}
             >
               <span>Уровень</span>
               <span>Команда</span>
               <span>Аргумент</span>
               <span>Описание</span>
+              {editor === "on" && <span className="text-right">Действия</span>}
             </div>
             <ul className="divide-y">
               {visible.map((item) => (
                 <li
-                  key={`${item.level}-${item.command}`}
+                  key={item.id}
                   className={cn(
                     "flex flex-col gap-1.5 px-4 py-3 transition-colors hover:bg-muted/40 md:items-center md:gap-y-0",
-                    GRID,
+                    grid,
                   )}
                 >
                   <div>
@@ -229,6 +256,11 @@ export function CommandsTable({ commands }: { commands: readonly ServerCommand[]
                   <p className="text-sm">
                     <Highlight text={item.description} query={query} />
                   </p>
+                  {editor === "on" && (
+                    <div className="md:flex md:justify-end">
+                      <CommandActions item={item} />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
