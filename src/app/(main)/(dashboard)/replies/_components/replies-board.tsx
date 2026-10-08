@@ -382,7 +382,7 @@ export function RepliesBoard({
                 if (event.key === "Escape" && query) setQuery("");
               }}
               placeholder="Что нужно написать игроку?"
-              aria-label="Поиск быстрых ответов"
+              aria-label="Поиск быстрых ответов" data-section-search
               className="h-12 rounded-xl pr-24 pl-12 text-base md:text-base"
             />
             <div className="absolute top-1/2 right-3 flex -translate-y-1/2 items-center gap-2">

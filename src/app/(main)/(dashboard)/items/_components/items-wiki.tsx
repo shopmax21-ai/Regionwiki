@@ -100,7 +100,7 @@ export function ItemsWiki({ items, initialQuery = "", editor = "off" }: ItemsWik
                 setPage(1);
               }}
               placeholder="Поиск предмета..."
-              aria-label="Поиск предмета"
+              aria-label="Поиск предмета" data-section-search
               className="h-10 pl-9"
             />
           </div>

@@ -322,6 +322,8 @@ export function WikiPage({
                 }}
                 placeholder="Найти правило, работу, машину или раздел"
                 aria-label="Поиск по всем разделам"
+                data-global-search
+                aria-keyshortcuts="Control+E"
                 className="h-14 rounded-2xl bg-background pr-14 pl-12 text-base shadow-sm"
               />
               {query ? (
@@ -337,7 +339,7 @@ export function WikiPage({
                   <X className="size-4" />
                 </button>
               ) : (
-                <Kbd className="absolute top-1/2 right-4 -translate-y-1/2">/</Kbd>
+                <Kbd className="absolute top-1/2 right-4 -translate-y-1/2">Ctrl E</Kbd>
               )}
             </div>
 

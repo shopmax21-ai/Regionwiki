@@ -314,7 +314,7 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Поиск по имени, нику или @username"
-              aria-label="Поиск пользователя"
+              aria-label="Поиск пользователя" data-section-search
               className="h-10 pl-9"
             />
           </div>

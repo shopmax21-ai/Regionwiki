@@ -14,6 +14,7 @@ import { listJobs } from "@/lib/jobs/store";
 import { getPreference } from "@/server/server-actions";
 
 import { SearchDialog } from "./_components/header/search-dialog";
+import { SectionSearchShortcut } from "./_components/section-search-shortcut";
 import { ThemeSwitcher } from "./_components/header/theme-switcher";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
@@ -93,6 +94,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
           </div>
         </header>
         {/* Pages can set data-content-padding="false" to render full-bleed app layouts. */}
+        <SectionSearchShortcut />
         <div className="min-h-0 min-w-0 flex-1 overflow-x-clip p-4 has-data-[content-padding=false]:p-0 md:p-6 md:has-data-[content-padding=false]:p-0">
           {children}
         </div>

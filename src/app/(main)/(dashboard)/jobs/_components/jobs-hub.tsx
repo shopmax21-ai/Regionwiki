@@ -98,7 +98,7 @@ export function JobsHub({ jobs, editor, problem }: JobsHubProps) {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Найти работу, например шахтёр или такси"
-              aria-label="Поиск по работам"
+              aria-label="Поиск по работам" data-section-search
               className="h-14 rounded-2xl bg-background pr-11 pl-12 text-base shadow-sm"
             />
             {query && (

@@ -98,8 +98,16 @@ export function SearchDialog({
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (e.key === "j" && (e.metaKey || e.ctrlKey)) {
+      // Ctrl + E (⌘ + E на Mac) — глобальный поиск по сайту. Код клавиши не зависит от раскладки.
+      if (e.code === "KeyE" && (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey) {
         e.preventDefault();
+        // На главной глобальный поиск стоит прямо на странице — переводим фокус в него, а не открываем окно
+        const inline = document.querySelector<HTMLInputElement>("input[data-global-search]");
+        if (inline && inline.getClientRects().length > 0) {
+          inline.focus();
+          inline.select();
+          return;
+        }
         setOpen((prev) => !prev);
       }
     };
@@ -160,7 +168,7 @@ export function SearchDialog({
         <Search data-icon="inline-start" />
         Поиск
         <kbd className="inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-medium text-[10px]">
-          <span className="text-xs">⌘</span>J
+          Ctrl E
         </kbd>
       </Button>
       <CommandDialog

@@ -70,7 +70,7 @@ export function PlacesPanel({ places, query, onQueryChange, selectedId, onSelect
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder="Найти место"
-          aria-label="Поиск по местам на карте"
+          aria-label="Поиск по местам на карте" data-section-search
           className="h-11 pl-9 text-base md:text-sm"
         />
       </div>

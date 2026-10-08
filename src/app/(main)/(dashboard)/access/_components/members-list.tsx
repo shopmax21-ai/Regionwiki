@@ -71,7 +71,7 @@ export function MembersList({ rows }: { rows: MemberRow[] }) {
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Поиск по имени или @username"
             className="pl-9"
-            aria-label="Поиск участников"
+            aria-label="Поиск участников" data-section-search
           />
         </div>
         {/* biome-ignore lint/a11y/useSemanticElements: фильтр-кнопки: role="group" на div, fieldset сломает вёрстку */}

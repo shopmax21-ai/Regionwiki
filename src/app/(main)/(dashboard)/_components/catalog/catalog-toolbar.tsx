@@ -26,7 +26,7 @@ export function CatalogToolbar({ config }: CatalogToolbarProps) {
   return (
     <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
       <InputGroup className="md:max-w-lg">
-        <InputGroupInput placeholder={config.searchPlaceholder} aria-label={config.searchPlaceholder} />
+        <InputGroupInput placeholder={config.searchPlaceholder} aria-label={config.searchPlaceholder} data-section-search />
         <InputGroupAddon>
           <Search />
         </InputGroupAddon>

@@ -250,7 +250,7 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Статик, имя, номер, пункт, жалоба"
-            aria-label="Поиск по наказаниям"
+            aria-label="Поиск по наказаниям" data-section-search
             className="pl-8"
           />
         </div>

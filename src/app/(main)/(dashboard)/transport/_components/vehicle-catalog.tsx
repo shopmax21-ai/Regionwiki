@@ -131,7 +131,7 @@ export function VehicleCatalog() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Поиск транспорта..."
-              aria-label="Поиск транспорта"
+              aria-label="Поиск транспорта" data-section-search
               className="pl-10"
             />
           </div>

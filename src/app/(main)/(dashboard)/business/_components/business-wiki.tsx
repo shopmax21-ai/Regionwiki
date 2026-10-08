@@ -95,7 +95,7 @@ export function BusinessWiki({ initialQuery = "", businesses, editor, mapPlaces 
                 setPage(1);
               }}
               placeholder="Поиск бизнеса..."
-              aria-label="Поиск бизнеса"
+              aria-label="Поиск бизнеса" data-section-search
               className="h-10 pl-9"
             />
           </div>

@@ -8,7 +8,6 @@ import { ArrowDownWideNarrow, ArrowUpNarrowWide, Search, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Kbd } from "@/components/ui/kbd";
 
 import { levelLabel, type ServerCommand } from "../_data/commands";
 import { CommandActions } from "./command-actions";
@@ -112,15 +111,97 @@ export function CommandsTable({
 
   return (
     <div className="flex w-full flex-col gap-4 md:gap-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-semibold text-2xl tracking-tight">Команды сервера</h1>
-          <p className="max-w-2xl text-muted-foreground text-sm">
+      <section className="relative px-2 pt-12 pb-2 sm:pt-6 md:px-6 md:pt-8">
+        {editor === "on" && (
+          <div className="absolute top-0 right-0 sm:top-1 md:top-2">
+            <CommandEditor mode="create" defaultLevel={selected.length === 1 ? selected[0] : 1} />
+          </div>
+        )}
+        <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Команды сервера</h1>
+          <p className="mt-3 max-w-xl text-muted-foreground">
             Команды сгруппированы по уровню доступа. Цвет уровня одинаков в таблице и в фильтре.
           </p>
+
+          <div className="relative mt-7 w-full">
+            <Search
+              className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <Input
+              ref={searchRef}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  setQuery("");
+                  event.currentTarget.blur();
+                }
+              }}
+              placeholder="Поиск по командам, аргументам и описанию"
+              aria-label="Поиск по командам сервера"
+              aria-keyshortcuts="Control+F"
+              className="h-11 rounded-xl pr-24 pl-10"
+            />
+            <div className="absolute top-1/2 right-2.5 flex -translate-y-1/2 items-center gap-1">
+              {query ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery("");
+                    searchRef.current?.focus();
+                  }}
+                  aria-label="Очистить поиск"
+                  className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <X className="size-4" aria-hidden="true" />
+                </button>
+              ) : (
+                <kbd className="pointer-events-none hidden rounded-md border bg-muted/50 px-1.5 py-0.5 font-sans text-[11px] text-muted-foreground sm:inline-block">
+                  Ctrl + F
+                </kbd>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 flex max-w-full flex-wrap items-center justify-center gap-2">
+            {levels.map((level) => {
+              const active = selected.includes(level);
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => toggle(level)}
+                  className={cn(
+                    "rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-ring/50",
+                    active ? "ring-2 ring-ring" : selected.length > 0 ? "opacity-50 hover:opacity-100" : "hover:opacity-80",
+                  )}
+                >
+                  <LevelBadge level={level} className="h-7 cursor-pointer px-3 text-xs" />
+                </button>
+              );
+            })}
+            {selected.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelected([])}
+                className="text-muted-foreground text-xs underline-offset-2 hover:text-foreground hover:underline"
+              >
+                Сбросить уровни
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setDescending((value) => !value)}
+              className="inline-flex h-7 items-center gap-1.5 rounded-full border bg-background px-3 text-xs outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              <SortIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />
+              {descending ? "Сначала высокие уровни" : "Сначала низкие уровни"}
+            </button>
+          </div>
         </div>
-        {editor === "on" && <CommandEditor mode="create" defaultLevel={selected.length === 1 ? selected[0] : 1} />}
-      </header>
+      </section>
 
       {editor === "unavailable" && (
         <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-700 text-sm dark:text-amber-300">
@@ -128,87 +209,6 @@ export function CommandsTable({
           команды.
         </p>
       )}
-
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div className="relative w-full lg:max-w-md">
-          <Search
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <Input
-            ref={searchRef}
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") {
-                setQuery("");
-                event.currentTarget.blur();
-              }
-            }}
-            placeholder="Поиск по командам, аргументам и описанию"
-            aria-label="Поиск по командам сервера"
-            aria-keyshortcuts="Control+F"
-            className="pr-20 pl-9"
-          />
-          {query ? (
-            <button
-              type="button"
-              onClick={() => {
-                setQuery("");
-                searchRef.current?.focus();
-              }}
-              aria-label="Очистить поиск"
-              className="absolute top-1/2 right-2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <X className="size-4" aria-hidden="true" />
-            </button>
-          ) : (
-            <span className="pointer-events-none absolute top-1/2 right-2.5 hidden -translate-y-1/2 items-center gap-1 text-muted-foreground md:flex">
-              <Kbd>Ctrl</Kbd>
-              <Kbd>F</Kbd>
-            </span>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 lg:flex-1">
-          {levels.map((level) => {
-            const active = selected.includes(level);
-            return (
-              <button
-                key={level}
-                type="button"
-                aria-pressed={active}
-                onClick={() => toggle(level)}
-                className={cn(
-                  "rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-ring/50",
-                  active ? "ring-2 ring-ring" : selected.length > 0 ? "opacity-50 hover:opacity-100" : "hover:opacity-80",
-                )}
-              >
-                <LevelBadge level={level} className="h-7 cursor-pointer px-3 text-xs" />
-              </button>
-            );
-          })}
-          {selected.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setSelected([])}
-              className="text-muted-foreground text-xs underline-offset-2 hover:text-foreground hover:underline"
-            >
-              Сбросить уровни
-            </button>
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setDescending((value) => !value)}
-          className="inline-flex h-9 items-center gap-2 rounded-md border bg-background px-3 text-sm outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50"
-        >
-          <SortIcon className="size-4 text-muted-foreground" aria-hidden="true" />
-          {descending ? "Сначала высокие уровни" : "Сначала низкие уровни"}
-        </button>
-      </div>
 
       {visible.length === 0 ? (
         <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">

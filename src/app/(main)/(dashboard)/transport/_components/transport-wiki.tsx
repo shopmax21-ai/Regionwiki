@@ -109,7 +109,7 @@ export function TransportWiki({ vehicles, editor = "off" }: { vehicles: Vehicle[
                 setPage(1);
               }}
               placeholder="Поиск транспорта..."
-              aria-label="Поиск транспорта"
+              aria-label="Поиск транспорта" data-section-search
               className="h-10 pl-9"
             />
           </div>

@@ -84,7 +84,7 @@ export function StaffList({ members, meId }: { members: StaffMember[]; meId: str
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Поиск по нику, имени или Static ID"
-            aria-label="Поиск по администраторам"
+            aria-label="Поиск по администраторам" data-section-search
             className="pr-9 pl-9"
           />
           {query && (

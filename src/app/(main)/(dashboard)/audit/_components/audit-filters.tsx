@@ -77,7 +77,7 @@ export function AuditFilters({
             placeholder="Поиск по действию, объекту или имени"
             className="pl-9"
             maxLength={80}
-            aria-label="Поиск по журналу"
+            aria-label="Поиск по журналу" data-section-search
           />
         </div>
 

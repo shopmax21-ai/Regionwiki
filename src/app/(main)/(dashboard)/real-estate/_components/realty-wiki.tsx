@@ -85,7 +85,7 @@ export function RealtyWiki({ initialQuery = "", realties, editor }: RealtyWikiPr
                 setPage(1);
               }}
               placeholder="Поиск по номеру или названию..."
-              aria-label="Поиск недвижимости"
+              aria-label="Поиск недвижимости" data-section-search
               className="h-10 pl-9"
             />
           </div>
