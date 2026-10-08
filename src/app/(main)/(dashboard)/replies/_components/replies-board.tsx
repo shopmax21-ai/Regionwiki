@@ -1,9 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "cn";
-import { Clock, CornerDownLeft, LayoutGrid, Rows3, Search, TriangleAlert, X } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Clock,
+  CornerDownLeft,
+  LayoutGrid,
+  Maximize2,
+  Minimize2,
+  Rows3,
+  Search,
+  Star,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +35,10 @@ type Layout = "rows" | "columns";
 
 const LAYOUT_KEY = "region-replies-layout";
 const RECENT_KEY = "region-replies-recent";
+const FAVORITES_KEY = "region-replies-favorites";
+const COLLAPSED_CATEGORIES_KEY = "region-replies-collapsed-categories";
+const COLLAPSED_CARDS_KEY = "region-replies-collapsed-cards";
+const FAVORITES_SECTION = "__favorites__";
 const RECENT_LIMIT = 5;
 const ALL = "Все";
 
@@ -39,6 +57,16 @@ function readRecent(): string[] {
     return Array.isArray(parsed)
       ? parsed.filter((id): id is string => typeof id === "string").slice(0, RECENT_LIMIT)
       : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Список строк из браузера (избранное, свёрнутые категории и карточки). Любой мусор в хранилище отбрасываем. */
+function readList(key: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(getLocalStorageValue(key) ?? "[]");
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
   } catch {
     return [];
   }
@@ -71,6 +99,9 @@ export function RepliesBoard({
   const [category, setCategory] = useState(ALL);
   const [layout, setLayout] = useState<Layout>("columns");
   const [recent, setRecent] = useState<string[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [collapsedSections, setCollapsedSections] = useState<string[]>([]);
+  const [collapsedCards, setCollapsedCards] = useState<string[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -80,6 +111,9 @@ export function RepliesBoard({
     const saved = getLocalStorageValue(LAYOUT_KEY);
     if (isLayout(saved)) setLayout(saved);
     setRecent(readRecent());
+    setFavorites(readList(FAVORITES_KEY));
+    setCollapsedSections(readList(COLLAPSED_CATEGORIES_KEY));
+    setCollapsedCards(readList(COLLAPSED_CARDS_KEY));
   }, []);
 
   useEffect(
@@ -107,6 +141,26 @@ export function RepliesBoard({
     setLayout(next);
     setLocalStorageValue(LAYOUT_KEY, next);
   };
+
+  const toggleIn = (
+    setter: (update: (prev: string[]) => string[]) => void,
+    key: string,
+    id: string,
+  ) =>
+    setter((prev) => {
+      const next = prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id];
+      setLocalStorageValue(key, JSON.stringify(next));
+      return next;
+    });
+
+  const replaceList = (setter: (value: string[]) => void, key: string, next: string[]) => {
+    setter(next);
+    setLocalStorageValue(key, JSON.stringify(next));
+  };
+
+  const toggleFavorite = (reply: QuickReply) => toggleIn(setFavorites, FAVORITES_KEY, reply.id);
+  const toggleCard = (reply: QuickReply) => toggleIn(setCollapsedCards, COLLAPSED_CARDS_KEY, reply.id);
+  const toggleSection = (name: string) => toggleIn(setCollapsedSections, COLLAPSED_CATEGORIES_KEY, name);
 
   const copyReply = useCallback(async (reply: QuickReply) => {
     const ok = await copyText(reply.text);
@@ -170,6 +224,24 @@ export function RepliesBoard({
     [recent, replies],
   );
 
+  const favoriteReplies = useMemo(
+    () => replies.filter((reply) => favorites.includes(reply.id) && matchesQuery(reply)),
+    [replies, favorites, matchesQuery],
+  );
+
+  const allCardsCollapsed = replies.length > 0 && replies.every((reply) => collapsedCards.includes(reply.id));
+  const allSectionsCollapsed =
+    categories.length > 0 && categories.every((name) => collapsedSections.includes(name));
+
+  const toggleAllCards = () =>
+    replaceList(setCollapsedCards, COLLAPSED_CARDS_KEY, allCardsCollapsed ? [] : replies.map((reply) => reply.id));
+  const toggleAllSections = () =>
+    replaceList(
+      setCollapsedSections,
+      COLLAPSED_CATEGORIES_KEY,
+      allSectionsCollapsed ? [] : [...categories, FAVORITES_SECTION],
+    );
+
   const chip = (name: string, count: number, hueFor?: string) => {
     const active = activeCategory === name;
     return (
@@ -192,6 +264,69 @@ export function RepliesBoard({
           {count}
         </span>
       </button>
+    );
+  };
+
+  const renderSection = ({
+    key,
+    title,
+    marker,
+    items,
+  }: {
+    key: string;
+    title: string;
+    marker: ReactNode;
+    items: QuickReply[];
+  }) => {
+    // Во время поиска категории раскрыты: иначе найденное было бы спрятано
+    const folded = !normalized && collapsedSections.includes(key);
+    const bodyId = `replies-section-${key.replace(/\W/g, "_")}`;
+    return (
+      <section key={key} className="flex flex-col gap-3" aria-label={title}>
+        <h2 className="font-semibold text-base">
+          <button
+            type="button"
+            onClick={() => toggleSection(key)}
+            aria-expanded={!folded}
+            aria-controls={bodyId}
+            disabled={!!normalized}
+            className="-mx-2 flex items-center gap-2 rounded-lg px-2 py-1 text-left outline-none transition-colors hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-default disabled:hover:bg-transparent"
+          >
+            <ChevronDown
+              className={cn("size-4 shrink-0 text-muted-foreground transition-transform", folded && "-rotate-90")}
+              aria-hidden="true"
+            />
+            {marker}
+            {title}
+            <span className="font-normal text-muted-foreground text-sm tabular-nums">{items.length}</span>
+          </button>
+        </h2>
+        {!folded && (
+          <div
+            id={bodyId}
+            className={cn(
+              "grid gap-4",
+              layout === "columns" ? "grid-cols-1 md:grid-cols-2 2xl:grid-cols-3" : "grid-cols-1",
+            )}
+          >
+            {items.map((reply) => (
+              <ReplyCard
+                key={reply.id}
+                reply={reply}
+                categories={categories}
+                editable={editor === "on"}
+                copied={copiedId === reply.id}
+                onCopy={copyReply}
+                query={query}
+                favorite={favorites.includes(reply.id)}
+                onToggleFavorite={toggleFavorite}
+                collapsed={collapsedCards.includes(reply.id)}
+                onToggleCollapsed={toggleCard}
+              />
+            ))}
+          </div>
+        )}
+      </section>
     );
   };
 
@@ -281,6 +416,36 @@ export function RepliesBoard({
           >
             <ToggleIcon className="size-4" aria-hidden="true" />
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-12 shrink-0 rounded-xl"
+            onClick={toggleAllCards}
+            aria-label={allCardsCollapsed ? "Развернуть все ответы" : "Свернуть все ответы до названий"}
+            title={allCardsCollapsed ? "Развернуть все ответы" : "Свернуть все ответы до названий"}
+          >
+            {allCardsCollapsed ? (
+              <Maximize2 className="size-4" aria-hidden="true" />
+            ) : (
+              <Minimize2 className="size-4" aria-hidden="true" />
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-12 shrink-0 rounded-xl"
+            onClick={toggleAllSections}
+            aria-label={allSectionsCollapsed ? "Развернуть все категории" : "Свернуть все категории"}
+            title={allSectionsCollapsed ? "Развернуть все категории" : "Свернуть все категории"}
+          >
+            {allSectionsCollapsed ? (
+              <ChevronsUpDown className="size-4" aria-hidden="true" />
+            ) : (
+              <ChevronsDownUp className="size-4" aria-hidden="true" />
+            )}
+          </Button>
         </div>
 
         {normalized && total > 0 && (
@@ -331,33 +496,22 @@ export function RepliesBoard({
           )}
 
           {total > 0 ? (
-            groups.map((group) => (
-              <section key={group.name} className="flex flex-col gap-3" aria-label={group.name}>
-                <h2 className="flex items-center gap-2 font-semibold text-base">
-                  <Dot category={group.name} />
-                  {group.name}
-                  <span className="font-normal text-muted-foreground text-sm tabular-nums">{group.items.length}</span>
-                </h2>
-                <div
-                  className={cn(
-                    "grid gap-4",
-                    layout === "columns" ? "grid-cols-1 md:grid-cols-2 2xl:grid-cols-3" : "grid-cols-1",
-                  )}
-                >
-                  {group.items.map((reply) => (
-                    <ReplyCard
-                      key={reply.id}
-                      reply={reply}
-                      categories={categories}
-                      editable={editor === "on"}
-                      copied={copiedId === reply.id}
-                      onCopy={copyReply}
-                      query={query}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))
+            <>
+              {activeCategory === ALL && favoriteReplies.length > 0 && renderSection({
+                key: FAVORITES_SECTION,
+                title: "Избранное",
+                marker: <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-500" aria-hidden="true" />,
+                items: favoriteReplies,
+              })}
+              {groups.map((group) =>
+                renderSection({
+                  key: group.name,
+                  title: group.name,
+                  marker: <Dot category={group.name} />,
+                  items: group.items,
+                }),
+              )}
+            </>
           ) : (
             <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed p-12 text-center text-muted-foreground">
               {replies.length === 0 ? (
