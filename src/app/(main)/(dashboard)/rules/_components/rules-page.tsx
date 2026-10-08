@@ -168,10 +168,10 @@ export function RulesPage({
                 <Link
                   key={article.slug}
                   href={articleHref(article.group, article.slug)}
-                  className="group relative flex min-w-0 flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm transition-colors hover:bg-muted/40"
+                  className="group relative flex min-w-0 flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm transition-colors hover:bg-[color-mix(in_oklab,var(--card),black_4%)] dark:hover:bg-[color-mix(in_oklab,var(--card),white_6%)]"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                       <Icon className="size-5" aria-hidden="true" />
                     </span>
                     <ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
