@@ -71,7 +71,7 @@ export function RulesPage({
   }, [isSearching, query, searchIndex]);
 
   return (
-    <main className="mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-6 pb-10">
+    <main className="flex w-full min-w-0 flex-col gap-6 pb-10">
       <section className="relative px-2 pt-12 pb-2 sm:pt-6 md:px-6 md:pt-8">
         <RuleStatusBlock
           state={status.state}
@@ -161,7 +161,7 @@ export function RulesPage({
             Разделов с таким названием нет. Поиск выше ищет и по отдельным пунктам правил.
           </p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {articles.map((article) => {
               const Icon = getRuleIcon(article.slug);
               return (
