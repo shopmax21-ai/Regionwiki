@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 
 import { ChangelogFeed } from "./changelog-feed";
-import { RuleStatusBadge } from "./rule-status";
+import { RuleStatusBadge, RuleStatusBlock } from "./rule-status";
 import { Highlight, matchesQuery, PunishmentList } from "./rule-ui";
 import {
   articleHref,
@@ -63,12 +63,7 @@ export function RulesPage({
             <h1 className="text-3xl font-semibold tracking-tight">{data.title}</h1>
             <p className="mt-3 max-w-2xl text-muted-foreground">{data.description}</p>
           </div>
-          <div className="flex shrink-0 flex-col items-start gap-1.5 rounded-xl border bg-background px-3 py-2 md:items-end">
-            <RuleStatusBadge state={status.state} />
-            <span className="text-muted-foreground text-xs">
-              {status.lastChecked ? `Проверено ${status.lastChecked}` : "Проверка ещё не выполнялась"}
-            </span>
-          </div>
+          <RuleStatusBlock state={status.state} lastChecked={status.lastChecked} />
         </div>
         <div className="relative mt-7 max-w-xl">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
