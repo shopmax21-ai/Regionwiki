@@ -115,19 +115,6 @@ export function RulesPage({
       </section>
 
       {isSearching && (
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              aria-label="Очистить поиск"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <X className="size-4" />
-            </button>
-          )}
-        </div>
-      </section>
-
-      {isSearching && (
         <Card>
           <CardHeader>
             <CardTitle>Найденные пункты</CardTitle>
