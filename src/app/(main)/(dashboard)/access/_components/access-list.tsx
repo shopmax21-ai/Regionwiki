@@ -1,6 +1,6 @@
 import { cn } from "cn";
 import type { LucideIcon } from "lucide-react";
-import { CheckCircle2, Clock, Inbox, Users, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Fingerprint, Inbox, Users, XCircle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,46 +35,66 @@ const TONES: Record<Tone, { box: string; icon: string }> = {
 function StatTile({ icon: Icon, label, value, tone }: { icon: LucideIcon; label: string; value: number; tone: Tone }) {
   return (
     <Card className={cn("relative overflow-hidden bg-gradient-to-br", TONES[tone].box)}>
-      <CardContent className="flex items-center gap-3">
-        <span className={cn("grid size-10 shrink-0 place-items-center rounded-xl", TONES[tone].icon)}>
-          <Icon className="size-5" aria-hidden="true" />
+      <CardContent className="flex items-center gap-4">
+        <span className={cn("grid size-12 shrink-0 place-items-center rounded-2xl", TONES[tone].icon)}>
+          <Icon className="size-6" aria-hidden="true" />
         </span>
         <div className="min-w-0 leading-tight">
-          <p className="font-semibold text-2xl tabular-nums">{value}</p>
-          <p className="truncate text-muted-foreground text-xs">{label}</p>
+          <p className="font-semibold text-3xl tabular-nums tracking-tight">{value}</p>
+          <p className="truncate text-muted-foreground text-sm">{label}</p>
         </div>
       </CardContent>
     </Card>
   );
 }
 
+const DAY = 24 * 60 * 60 * 1000;
+
 function PendingCard({ user, now }: { user: DbUser; now: number }) {
+  // Заявка, которая ждёт больше суток, подсвечивается: её пора разобрать
+  const stale = now - user.createdAt.getTime() > DAY;
   return (
-    <Card className="relative overflow-hidden ring-amber-500/30">
+    <Card className={cn("relative h-full overflow-hidden", stale ? "ring-rose-500/40" : "ring-amber-500/30")}>
       <div
         aria-hidden="true"
         className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500"
       />
-      <CardContent className="flex flex-col gap-4 pt-2">
+      <CardContent className="flex h-full flex-col gap-4 pt-2">
         <div className="flex items-center gap-3">
-          <AccessAvatar id={user.telegramId} name={user.name} admin={user.adminGroup !== null} className="size-12" />
+          <AccessAvatar id={user.telegramId} name={user.name} admin={user.adminGroup !== null} className="size-14" />
           <div className="min-w-0 leading-tight">
-            <p className="truncate font-semibold">{user.name}</p>
+            <p className="truncate font-semibold text-base">{user.name}</p>
             <p className="truncate text-muted-foreground text-sm">
               {user.username ? `@${user.username}` : "Без username"}
             </p>
           </div>
         </div>
 
-        <p
-          className="flex items-center gap-1.5 text-muted-foreground text-xs"
-          title={dateFormat.format(user.createdAt)}
-        >
-          <Clock className="size-3.5" aria-hidden="true" />
-          Подал(а) заявку {ago(user.createdAt, now)}
-        </p>
+        <dl className="flex flex-col gap-1.5 rounded-lg bg-muted/50 px-3 py-2 text-xs">
+          <div className="flex items-center justify-between gap-3">
+            <dt className="flex items-center gap-1.5 text-muted-foreground">
+              <Clock className="size-3.5" aria-hidden="true" />
+              Подана
+            </dt>
+            <dd
+              className={cn("font-medium", stale && "text-rose-600 dark:text-rose-400")}
+              title={dateFormat.format(user.createdAt)}
+            >
+              {ago(user.createdAt, now)}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <dt className="flex items-center gap-1.5 text-muted-foreground">
+              <Fingerprint className="size-3.5" aria-hidden="true" />
+              Telegram ID
+            </dt>
+            <dd className="font-medium tabular-nums">{user.telegramId}</dd>
+          </div>
+        </dl>
 
-        <DecisionButtons telegramId={user.telegramId} size="default" stretch />
+        <div className="mt-auto">
+          <DecisionButtons telegramId={user.telegramId} size="default" stretch />
+        </div>
       </CardContent>
     </Card>
   );
@@ -102,15 +122,15 @@ export function AccessList({ users }: { users: DbUser[] }) {
   }));
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 md:gap-8">
+    <div className="flex w-full flex-col gap-6 md:gap-8">
       <header className="flex flex-col gap-1">
         <h1 className="font-semibold text-2xl tracking-tight">Заявки на доступ</h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="max-w-2xl text-muted-foreground text-sm">
           Решайте, кто получит доступ к панели. Мы напишем в Telegram, когда придёт новая заявка.
         </p>
       </header>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile icon={Clock} label="Ждут решения" value={pending.length} tone="amber" />
         <StatTile icon={CheckCircle2} label="Одобрено" value={approved} tone="green" />
         <StatTile icon={XCircle} label="Отклонено" value={rejected} tone="red" />
@@ -132,7 +152,7 @@ export function AccessList({ users }: { users: DbUser[] }) {
         </div>
 
         {pending.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {pending.map((user) => (
               <PendingCard key={user.telegramId} user={user} now={now} />
             ))}
