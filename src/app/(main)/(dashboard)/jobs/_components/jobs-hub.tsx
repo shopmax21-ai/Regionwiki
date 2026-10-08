@@ -97,18 +97,24 @@ export function JobsHub({ jobs, editor, problem }: JobsHubProps) {
               placeholder="Найти работу, например шахтёр или такси"
               aria-label="Поиск по работам"
               data-section-search
-              className="h-11 rounded-xl pr-11 pl-10"
+              className="h-11 rounded-xl pr-24 pl-10"
             />
-            {query && (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                aria-label="Очистить поиск"
-                className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                <X className="size-4" />
-              </button>
-            )}
+            <div className="absolute top-1/2 right-2.5 flex -translate-y-1/2 items-center gap-1">
+              {query ? (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  aria-label="Очистить поиск"
+                  className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <X className="size-4" />
+                </button>
+              ) : (
+                <kbd className="pointer-events-none hidden rounded-md border bg-muted/50 px-1.5 py-0.5 font-sans text-[11px] text-muted-foreground sm:inline-block">
+                  Ctrl + F
+                </kbd>
+              )}
+            </div>
           </div>
         </div>
       </section>
