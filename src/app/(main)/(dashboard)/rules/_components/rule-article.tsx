@@ -190,7 +190,6 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
         <RuleStatusBlock
           state={article.status.state}
           lastChecked={article.status.checkedAt}
-          showTime={false}
           className="absolute top-0 right-0 sm:top-1 md:top-2"
         />
         <Link
@@ -238,8 +237,11 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
         </div>
       </section>
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-        <nav aria-label="Разделы" className="min-w-0 lg:sticky lg:top-20 lg:self-start">
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
+        <nav
+          aria-label="Разделы"
+          className="sticky top-[calc(var(--dashboard-header-height)+1rem)] z-20 -mx-1 min-w-0 self-start bg-background/90 px-1 py-2 backdrop-blur-sm max-lg:w-[calc(100%+0.5rem)] lg:max-h-[calc(100svh-var(--dashboard-header-height)-2rem)] lg:overflow-y-auto lg:bg-transparent lg:py-0 lg:backdrop-blur-none"
+        >
           <p className="mb-2 hidden text-xs font-medium uppercase tracking-wide text-muted-foreground lg:block">
             Разделы
           </p>
