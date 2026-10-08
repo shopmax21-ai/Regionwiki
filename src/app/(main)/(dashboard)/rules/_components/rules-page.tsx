@@ -153,9 +153,6 @@ export function RulesPage({
       )}
 
       <section className="flex flex-col gap-3">
-        <p className="px-1 text-sm text-muted-foreground">
-          {articles.length} {articles.length === 1 ? "раздел" : "разделов"}
-        </p>
         {articles.length === 0 ? (
           <p className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
             Разделов с таким названием нет. Поиск выше ищет и по отдельным пунктам правил.
@@ -180,9 +177,6 @@ export function RulesPage({
                     <h2 className="font-medium leading-snug">{article.title}</h2>
                     <p className="mt-1.5 line-clamp-3 text-sm leading-5 text-muted-foreground">{article.description}</p>
                   </div>
-                  <p className="border-t pt-3 text-xs text-muted-foreground">
-                    {article.ruleCount} пунктов · обновлено {article.updatedAt}
-                  </p>
                 </Link>
               );
             })}
