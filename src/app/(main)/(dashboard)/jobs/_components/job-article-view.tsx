@@ -70,8 +70,8 @@ export function JobArticleView({ job, jobs, actions, preview, guideSlot }: JobAr
   ];
 
   return (
-    <main inert={preview} className="@container mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-6 pb-10">
-      <section className="rounded-3xl border bg-card px-4 py-6 shadow-sm sm:px-6 sm:py-7 md:px-10">
+    <main inert={preview} className="@container flex w-full min-w-0 flex-col gap-6 pb-10">
+      <section>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link
             href="/jobs"
@@ -96,7 +96,7 @@ export function JobArticleView({ job, jobs, actions, preview, guideSlot }: JobAr
           job={job}
           priority={!preview}
           sizes="(max-width: 1152px) 100vw, 1152px"
-          className="mt-6 max-h-[420px] w-full rounded-2xl border"
+          className="mt-6 max-h-[420px] w-full rounded-2xl"
         />
       </section>
 
