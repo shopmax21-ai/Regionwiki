@@ -81,7 +81,7 @@ function Dot({ category, className }: { category: string; className?: string }) 
     <span
       aria-hidden="true"
       style={hueStyle(categoryHue(category))}
-      className={cn("size-2.5 shrink-0 rounded-full bg-[oklch(0.68_0.16_var(--h))]", className)}
+      className={cn("size-2.5 shrink-0 rounded-md bg-[oklch(0.68_0.16_var(--h))]", className)}
     />
   );
 }
@@ -251,7 +251,7 @@ export function RepliesBoard({
         aria-pressed={active}
         onClick={() => setCategory(name)}
         className={cn(
-          "flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
+          "flex shrink-0 items-center gap-2 rounded-md border px-3.5 py-1.5 text-sm outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
           active
             ? "border-foreground bg-foreground font-medium text-background"
             : "bg-card text-muted-foreground hover:border-foreground/30 hover:text-foreground",
@@ -482,7 +482,7 @@ export function RepliesBoard({
                     title={reply.text}
                     style={hueStyle(categoryHue(reply.category))}
                     className={cn(
-                      "flex max-w-full cursor-pointer items-center gap-2 rounded-full border bg-card py-1.5 pr-3.5 pl-3 text-sm outline-none transition-colors hover:border-[oklch(0.7_0.12_var(--h))] focus-visible:ring-3 focus-visible:ring-ring/50",
+                      "flex max-w-full cursor-pointer items-center gap-2 rounded-md border bg-card py-1.5 pr-3.5 pl-3 text-sm outline-none transition-colors hover:border-[oklch(0.7_0.12_var(--h))] focus-visible:ring-3 focus-visible:ring-ring/50",
                       copiedId === reply.id &&
                         "border-[oklch(0.7_0.12_var(--h))] bg-[oklch(0.965_0.025_var(--h))] dark:bg-[oklch(0.28_0.045_var(--h))]",
                     )}

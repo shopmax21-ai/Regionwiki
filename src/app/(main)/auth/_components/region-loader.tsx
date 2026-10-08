@@ -50,7 +50,7 @@ export function RegionLoader({
       </svg>
 
       <div aria-hidden="true" className="relative">
-        <div className="absolute inset-4 rounded-full bg-primary/25 blur-3xl" />
+        <div className="absolute inset-4 rounded-md bg-primary/25 blur-3xl" />
         <RegionMarkOutline id={id} className="relative w-28 sm:w-36" />
       </div>
       <p className="font-medium text-muted-foreground text-sm tracking-wide">{label}</p>

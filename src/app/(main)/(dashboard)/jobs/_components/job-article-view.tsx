@@ -83,10 +83,10 @@ export function JobArticleView({ job, jobs, actions, preview, guideSlot }: JobAr
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <KindBadge kind={job.kind} />
-          <Badge variant="secondary" className="rounded-full px-3 py-1">
+          <Badge variant="secondary" className="rounded-md px-3 py-1">
             {levelLabel(job)}
           </Badge>
-          <Badge variant="outline" className="gap-1.5 rounded-full px-3 py-1">
+          <Badge variant="outline" className="gap-1.5 rounded-md px-3 py-1">
             <Clock3 className="size-3.5" /> {readMinutes(job)} мин чтения
           </Badge>
         </div>

@@ -60,7 +60,7 @@ export function AccountSwitcher({
               </div>
               <span
                 className={cn(
-                  "mr-1 flex size-5 items-center justify-center rounded-full text-primary opacity-0",
+                  "mr-1 flex size-5 items-center justify-center rounded-md text-primary opacity-0",
                   user.id === activeUser.id && "opacity-100",
                 )}
               >

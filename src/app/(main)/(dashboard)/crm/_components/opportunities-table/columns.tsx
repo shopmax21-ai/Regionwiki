@@ -79,7 +79,7 @@ export const opportunitiesColumns: ColumnDef<DataTableFeatures, OpportunityRow>[
     accessorKey: "stage",
     header: "Stage",
     cell: ({ row }) => (
-      <Badge variant="outline" className="rounded-full px-2.5">
+      <Badge variant="outline" className="rounded-md px-2.5">
         {row.original.stage}
       </Badge>
     ),
@@ -122,7 +122,7 @@ export const opportunitiesColumns: ColumnDef<DataTableFeatures, OpportunityRow>[
         <Button
           variant="ghost"
           size="icon"
-          className="size-8 rounded-full text-muted-foreground hover:bg-transparent focus-visible:bg-transparent"
+          className="size-8 rounded-md text-muted-foreground hover:bg-transparent focus-visible:bg-transparent"
         >
           <Pencil />
           <span className="sr-only">Edit opportunity</span>

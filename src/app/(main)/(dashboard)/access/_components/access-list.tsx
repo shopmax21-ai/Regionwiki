@@ -143,8 +143,8 @@ export function AccessList({ users }: { users: DbUser[] }) {
           {pending.length > 0 && (
             <Badge className="gap-1.5 bg-amber-500/15 text-amber-700 dark:text-amber-300" variant="secondary">
               <span className="relative flex size-2">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-amber-500/70" />
-                <span className="relative inline-flex size-2 rounded-full bg-amber-500" />
+                <span className="absolute inline-flex size-full animate-ping rounded-md bg-amber-500/70" />
+                <span className="relative inline-flex size-2 rounded-md bg-amber-500" />
               </span>
               {pending.length}
             </Badge>

@@ -82,7 +82,7 @@ export function VehicleTuning({ upgrades }: { upgrades: VehicleUpgrade[] }) {
                   <span
                     key={item.price + String(index)}
                     className={cn(
-                      "h-1.5 flex-1 rounded-full transition-colors",
+                      "h-1.5 flex-1 rounded-md transition-colors",
                       index < level ? "bg-primary" : "bg-muted",
                     )}
                   />

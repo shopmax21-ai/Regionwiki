@@ -116,7 +116,7 @@ function PerformanceHighlightBar({
             <Tooltip>
               <TooltipTrigger
                 aria-label={student.name}
-                className="flex size-5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex size-5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 type="button"
               >
                 <Avatar className="size-5 bg-muted" size="sm">

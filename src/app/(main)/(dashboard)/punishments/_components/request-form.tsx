@@ -31,7 +31,7 @@ const QUICK_MINUTES = [15, 30, 60, 120, 180, 300];
 const QUICK_DAYS = [1, 3, 7, 14, 30, 60];
 
 const PILL =
-  "rounded-full border px-2.5 py-0.5 text-xs outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring aria-pressed:border-primary aria-pressed:bg-primary/10";
+  "rounded-md border px-2.5 py-0.5 text-xs outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring aria-pressed:border-primary aria-pressed:bg-primary/10";
 
 type Errors = Partial<Record<"staticId" | "duration" | "rules" | "forum", string>>;
 

@@ -180,10 +180,10 @@ export function LoginForm({ next, disabled = false }: { next: string; disabled?:
         <p className="flex items-center gap-2 text-muted-foreground text-xs" aria-live="polite">
           <span className="relative flex size-2">
             <span
-              className={`absolute inline-flex size-full rounded-full ${codeReady ? "bg-emerald-500" : "animate-ping bg-primary/70"}`}
+              className={`absolute inline-flex size-full rounded-md ${codeReady ? "bg-emerald-500" : "animate-ping bg-primary/70"}`}
             />
             <span
-              className={`relative inline-flex size-2 rounded-full ${codeReady ? "bg-emerald-500" : "bg-primary"}`}
+              className={`relative inline-flex size-2 rounded-md ${codeReady ? "bg-emerald-500" : "bg-primary"}`}
             />
           </span>
           {codeReady ? "Код отправлен в Telegram. Он действует 5 минут." : "Ждём, пока вы нажмёте Start в боте…"}

@@ -111,7 +111,7 @@ export function IconPicker({
       />
 
       <div className="flex items-center gap-3">
-        <MarkerBadge category={category} icon={value} size="xl" className="rounded-full ring-4 ring-border" />
+        <MarkerBadge category={category} icon={value} size="xl" className="rounded-md ring-4 ring-border" />
         <Button
           type="button"
           variant="outline"

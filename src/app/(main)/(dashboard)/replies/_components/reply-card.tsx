@@ -27,7 +27,7 @@ type ReplyCardProps = {
 };
 
 const iconButton =
-  "flex size-8 items-center justify-center rounded-full border bg-card text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50";
+  "flex size-8 items-center justify-center rounded-md border bg-card text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50";
 
 /** Блок с готовым ответом: цвет категории в значке и рамке, весь блок нажимается и копирует текст. */
 export function ReplyCard({
@@ -106,7 +106,7 @@ export function ReplyCard({
         <span
           aria-hidden="true"
           className={cn(
-            "pointer-events-none flex size-8 items-center justify-center rounded-full border transition-colors",
+            "pointer-events-none flex size-8 items-center justify-center rounded-md border transition-colors",
             copied
               ? "border-transparent bg-[oklch(0.55_0.16_var(--h))] text-white dark:bg-[oklch(0.7_0.14_var(--h))] dark:text-[oklch(0.2_0.03_var(--h))]"
               : "bg-card text-muted-foreground group-hover/reply:text-foreground",

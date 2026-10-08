@@ -206,7 +206,7 @@ export function ChangelogFeed({ entries }: { entries: ChangelogEntry[] }) {
             return (
               <li key={date} className="relative min-w-0">
                 <span
-                  className="absolute top-2 left-[calc(-1.5rem-6.5px)] size-3 rounded-full border-2 border-background bg-primary"
+                  className="absolute top-2 left-[calc(-1.5rem-6.5px)] size-3 rounded-md border-2 border-background bg-primary"
                   aria-hidden="true"
                 />
                 <Collapsible defaultOpen={dayIndex === 0} className="flex min-w-0 flex-col gap-3">

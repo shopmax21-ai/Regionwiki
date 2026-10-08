@@ -48,7 +48,7 @@ export function PendingStatus({ initial, name }: { initial: Status; name: string
   if (status === "rejected") {
     return (
       <div className="flex flex-col items-center gap-4 text-center">
-        <span className="flex size-14 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+        <span className="flex size-14 items-center justify-center rounded-md bg-destructive/15 text-destructive">
           <ShieldX className="size-7" />
         </span>
         <div className="flex flex-col gap-1">
@@ -69,8 +69,8 @@ export function PendingStatus({ initial, name }: { initial: Status; name: string
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col items-center gap-3 text-center">
-        <span className="relative flex size-14 items-center justify-center rounded-full bg-primary/15 text-primary">
-          {status === "pending" && <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />}
+        <span className="relative flex size-14 items-center justify-center rounded-md bg-primary/15 text-primary">
+          {status === "pending" && <span className="absolute inset-0 animate-ping rounded-md bg-primary/20" />}
           {status === "approved" ? <Check className="relative size-7" /> : <Clock className="relative size-7" />}
         </span>
         <div className="flex flex-col gap-1">
@@ -90,7 +90,7 @@ export function PendingStatus({ initial, name }: { initial: Status; name: string
             <li key={step.title} className="flex items-start gap-3">
               <span
                 className={cn(
-                  "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
+                  "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md text-[11px] font-bold",
                   state === "done" && "bg-emerald-500 text-white",
                   state === "current" && "bg-primary text-primary-foreground",
                   state === "todo" && "bg-foreground/10 text-muted-foreground",

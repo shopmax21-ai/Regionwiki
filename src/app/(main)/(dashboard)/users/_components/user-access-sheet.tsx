@@ -70,7 +70,7 @@ export function UserAccessSheet({
                   <PersonAvatar
                     id={user.telegramId}
                     name={personLabel(user)}
-                    className="size-10 rounded-full text-sm"
+                    className="size-10 rounded-md text-sm"
                   />
                 ) : (
                   <Avatar className="size-10">

@@ -94,7 +94,7 @@ export function SearchKindTabs({
             aria-selected={active}
             onClick={() => onChange(tab.id)}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors",
+              "inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors",
               active
                 ? "border-primary bg-primary text-primary-foreground"
                 : "bg-card hover:border-primary/60 hover:text-primary",
@@ -190,7 +190,7 @@ export function SearchEmpty({
             key={word}
             type="button"
             onClick={() => onPick(word)}
-            className="rounded-full border px-3 py-1.5 text-sm transition-colors hover:border-primary/60 hover:text-primary"
+            className="rounded-md border px-3 py-1.5 text-sm transition-colors hover:border-primary/60 hover:text-primary"
           >
             {word}
           </button>

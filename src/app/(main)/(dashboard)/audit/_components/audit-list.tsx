@@ -87,7 +87,7 @@ export function AuditList({
               return (
                 <li key={entry.id} className="flex items-start gap-3 py-3">
                   <span
-                    className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+                    className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"
                     aria-hidden="true"
                   >
                     <Icon className="size-4" />

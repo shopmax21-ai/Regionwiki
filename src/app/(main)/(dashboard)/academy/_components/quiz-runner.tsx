@@ -63,7 +63,7 @@ export function QuizRunner({ test, attemptId, questions, restarting, onRestart, 
         <Card>
           <CardContent className="flex flex-col items-center gap-5 py-12 text-center">
             <div
-              className={`flex size-16 items-center justify-center rounded-full ${result.passed ? "bg-green-500/10 text-green-600 dark:text-green-400" : "bg-destructive/10 text-destructive"}`}
+              className={`flex size-16 items-center justify-center rounded-md ${result.passed ? "bg-green-500/10 text-green-600 dark:text-green-400" : "bg-destructive/10 text-destructive"}`}
             >
               <Icon className="size-8" />
             </div>

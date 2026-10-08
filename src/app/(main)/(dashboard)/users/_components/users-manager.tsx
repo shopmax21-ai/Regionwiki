@@ -103,7 +103,7 @@ function UserIdentity({ user }: { user: UserItem }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
       {user.adminGroup ? (
-        <PersonAvatar id={user.telegramId} name={personLabel(user)} className="size-9 rounded-full text-xs" />
+        <PersonAvatar id={user.telegramId} name={personLabel(user)} className="size-9 rounded-md text-xs" />
       ) : (
         <Avatar className="size-9">
           <AvatarFallback>{getInitials(personLabel(user))}</AvatarFallback>

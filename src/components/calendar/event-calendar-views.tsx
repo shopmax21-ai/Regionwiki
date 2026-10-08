@@ -240,7 +240,7 @@ export function EventCalendarViews({
                     'whitespace-pre',
                     (textPart.type === 'day' && info.isToday)
                       ? [
-                          'first:-ms-1 last:-me-1 size-7 rounded-full font-semibold flex flex-row items-center justify-center bg-chart-1/50',
+                          'first:-ms-1 last:-me-1 size-7 rounded-md font-semibold flex flex-row items-center justify-center bg-chart-1/50',
                           info.hasNavLink && 'group-hover:bg-chart-1/60 group-focus-visible:outline-3 outline-ring/50',
                         ]
                       : 'text-muted-foreground',
@@ -294,7 +294,7 @@ export function EventCalendarViews({
                     'whitespace-pre',
                     (textPart.type === 'day' && info.isToday)
                       ? [
-                          'rounded-full font-semibold flex flex-row items-center justify-center bg-chart-1/50',
+                          'rounded-md font-semibold flex flex-row items-center justify-center bg-chart-1/50',
                           info.hasNavLink && 'group-hover:bg-chart-1/60 group-focus-visible:outline-3 outline-ring/50',
                           info.isNarrow
                             ? 'size-5'
@@ -394,7 +394,7 @@ export function EventCalendarViews({
         highlightClass='bg-chart-1/20'
         nonBusinessHoursClass='bg-foreground/3'
         nowIndicatorLineClass='-m-px border-1 border-destructive'
-        nowIndicatorDotClass="-m-[6px] border-6 border-destructive size-0 rounded-full ring-2 ring-background"
+        nowIndicatorDotClass="-m-[6px] border-6 border-destructive size-0 rounded-md ring-2 ring-background"
 
         /* View-Specific Options
         ----------------------------------------------------------------------------------------- */

@@ -118,7 +118,7 @@ export function VehicleCatalog() {
             Каталог автомобилей, техники и транспорта штата с характеристиками и актуальной стоимостью.
           </p>
         </div>
-        <Badge variant="secondary" className="w-fit gap-2 rounded-full px-3 py-1.5">
+        <Badge variant="secondary" className="w-fit gap-2 rounded-md px-3 py-1.5">
           <Sparkles className="size-3.5" /> {vehicles.length} моделей
         </Badge>
       </section>
@@ -188,8 +188,8 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
       <div
         className={`relative flex h-44 items-center justify-center overflow-hidden bg-gradient-to-br ${vehicle.tone}`}
       >
-        <div className="absolute -right-8 -top-10 size-40 rounded-full border border-white/10" />
-        <div className="absolute -bottom-16 -left-8 size-48 rounded-full border border-white/10" />
+        <div className="absolute -right-8 -top-10 size-40 rounded-md border border-white/10" />
+        <div className="absolute -bottom-16 -left-8 size-48 rounded-md border border-white/10" />
         <CarFront
           className={`relative size-24 stroke-[1.1] opacity-90 transition-transform group-hover:scale-110 ${vehicle.accent}`}
         />

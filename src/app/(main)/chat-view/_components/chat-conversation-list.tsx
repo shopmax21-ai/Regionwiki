@@ -149,7 +149,7 @@ export function ChatConversationList({ conversations, onSelectConversation, clas
                                   )}
 
                                   {conversation.isUnread && (
-                                    <div className="grid size-5 place-items-center rounded-full bg-primary/90 text-primary-foreground text-xs">
+                                    <div className="grid size-5 place-items-center rounded-md bg-primary/90 text-primary-foreground text-xs">
                                       {conversation.unreadCount}
                                     </div>
                                   )}

@@ -83,7 +83,7 @@ export function MembersList({ rows }: { rows: MemberRow[] }) {
               onClick={() => setFilter(key)}
               aria-pressed={filter === key}
               className={cn(
-                "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs outline-none transition focus-visible:ring-2 focus-visible:ring-ring/50",
+                "inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs outline-none transition focus-visible:ring-2 focus-visible:ring-ring/50",
                 filter === key
                   ? "border-primary bg-primary text-primary-foreground"
                   : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground",

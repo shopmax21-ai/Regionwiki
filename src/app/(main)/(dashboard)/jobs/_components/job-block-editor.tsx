@@ -154,7 +154,7 @@ export function InsertSlot({ afterId, actions }: { afterId: string | null; actio
           variant="outline"
           size="icon-xs"
           aria-label="Добавить блок сюда"
-          className="relative rounded-full bg-background opacity-0 transition-opacity group-hover/slot:opacity-100 group-focus-visible/slot:opacity-100 data-[state=open]:opacity-100 max-md:opacity-100"
+          className="relative rounded-md bg-background opacity-0 transition-opacity group-hover/slot:opacity-100 group-focus-visible/slot:opacity-100 data-[state=open]:opacity-100 max-md:opacity-100"
         >
           <Plus />
         </Button>
@@ -338,7 +338,7 @@ export function SliderBody({
                       </div>
                     )}
                     {block.slides.length > 1 && (
-                      <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-1 text-xs shadow-sm">
+                      <span className="absolute left-2 top-2 rounded-md bg-background/90 px-2 py-1 text-xs shadow-sm">
                         {index + 1} / {block.slides.length}
                       </span>
                     )}
@@ -594,7 +594,7 @@ export function FloatingAddBlock({ blocks, actions }: { blocks: readonly EditorB
   return (
     <div className="fixed right-5 bottom-24 z-40 sm:right-7 sm:bottom-28">
       <AddBlockMenu onAdd={(kind) => actions.insert(kind, endId)} onTemplates={() => actions.openTemplates(endId)}>
-        <Button type="button" size="lg" disabled={atLimit} className="h-12 rounded-full px-5 shadow-lg shadow-black/10">
+        <Button type="button" size="lg" disabled={atLimit} className="h-12 rounded-md px-5 shadow-lg shadow-black/10">
           <Plus data-icon="inline-start" /> Добавить блок
         </Button>
       </AddBlockMenu>

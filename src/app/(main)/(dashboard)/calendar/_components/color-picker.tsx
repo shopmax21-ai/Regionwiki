@@ -39,7 +39,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
               title={color.label}
               onClick={() => onChange(color.value)}
               style={{ backgroundColor: color.value, color: readableTextOn(color.value) }}
-              className="flex size-7 items-center justify-center rounded-full outline-none ring-offset-2 ring-offset-background transition-shadow hover:ring-2 hover:ring-foreground/30 focus-visible:ring-2 focus-visible:ring-ring aria-checked:ring-2 aria-checked:ring-foreground"
+              className="flex size-7 items-center justify-center rounded-md outline-none ring-offset-2 ring-offset-background transition-shadow hover:ring-2 hover:ring-foreground/30 focus-visible:ring-2 focus-visible:ring-ring aria-checked:ring-2 aria-checked:ring-foreground"
             >
               {selected && <Check className="size-4" aria-hidden="true" />}
             </button>
@@ -49,7 +49,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
         {/* Свой оттенок: системный выбор цвета лежит под круглой кнопкой */}
         <label
           title="Свой цвет"
-          className="relative flex size-7 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-dashed text-muted-foreground ring-offset-2 ring-offset-background transition-shadow focus-within:ring-2 focus-within:ring-ring hover:ring-2 hover:ring-foreground/30 has-[input:checked]:ring-2"
+          className="relative flex size-7 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-dashed text-muted-foreground ring-offset-2 ring-offset-background transition-shadow focus-within:ring-2 focus-within:ring-ring hover:ring-2 hover:ring-foreground/30 has-[input:checked]:ring-2"
           style={
             !inPalette && isEventColor(current)
               ? { backgroundColor: current, color: readableTextOn(current) }

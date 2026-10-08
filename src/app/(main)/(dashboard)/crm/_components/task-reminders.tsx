@@ -53,7 +53,7 @@ export function TaskReminders() {
               <div className="absolute inset-x-3 top-1/2 h-px -translate-y-1/2 bg-border/80" />
               <div className="absolute top-2 bottom-2 left-[22%] flex w-[44%] items-center rounded-lg bg-primary px-2 text-primary-foreground shadow-sm">
                 <div className="flex items-center gap-2">
-                  <div className="flex size-7 items-center justify-center rounded-full bg-background text-primary">
+                  <div className="flex size-7 items-center justify-center rounded-md bg-background text-primary">
                     <CalendarRange className="size-3.5" />
                   </div>
                   <div className="min-w-0">
@@ -64,7 +64,7 @@ export function TaskReminders() {
                   </div>
                 </div>
               </div>
-              <div className="absolute top-4 bottom-4 left-[64%] w-1 rounded-full bg-background/90" />
+              <div className="absolute top-4 bottom-4 left-[64%] w-1 rounded-md bg-background/90" />
             </div>
           </div>
         </CardContent>

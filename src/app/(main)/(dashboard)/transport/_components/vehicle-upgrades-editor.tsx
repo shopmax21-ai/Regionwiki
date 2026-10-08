@@ -199,7 +199,7 @@ export function VehicleUpgradesEditor({ upgrades, onChange, errors, clearError }
               key={name}
               type="button"
               onClick={() => onChange([...upgrades, emptyUpgrade(name)])}
-              className="flex items-center gap-1 rounded-full border border-dashed px-2 py-0.5 text-muted-foreground text-xs outline-none transition-colors hover:border-primary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex items-center gap-1 rounded-md border border-dashed px-2 py-0.5 text-muted-foreground text-xs outline-none transition-colors hover:border-primary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Plus className="size-3" aria-hidden="true" />
               {name}

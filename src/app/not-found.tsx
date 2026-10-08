@@ -59,7 +59,7 @@ export default function NotFound() {
 
       {/* Фирменная R, уходящая за нижний край */}
       <div aria-hidden="true" className="pointer-events-none absolute -right-16 -bottom-24 hidden md:block lg:right-16">
-        <div className="absolute inset-10 rounded-full bg-primary/25 blur-3xl" />
+        <div className="absolute inset-10 rounded-md bg-primary/25 blur-3xl" />
         <RegionMarkOutline id="rmo-404" className="relative w-96 lg:w-[28rem]" />
       </div>
 
@@ -106,7 +106,7 @@ export default function NotFound() {
                   <Link
                     href={link.href}
                     prefetch={false}
-                    className="inline-flex items-center gap-1.5 rounded-full border bg-background/70 px-3 py-1.5 text-sm transition-colors hover:border-primary/60 hover:text-primary"
+                    className="inline-flex items-center gap-1.5 rounded-md border bg-background/70 px-3 py-1.5 text-sm transition-colors hover:border-primary/60 hover:text-primary"
                   >
                     <Icon className="size-3.5" />
                     {link.title}

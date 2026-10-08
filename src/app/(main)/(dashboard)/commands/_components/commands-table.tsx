@@ -174,7 +174,7 @@ export function CommandsTable({
                   aria-pressed={active}
                   onClick={() => toggle(level)}
                   className={cn(
-                    "rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-ring/50",
+                    "rounded-md outline-none transition focus-visible:ring-2 focus-visible:ring-ring/50",
                     active ? "ring-2 ring-ring" : selected.length > 0 ? "opacity-50 hover:opacity-100" : "hover:opacity-80",
                   )}
                 >
@@ -194,7 +194,7 @@ export function CommandsTable({
             <button
               type="button"
               onClick={() => setDescending((value) => !value)}
-              className="inline-flex h-7 items-center gap-1.5 rounded-full border bg-background px-3 text-xs outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50"
+              className="inline-flex h-7 items-center gap-1.5 rounded-md border bg-background px-3 text-xs outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50"
             >
               <SortIcon className="size-3.5 text-muted-foreground" aria-hidden="true" />
               {descending ? "Сначала высокие уровни" : "Сначала низкие уровни"}

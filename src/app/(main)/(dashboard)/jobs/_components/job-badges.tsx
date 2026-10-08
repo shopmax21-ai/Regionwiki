@@ -11,7 +11,7 @@ const kindClass: Record<JobKind, string> = {
 
 export function KindBadge({ kind, className }: { kind: JobKind; className?: string }) {
   return (
-    <Badge variant="outline" className={cn("rounded-full px-2.5 py-0.5", kindClass[kind], className)}>
+    <Badge variant="outline" className={cn("rounded-md px-2.5 py-0.5", kindClass[kind], className)}>
       {kind === "legal" ? "Легальная" : "Нелегальная"}
     </Badge>
   );

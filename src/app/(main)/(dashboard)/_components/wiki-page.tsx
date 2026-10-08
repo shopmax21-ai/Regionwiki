@@ -297,7 +297,7 @@ export function WikiPage({
           aria-hidden="true"
           className="pointer-events-none absolute -right-12 -bottom-20 hidden md:block lg:right-10 lg:-bottom-24"
         >
-          <div className="absolute inset-10 rounded-full bg-primary/25 blur-3xl" />
+          <div className="absolute inset-10 rounded-md bg-primary/25 blur-3xl" />
           <RegionMarkOutline id="rmo-home" className="relative w-72 lg:w-[23rem]" />
         </div>
 
@@ -339,7 +339,7 @@ export function WikiPage({
                   <X className="size-4" />
                 </button>
               ) : (
-                <Kbd className="absolute top-1/2 right-4 -translate-y-1/2">Ctrl E</Kbd>
+                <Kbd className="absolute top-1/2 right-4 -translate-y-1/2">Ctrl + E</Kbd>
               )}
             </div>
 
@@ -353,7 +353,7 @@ export function WikiPage({
                     changeQuery(word);
                     inputRef.current?.focus();
                   }}
-                  className="rounded-full border bg-background/70 px-3 py-1 transition-colors hover:border-primary/60 hover:text-primary"
+                  className="rounded-md border bg-background/70 px-3 py-1 transition-colors hover:border-primary/60 hover:text-primary"
                 >
                   {word}
                 </button>
