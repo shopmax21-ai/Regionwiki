@@ -4,13 +4,13 @@ import { useMemo, useState } from "react";
 
 import Link from "next/link";
 
-import { ArrowUpRight, Clock3, FileText, RefreshCw, Search, X } from "lucide-react";
+import { ArrowUpRight, Clock3, FileText, Search, X } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 import { ChangelogFeed } from "./changelog-feed";
+import { RuleStatusBadge } from "./rule-status";
 import { Highlight, matchesQuery, PunishmentList } from "./rule-ui";
 import {
   articleHref,
@@ -19,9 +19,8 @@ import {
   type RuleArticleCard,
   type RuleGroup,
   type RuleSearchEntry,
+  type RulesStatus,
   ruleGroups,
-  type SyncStatus,
-  syncInfo,
 } from "./rules-meta";
 
 const MAX_RESULTS = 60;
@@ -30,12 +29,12 @@ export function RulesPage({
   group,
   cards,
   searchIndex,
-  sync,
+  status,
 }: {
   group: RuleGroup;
   cards: RuleArticleCard[];
   searchIndex: RuleSearchEntry[];
-  sync: SyncStatus;
+  status: RulesStatus;
 }) {
   const data = ruleGroups[group];
   const [query, setQuery] = useState("");
@@ -64,8 +63,11 @@ export function RulesPage({
             <h1 className="text-3xl font-semibold tracking-tight">{data.title}</h1>
             <p className="mt-3 max-w-2xl text-muted-foreground">{data.description}</p>
           </div>
-          <div className="flex shrink-0 items-center gap-2 rounded-xl border bg-background px-3 py-2 text-xs text-muted-foreground">
-            <RefreshCw className="size-4 text-primary" /> {syncInfo.interval}
+          <div className="flex shrink-0 flex-col items-start gap-1.5 rounded-xl border bg-background px-3 py-2 md:items-end">
+            <RuleStatusBadge state={status.state} />
+            <span className="text-muted-foreground text-xs">
+              {status.lastChecked ? `Проверено ${status.lastChecked}` : "Проверка ещё не выполнялась"}
+            </span>
           </div>
         </div>
         <div className="relative mt-7 max-w-xl">
@@ -135,7 +137,7 @@ export function RulesPage({
               <CardTitle>Разделы правил</CardTitle>
               <CardDescription className="mt-1">{articles.length} разделов</CardDescription>
             </div>
-            <Badge variant="outline">Актуально</Badge>
+            <RuleStatusBadge state={status.state} />
           </div>
         </CardHeader>
         <CardContent className="grid gap-2 md:grid-cols-2">
@@ -151,8 +153,11 @@ export function RulesPage({
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium">{article.title}</span>
                 <span className="mt-1 block text-xs leading-5 text-muted-foreground">{article.description}</span>
-                <span className="mt-1.5 block text-xs text-muted-foreground">
-                  {article.ruleCount} пунктов · обновлено {article.updatedAt}
+                <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                  <span>
+                    {article.ruleCount} пунктов · обновлено {article.updatedAt}
+                  </span>
+                  {article.status.state !== "fresh" && <RuleStatusBadge state={article.status.state} />}
                 </span>
               </span>
               <ArrowUpRight className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
@@ -163,16 +168,19 @@ export function RulesPage({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Автообновление</CardTitle>
-          <CardDescription>Сервис проверяет изменения автоматически</CardDescription>
+          <CardTitle className="text-base">Актуальность правил</CardTitle>
+          <CardDescription>Разделы сверяются автоматически в фоновом режиме</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
           <span className="flex items-center gap-2">
-            <Clock3 className="size-4" /> Следующая проверка по расписанию
+            <FileText className="size-4" /> Последняя проверка: {status.lastChecked ?? "ещё не выполнялась"}
+            {status.lastChecked && !status.ok ? " (были ошибки)" : ""}
           </span>
           <span className="flex items-center gap-2">
-            <FileText className="size-4" /> Последняя: {sync.lastChecked ?? "ещё не проверялось"}
-            {sync.lastChecked && !sync.ok ? " (были ошибки)" : ""}
+            <Clock3 className="size-4" />
+            {status.total > 0
+              ? `Актуально ${status.fresh} из ${status.total} разделов${status.needsAttention > 0 ? `, требуют проверки: ${status.needsAttention}` : ""}`
+              : "Разделов нет"}
           </span>
         </CardContent>
       </Card>
@@ -180,11 +188,15 @@ export function RulesPage({
   );
 }
 
-export function ChangelogPage({ entries, sync }: { entries: ChangelogEntry[]; sync: SyncStatus }) {
+export function ChangelogPage({ entries, status }: { entries: ChangelogEntry[]; status: RulesStatus }) {
   return (
     <main className="mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-6 pb-10">
-      <section>
+      <section className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-semibold tracking-tight">История изменений</h1>
+        <div className="flex items-center gap-2">
+          <RuleStatusBadge state={status.state} />
+          {status.lastChecked && <span className="text-muted-foreground text-xs">Проверено {status.lastChecked}</span>}
+        </div>
       </section>
       <ChangelogFeed entries={entries} />
     </main>

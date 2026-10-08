@@ -5,8 +5,9 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
-  // Для автообновления правил нужна только база, вход через Telegram не требуется.
-  if (process.env.DATABASE_URL && process.env.RULES_SYNC !== "off") {
+  // Проверка правил по умолчанию идёт фоновой задачей по cron (GET /api/rules/sync, см. scripts/rules-sync-cron.mjs).
+  // Встроенное расписание внутри сайта — запасной вариант без внешнего cron: включается RULES_SYNC=internal.
+  if (process.env.DATABASE_URL && process.env.RULES_SYNC === "internal") {
     const { startRulesScheduler } = await import("@/lib/rules/sync");
     startRulesScheduler();
   }

@@ -1,4 +1,4 @@
-import { getLastRun } from "@/lib/rules/store";
+import { getRulesStatus } from "@/lib/rules/store";
 
 import { getGroupCards, getSearchIndex } from "../_components/rules-content";
 import { RulesPage } from "../_components/rules-page";
@@ -6,10 +6,10 @@ import { RulesPage } from "../_components/rules-page";
 export const dynamic = "force-dynamic";
 
 export default async function GovernmentRulesPage() {
-  const [cards, searchIndex, sync] = await Promise.all([
+  const [cards, searchIndex, status] = await Promise.all([
     getGroupCards("government"),
     getSearchIndex("government"),
-    getLastRun(),
+    getRulesStatus(),
   ]);
-  return <RulesPage group="government" cards={cards} searchIndex={searchIndex} sync={sync} />;
+  return <RulesPage group="government" cards={cards} searchIndex={searchIndex} status={status} />;
 }

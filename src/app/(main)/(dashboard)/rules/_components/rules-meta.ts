@@ -150,6 +150,7 @@ export function articleHref(group: RuleGroup, slug: string): string {
 export type RuleArticleView = RuleArticleMeta & {
   ruleCount: number;
   sections: RuleSectionData[];
+  status: RuleArticleStatus;
 };
 
 /** Краткая запись пункта для поиска по всей группе правил. */
@@ -167,7 +168,7 @@ export type RuleSearchEntry = {
   extra: string;
 };
 
-export type RuleArticleCard = RuleArticleMeta & { ruleCount: number };
+export type RuleArticleCard = RuleArticleMeta & { ruleCount: number; status: RuleArticleStatus };
 
 export type RuleChangeType = "added" | "changed" | "removed";
 
@@ -192,7 +193,7 @@ export type ChangelogEntry = {
 };
 
 /**
- * Записи до включения автообновления (вручную). Новые изменения пишет сервис синхронизации в базу
+ * Записи до включения автообновления (вручную). Новые изменения пишет фоновая проверка в базу
  * (таблица rule_changes) и показывает выше этих записей. Поля changes ниже — примерные данные для демонстрации,
  * при желании их можно удалить.
  */
@@ -271,16 +272,40 @@ export const changelog: ChangelogEntry[] = [
   },
 ];
 
-export const syncInfo = {
-  interval: "Каждые 3 часа",
+/**
+ * Статус актуальности правил. Считается на сервере по журналу фоновой проверки:
+ *  - fresh   — раздел недавно сверен с источником, расхождений и ошибок нет;
+ *  - stale   — раздел давно не сверялся (проверка не запускалась или сбоит);
+ *  - error   — последняя проверка раздела закончилась ошибкой, показан последний сохранённый текст;
+ *  - unknown — раздел ещё ни разу не проверялся (показан встроенный текст базы).
+ */
+export type RuleFreshness = "fresh" | "stale" | "error" | "unknown";
+
+export const ruleFreshnessMeta: Record<RuleFreshness, { label: string; hint: string }> = {
+  fresh: { label: "Актуально", hint: "Раздел недавно проверен, текст соответствует источнику" },
+  stale: { label: "Давно не проверялось", hint: "Проверка давно не запускалась: текст мог устареть" },
+  error: { label: "Не удалось проверить", hint: "Последняя проверка завершилась ошибкой: показан сохранённый текст" },
+  unknown: { label: "Ещё не проверялось", hint: "Показан встроенный текст базы, сверка пока не выполнялась" },
 };
 
-/** Состояние последней проверки форума (читается из журнала в базе). */
-export type SyncStatus = {
-  /** «04.10.2026, 11:00 МСК» или null, если проверок ещё не было */
+/** Статус одного раздела правил. */
+export type RuleArticleStatus = {
+  state: RuleFreshness;
+  /** «04.10.2026, 11:00 МСК» — когда раздел последний раз успешно сверен, или null */
+  checkedAt: string | null;
+};
+
+/** Общий статус набора правил (читается из базы и журнала проверок). */
+export type RulesStatus = {
+  state: RuleFreshness;
+  /** «04.10.2026, 11:00 МСК» — когда фоновая проверка завершилась в последний раз, или null */
   lastChecked: string | null;
-  /** false, если в последней проверке были ошибки */
+  /** false, если в последнем запуске были ошибки */
   ok: boolean;
+  total: number;
+  fresh: number;
+  /** Разделы, которые стоит перепроверить: давно не сверялись, с ошибкой или без проверки */
+  needsAttention: number;
 };
 
 /** Текст для копирования: «ОП 1.9» (или просто «1.9», если у раздела нет тега). */

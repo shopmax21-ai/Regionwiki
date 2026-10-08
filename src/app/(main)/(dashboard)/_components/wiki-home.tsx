@@ -2,10 +2,11 @@ import { mapPlaces } from "@/app/(main)/(dashboard)/map/_components/map-data";
 import { listBusinesses } from "@/lib/businesses/store";
 import { listJobs } from "@/lib/jobs/store";
 import { listRealties } from "@/lib/realties/store";
+import { getRulesStatus } from "@/lib/rules/store";
 import { listVehicles } from "@/lib/vehicles/store";
 
 import { getGroupCards } from "../rules/_components/rules-content";
-import { articleHref, ruleGroups } from "../rules/_components/rules-meta";
+import { articleHref, ruleFreshnessMeta, ruleGroups } from "../rules/_components/rules-meta";
 import WikiPage, { type RecentArticle } from "./wiki-page";
 
 /** «21.09.2026» → число для сортировки */
@@ -22,7 +23,11 @@ export async function WikiHome() {
     listBusinesses(),
     listRealties(),
   ]);
-  const [general, government] = await Promise.all([getGroupCards("general"), getGroupCards("government")]);
+  const [general, government, status] = await Promise.all([
+    getGroupCards("general"),
+    getGroupCards("government"),
+    getRulesStatus(),
+  ]);
 
   const recent: RecentArticle[] = [...general, ...government]
     .sort((a, b) => dateValue(b.updatedAt) - dateValue(a.updatedAt))
@@ -49,6 +54,7 @@ export async function WikiHome() {
         places: mapPlaces.length,
       }}
       recent={recent}
+      rulesStatus={{ state: status.state, label: ruleFreshnessMeta[status.state].label }}
     />
   );
 }

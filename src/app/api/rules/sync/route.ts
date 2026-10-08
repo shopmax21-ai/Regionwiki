@@ -8,9 +8,11 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 /**
- * Запуск проверки форума вручную или по внешнему расписанию (cron Railway, Vercel Cron, cron-job.org):
+ * Фоновая проверка правил. Её запускает внешний cron (GitHub Actions, Railway Cron, Vercel Cron, cron-job.org)
+ * или администратор вручную:
  *   curl -H "Authorization: Bearer $CRON_SECRET" https://<сайт>/api/rules/sync
- * Без CRON_SECRET в production эндпоинт закрыт. Сам сайт и так проверяет форум раз в 3 часа (см. instrumentation.ts).
+ * Рекомендуемое расписание — раз в 3 часа (0 *\/3 * * *); готовый запуск: npm run rules:sync.
+ * Без CRON_SECRET в production эндпоинт закрыт. Параллельные запуски безопасны: второй пропускается по блокировке.
  */
 function isAuthorized(request: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;

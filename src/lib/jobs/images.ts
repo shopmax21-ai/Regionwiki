@@ -1,11 +1,13 @@
 import { getPool } from "@/lib/db/pool";
+import { convertToWebp, ImageConvertError } from "@/lib/images/webp";
 
 import { createHash } from "node:crypto";
 
 /**
  * Картинки гайдов лежат в Postgres (таблица wiki_images, байты в bytea): отдельное файловое хранилище не нужно,
  * а на хостингах без постоянного диска файлы не пропадают при перезапуске.
- * Адрес картинки — хеш её содержимого, поэтому одинаковые файлы хранятся один раз, а ответ можно кешировать навсегда.
+ * Любая загруженная картинка перед сохранением конвертируется в WebP (см. lib/images/webp.ts).
+ * Адрес картинки — хеш её содержимого (уже после конвертации), поэтому одинаковые файлы хранятся один раз, а ответ можно кешировать навсегда.
  */
 
 export const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
@@ -23,7 +25,7 @@ export type ImageMime = "image/png" | "image/jpeg" | "image/webp" | "image/gif";
 
 export class ImageStoreError extends Error {
   constructor(
-    readonly code: "type" | "size" | "empty" | "database",
+    readonly code: "type" | "size" | "empty" | "convert" | "database",
     cause?: unknown,
   ) {
     super(code, { cause });
@@ -81,12 +83,20 @@ export async function saveImage(bytes: Uint8Array, createdBy: string): Promise<s
   const mime = sniffImage(bytes);
   if (!mime) throw new ImageStoreError("type");
 
-  const id = createHash("sha256").update(bytes).digest("hex");
+  let webp: Buffer;
+  try {
+    webp = await convertToWebp(bytes);
+  } catch (error) {
+    if (error instanceof ImageConvertError) throw new ImageStoreError("convert", error);
+    throw error;
+  }
+
+  const id = createHash("sha256").update(webp).digest("hex");
   try {
     await ensureReady();
     await getPool().query(
       "INSERT INTO wiki_images (id, mime, data, size, created_by) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO NOTHING",
-      [id, mime, Buffer.from(bytes), bytes.byteLength, createdBy],
+      [id, "image/webp", webp, webp.byteLength, createdBy],
     );
   } catch (error) {
     throw new ImageStoreError("database", error);

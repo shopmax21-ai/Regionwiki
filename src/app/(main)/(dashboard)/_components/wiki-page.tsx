@@ -14,7 +14,6 @@ import {
   HardHat,
   History,
   House,
-  LifeBuoy,
   Map as MapIcon,
   Scale,
   Search,
@@ -38,8 +37,6 @@ import {
   SearchSkeleton,
 } from "./wiki-search-results";
 
-const FORUM_URL = "https://forum.region.game";
-
 export type WikiStats = {
   rules: number;
   generalArticles: number;
@@ -50,6 +47,9 @@ export type WikiStats = {
   vehicles: number;
   places: number;
 };
+
+/** Короткая подпись статуса актуальности правил для карточки «История изменений». */
+export type RulesStatusLabel = { label: string; state: "fresh" | "stale" | "error" | "unknown" };
 
 export type RecentArticle = {
   title: string;
@@ -77,7 +77,7 @@ type Section = {
   href?: string;
 };
 
-function buildSections(stats: WikiStats): Section[] {
+function buildSections(stats: WikiStats, rulesStatus?: RulesStatusLabel): Section[] {
   return [
     {
       title: "Основные правила",
@@ -97,7 +97,7 @@ function buildSections(stats: WikiStats): Section[] {
       title: "История изменений",
       description: "Что и когда поменялось в правилах: изменения подсвечены по словам",
       icon: History,
-      meta: "Следим за форумом",
+      meta: rulesStatus?.label,
       href: "/rules/changelog",
     },
     {
@@ -208,7 +208,15 @@ function SectionCard({ section, index }: { section: Section; index: number }) {
   );
 }
 
-export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentArticle[] }) {
+export function WikiPage({
+  stats,
+  recent,
+  rulesStatus,
+}: {
+  stats: WikiStats;
+  recent: RecentArticle[];
+  rulesStatus?: RulesStatusLabel;
+}) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<KindFilter>("all");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -216,7 +224,7 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
 
   const trimmed = query.trim();
   const search = useSiteSearch(query, { limit: filter === "all" ? 6 : 30 });
-  const sections = buildSections(stats);
+  const sections = buildSections(stats, rulesStatus);
 
   // «/» — быстрый переход к поиску
   useEffect(() => {
@@ -393,7 +401,7 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
             </div>
           </section>
 
-          <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+          <div className="grid items-stretch gap-6">
             <section className="flex min-w-0 flex-col gap-4 rounded-2xl border bg-card p-5 sm:p-6">
               <div>
                 <h2 className="font-semibold text-lg tracking-tight">Недавно обновлённые правила</h2>
@@ -425,28 +433,6 @@ export function WikiPage({ stats, recent }: { stats: WikiStats; recent: RecentAr
                 ))}
               </ul>
             </section>
-
-            <aside className="relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl bg-primary p-5 text-primary-foreground sm:p-6">
-              <LifeBuoy
-                aria-hidden="true"
-                className="absolute -right-6 -bottom-6 -z-10 size-36 rotate-12 text-primary-foreground/10"
-              />
-              <div className="flex size-10 items-center justify-center rounded-xl bg-primary-foreground/15">
-                <LifeBuoy className="size-5" />
-              </div>
-              <h2 className="mt-4 font-semibold text-lg tracking-tight">Не нашли ответ?</h2>
-              <p className="mt-1.5 text-primary-foreground/75 text-sm leading-6">
-                Задайте вопрос сообществу на форуме Region или напишите в поддержку.
-              </p>
-              <a
-                href={FORUM_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-auto inline-flex items-center gap-2 pt-6 font-medium text-sm hover:underline"
-              >
-                Открыть форум <ArrowUpRight className="size-4" />
-              </a>
-            </aside>
           </div>
         </>
       )}

@@ -1,3 +1,5 @@
+import { prepareImage } from "@/lib/image-resize.client";
+
 export const IMAGE_ACCEPT = "image/png,image/jpeg,image/webp,image/gif";
 const MAX_BYTES = 5 * 1024 * 1024;
 const TYPES = new Set(IMAGE_ACCEPT.split(","));
@@ -7,10 +9,21 @@ export const isImageFile = (file: File) => TYPES.has(file.type);
 /** Загружает картинку на сервер и возвращает её адрес. Бросает Error с понятным текстом. */
 export async function uploadImage(file: File): Promise<string> {
   if (!isImageFile(file)) throw new Error("Подходят только PNG, JPEG, WebP и GIF");
-  if (file.size > MAX_BYTES) throw new Error("Картинка больше 5 МБ, уменьшите её");
+
+  // Большие фото уменьшаются и сохраняются в WebP ещё в браузере. GIF отправляется как есть, чтобы не потерять анимацию;
+  // если подготовка не удалась, файл уходит как был: сервер проверит его и сам конвертирует в WebP.
+  let prepared = file;
+  if (file.type !== "image/gif") {
+    try {
+      prepared = await prepareImage(file);
+    } catch {
+      prepared = file;
+    }
+  }
+  if (prepared.size > MAX_BYTES) throw new Error("Картинка больше 5 МБ, уменьшите её");
 
   const body = new FormData();
-  body.append("file", file);
+  body.append("file", prepared);
 
   let response: Response;
   try {

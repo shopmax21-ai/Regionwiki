@@ -34,7 +34,7 @@ export function ProfileBackgroundControl({ hasBackground }: { hasBackground: boo
 
     setBusy(true);
     try {
-      // Уменьшаем и пересохраняем в JPEG прямо в браузере: так загрузка проходит и с телефона
+      // Уменьшаем и пересохраняем в WebP прямо в браузере: так загрузка проходит и с телефона
       let prepared: File;
       try {
         prepared = await prepareImage(file);

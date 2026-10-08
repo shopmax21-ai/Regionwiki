@@ -72,19 +72,6 @@ function buildSections(): IndexEntry[] {
       }
     }
   }
-  result.push(
-    entry(
-      {
-        id: "section-forum",
-        kind: "section",
-        title: "Форум Region",
-        subtitle: "Внешний сайт",
-        href: "https://forum.region.game",
-        external: true,
-      },
-      { weight: 10 },
-    ),
-  );
   return result;
 }
 
@@ -281,7 +268,7 @@ async function getPlaceEntries(): Promise<IndexEntry[]> {
   return placeCache.entries;
 }
 
-// Правила обновляются с форума и лежат в базе: индекс пересобирается, когда меняется версия набора правил.
+// Правила лежат в собственной базе и обновляются фоновой проверкой: индекс пересобирается, когда меняется версия набора правил.
 async function getRuleEntries(): Promise<IndexEntry[]> {
   const version = await getRulesVersion().catch(() => "");
   if (rulesCache && rulesCache.version === version) return rulesCache.entries;

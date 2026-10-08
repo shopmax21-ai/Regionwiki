@@ -5,22 +5,29 @@ import { countRules, parseRules } from "@/app/(main)/(dashboard)/rules/_content/
 import { diffRules } from "./diff";
 import { discoverThreads, extractRulesText, fetchForumHtml } from "./forum";
 import {
+  type BuiltInArticle,
   hasRulesDatabase,
   invalidateRulesCache,
   listStoredArticles,
+  markArticleErrors,
   recordRun,
+  seedBuiltInArticles,
   touchArticles,
   withSyncLock,
   writeArticle,
 } from "./store";
 import { createHash } from "node:crypto";
 
-/** Разделы форума, где лежат темы с правилами. Тема сопоставляется со статьёй по slug (он одинаковый на форуме и на сайте). */
+/**
+ * Внешний источник, с которым фоновая проверка сверяет собственную базу правил REGION.HELP.
+ * Тема сопоставляется со статьёй по slug (он одинаковый в источнике и на сайте). На сайте источник не показывается.
+ */
 export const FORUM_SOURCES: Record<RuleGroup, string> = {
   general: "https://forum.region.game/forums/obshchiye-pravila-proyekta.43/",
   government: "https://forum.region.game/forums/pravila-gosudarstvennykh-organizatsii.3/",
 };
 
+/** Интервал встроенного расписания (RULES_SYNC=internal). При запуске по cron расписание задаётся снаружи. */
 export const SYNC_INTERVAL_MS = 3 * 60 * 60 * 1000;
 
 /** Если после обновления пунктов стало меньше этой доли от прежнего, считаем, что сломался разбор, и ничего не применяем. */
@@ -46,10 +53,25 @@ function todayMoscow(): string {
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
+/** Встроенные тексты всех разделов: из них собирается начальное содержимое базы. */
+function builtInArticles(): BuiltInArticle[] {
+  const items: BuiltInArticle[] = [];
+  for (const group of Object.keys(ruleGroups) as RuleGroup[]) {
+    for (const article of ruleGroups[group].articles) {
+      const rawText = getStaticSource(article.slug);
+      if (rawText !== undefined) items.push({ slug: article.slug, group, rawText, hash: sha256(rawText) });
+    }
+  }
+  return items;
+}
+
 async function synchronize(): Promise<Exclude<SyncResult, { skipped: string }>> {
   const startedAt = new Date();
+  // База правил самостоятельна: сначала убеждаемся, что в ней есть все разделы, и только потом сверяемся с источником.
+  await seedBuiltInArticles(builtInArticles());
   const stored = await listStoredArticles();
   const errors: string[] = [];
+  const failures: { slug: string; message: string }[] = [];
   const untouched: string[] = [];
   let checked = 0;
   let seeded = 0;
@@ -62,6 +84,9 @@ async function synchronize(): Promise<Exclude<SyncResult, { skipped: string }>> 
       threads = discoverThreads(await fetchForumHtml(listingUrl), new URL(listingUrl).origin);
     } catch (error) {
       errors.push(`Раздел «${ruleGroups[group].title}»: ${message(error)}`);
+      for (const article of ruleGroups[group].articles) {
+        failures.push({ slug: article.slug, message: "Источник недоступен" });
+      }
       continue;
     }
 
@@ -69,6 +94,7 @@ async function synchronize(): Promise<Exclude<SyncResult, { skipped: string }>> 
       const url = threads.get(article.slug);
       if (!url) {
         errors.push(`«${article.title}»: тема не найдена в разделе форума`);
+        failures.push({ slug: article.slug, message: "Раздел не найден в источнике" });
         continue;
       }
 
@@ -83,12 +109,13 @@ async function synchronize(): Promise<Exclude<SyncResult, { skipped: string }>> 
         const after = countRules(parseRules(text));
         if (before > 0 && after < before * MIN_RULES_RATIO) {
           errors.push(`«${article.title}»: на форуме найдено ${after} пунктов вместо ${before}, обновление пропущено`);
+          failures.push({ slug: article.slug, message: "Источник вернул неполный текст, обновление пропущено" });
           continue;
         }
 
         const hash = sha256(text);
-        if (!previous) {
-          // Первая проверка: фиксируем текущий текст форума как точку отсчёта, историю не пишем.
+        if (!previous || previous.origin === "builtin") {
+          // Первая сверка раздела: фиксируем текущий текст источника как точку отсчёта, историю не пишем.
           await writeArticle({ slug: article.slug, group, rawText: text, hash, url });
           seeded += 1;
         } else if (previous.hash === hash) {
@@ -109,11 +136,13 @@ async function synchronize(): Promise<Exclude<SyncResult, { skipped: string }>> 
         }
       } catch (error) {
         errors.push(`«${article.title}»: ${message(error)}`);
+        failures.push({ slug: article.slug, message: "Не удалось загрузить или разобрать раздел" });
       }
     }
   }
 
   await touchArticles(untouched);
+  await markArticleErrors(failures);
   invalidateRulesCache();
 
   const ok = errors.length === 0;
@@ -121,7 +150,7 @@ async function synchronize(): Promise<Exclude<SyncResult, { skipped: string }>> 
   return { ok, checked, seeded, changed, unchanged: untouched.length, errors };
 }
 
-/** Одна проверка форума. Безопасно вызывать одновременно из нескольких мест: параллельный запуск пропускается. */
+/** Одна фоновая проверка. Безопасно вызывать одновременно из нескольких мест: параллельный запуск пропускается. */
 export async function runRulesSync(): Promise<SyncResult> {
   if (!hasRulesDatabase()) return { skipped: "no-database" };
   const outcome = await withSyncLock(synchronize);
@@ -138,7 +167,11 @@ function logResult(result: SyncResult) {
   else console.info(line);
 }
 
-/** Запускает проверку раз в 3 часа внутри процесса сайта (нужен постоянно работающий сервер, например Railway). */
+/**
+ * Запасной вариант для сайта без внешнего cron: запускает проверку раз в 3 часа внутри процесса сайта
+ * (нужен постоянно работающий сервер, например Railway). Включается только RULES_SYNC=internal.
+ * Основной способ — внешний cron, который вызывает /api/rules/sync (см. scripts/rules-sync-cron.mjs).
+ */
 export function startRulesScheduler(): void {
   const globalState = globalThis as unknown as { __rulesSyncStarted?: boolean };
   if (globalState.__rulesSyncStarted) return;

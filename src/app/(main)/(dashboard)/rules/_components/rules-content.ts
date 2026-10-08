@@ -1,4 +1,4 @@
-import { loadOverrides, type StoredArticle } from "@/lib/rules/store";
+import { articleStatus, loadOverrides, type StoredArticle } from "@/lib/rules/store";
 
 import { adminsRules } from "../_content/admins";
 import { airdropRules } from "../_content/airdrop";
@@ -41,23 +41,26 @@ const sources: Record<string, string> = {
   "pravila-gosudarstvennykh-organizatsii": governmentRules,
 };
 
-const cache = new Map<string, RuleArticleView>();
+/** Разобранный текст раздела. Статус считается отдельно при каждом показе: он меняется и без смены текста. */
+type ParsedArticle = Omit<RuleArticleView, "status">;
+
+const cache = new Map<string, ParsedArticle>();
 
 /** Встроенный текст из _content. Нужен как запасной вариант и как точка отсчёта при первой синхронизации. */
 export function getStaticSource(slug: string): string | undefined {
   return sources[slug];
 }
 
-function build(meta: RuleArticleMeta, raw: string, updatedAt: string): RuleArticleView {
+function build(meta: RuleArticleMeta, raw: string, updatedAt: string): ParsedArticle {
   const sections = parseRules(raw);
   return { ...meta, updatedAt, sections, ruleCount: countRules(sections) };
 }
 
 /**
- * Текст берётся из базы (его туда кладёт автообновление с форума), а если там статьи нет или база недоступна,
- * из встроенных файлов _content. Разобранный текст кешируется по хешу, пока он не изменился.
+ * Текст берётся из базы правил REGION.HELP, а если там статьи нет или база недоступна, из встроенных файлов _content.
+ * Разобранный текст кешируется по хешу, пока он не изменился.
  */
-function resolve(meta: RuleArticleMeta, override: StoredArticle | undefined): RuleArticleView | undefined {
+function resolveParsed(meta: RuleArticleMeta, override: StoredArticle | undefined): ParsedArticle | undefined {
   const raw = override?.rawText ?? sources[meta.slug];
   if (raw === undefined) return undefined;
 
@@ -69,6 +72,11 @@ function resolve(meta: RuleArticleMeta, override: StoredArticle | undefined): Ru
   const article = build(meta, raw, override?.updatedLabel ?? meta.updatedAt);
   cache.set(key, article);
   return article;
+}
+
+function resolve(meta: RuleArticleMeta, override: StoredArticle | undefined): RuleArticleView | undefined {
+  const parsed = resolveParsed(meta, override);
+  return parsed ? { ...parsed, status: articleStatus(override) } : undefined;
 }
 
 export function getGroupSlugs(group: RuleGroup): string[] {

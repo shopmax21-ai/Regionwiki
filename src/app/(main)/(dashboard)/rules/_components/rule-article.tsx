@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 
 import type { RuleItem, RuleSectionData, SectionEntry } from "../_content/parse";
+import { RuleStatusBadge } from "./rule-status";
 import { fieldStyles, Highlight, matchesQuery, PunishmentLegend, PunishmentList } from "./rule-ui";
 import { formatRuleRef, type RuleArticleView, ruleGroups } from "./rules-meta";
 
@@ -186,6 +187,10 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
           <Badge variant="outline" className="rounded-full px-3 py-1">
             {article.ruleCount} пунктов
           </Badge>
+          <RuleStatusBadge state={article.status.state} className="px-3 py-1" />
+          {article.status.checkedAt && (
+            <span className="text-muted-foreground text-xs">Проверено {article.status.checkedAt}</span>
+          )}
         </div>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight">{article.title}</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">{article.description}</p>

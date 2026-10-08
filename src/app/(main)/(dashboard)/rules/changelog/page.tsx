@@ -1,4 +1,4 @@
-import { getLastRun, hasRulesDatabase, listChangelogFromDb } from "@/lib/rules/store";
+import { getRulesStatus, hasRulesDatabase, listChangelogFromDb } from "@/lib/rules/store";
 
 import { changelog } from "../_components/rules-meta";
 import { ChangelogPage } from "../_components/rules-page";
@@ -16,6 +16,6 @@ async function loadEntries() {
 }
 
 export default async function RulesChangelogPage() {
-  const [entries, sync] = await Promise.all([loadEntries(), getLastRun()]);
-  return <ChangelogPage entries={entries} sync={sync} />;
+  const [entries, status] = await Promise.all([loadEntries(), getRulesStatus()]);
+  return <ChangelogPage entries={entries} status={status} />;
 }

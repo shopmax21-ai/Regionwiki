@@ -1,17 +1,20 @@
 import {
   type ChangelogEntry,
+  type RuleArticleStatus,
   type RuleChange,
+  type RuleFreshness,
   type RuleGroup,
+  type RulesStatus,
   ruleGroups,
-  type SyncStatus,
 } from "@/app/(main)/(dashboard)/rules/_components/rules-meta";
 import { getPool } from "@/lib/db/pool";
 
 /**
- * Хранилище автообновления правил в Postgres:
- *  - rule_articles   — актуальный текст каждой статьи, как он на форуме (заменяет встроенный из _content);
+ * Собственная база правил REGION.HELP в Postgres. Сайт читает правила только отсюда:
+ *  - rule_articles   — актуальный текст каждой статьи. Сначала заполняется встроенными текстами из _content,
+ *                      дальше обновляется фоновой проверкой (см. sync.ts);
  *  - rule_changes    — история изменений («было / стало» по пунктам);
- *  - rule_sync_runs  — журнал проверок (время, результат, ошибки).
+ *  - rule_sync_runs  — журнал проверок (время, результат, ошибки): по нему считается статус актуальности.
  * Если DATABASE_URL не задан или база недоступна, сайт показывает встроенные тексты, а история берётся из rules-meta.ts.
  */
 
@@ -19,7 +22,21 @@ const SCHEMA_LOCK_ID = 727_003;
 const SYNC_LOCK_ID = 727_002;
 const OVERRIDES_TTL_MS = 15_000;
 
+/**
+ * Через сколько раздел без успешной проверки считается устаревшим. По умолчанию 9 часов: это три пропущенных
+ * запуска при расписании «каждые 3 часа». Меняется переменной RULES_STALE_AFTER_HOURS.
+ */
+const DEFAULT_STALE_AFTER_HOURS = 9;
+
+function staleAfterMs(): number {
+  const hours = Number(process.env.RULES_STALE_AFTER_HOURS);
+  return (Number.isFinite(hours) && hours > 0 ? hours : DEFAULT_STALE_AFTER_HOURS) * 60 * 60 * 1000;
+}
+
 export const hasRulesDatabase = () => Boolean(process.env.DATABASE_URL);
+
+/** builtin — текст пока взят из встроенных файлов и ещё не сверялся; sync — текст уже прошёл проверку. */
+export type ArticleOrigin = "builtin" | "sync";
 
 export type StoredArticle = {
   slug: string;
@@ -27,6 +44,11 @@ export type StoredArticle = {
   rawText: string;
   hash: string;
   updatedLabel: string | null;
+  origin: ArticleOrigin;
+  /** Последняя успешная сверка с источником. null — ещё ни разу не сверялся */
+  checkedAt: Date | null;
+  /** Причина, по которой последняя проверка раздела не удалась. null — ошибок нет */
+  lastError: string | null;
 };
 
 let ready: Promise<void> | null = null;
@@ -47,6 +69,11 @@ async function init(): Promise<void> {
       changed_at    timestamptz,
       created_at    timestamptz NOT NULL DEFAULT now()
     )`);
+    // Миграция: собственная база правил. Текст может быть встроенным (ещё не сверенным), поэтому checked_at необязателен.
+    await client.query("ALTER TABLE rule_articles ALTER COLUMN checked_at DROP NOT NULL");
+    await client.query("ALTER TABLE rule_articles ADD COLUMN IF NOT EXISTS origin text NOT NULL DEFAULT 'sync'");
+    await client.query("ALTER TABLE rule_articles ADD COLUMN IF NOT EXISTS last_error text");
+    await client.query("ALTER TABLE rule_articles ADD COLUMN IF NOT EXISTS last_error_at timestamptz");
     await client.query(`CREATE TABLE IF NOT EXISTS rule_changes (
       id          bigserial PRIMARY KEY,
       slug        text NOT NULL,
@@ -98,12 +125,17 @@ function toStored(row: Record<string, unknown>): StoredArticle {
     rawText: String(row.raw_text),
     hash: String(row.content_hash),
     updatedLabel: (row.updated_label as string | null) ?? null,
+    origin: row.origin === "builtin" ? "builtin" : "sync",
+    checkedAt: row.checked_at ? new Date(row.checked_at as string | Date) : null,
+    lastError: (row.last_error as string | null) ?? null,
   };
 }
 
 /** Все сохранённые статьи (для синхронизации, без кеша). */
 export async function listStoredArticles(): Promise<Map<string, StoredArticle>> {
-  const rows = await query("SELECT slug, grp, raw_text, content_hash, updated_label FROM rule_articles");
+  const rows = await query(
+    "SELECT slug, grp, raw_text, content_hash, updated_label, origin, checked_at, last_error FROM rule_articles",
+  );
   return new Map(rows.map((row) => [String(row.slug), toStored(row)]));
 }
 
@@ -157,13 +189,16 @@ export async function writeArticle(write: ArticleWrite): Promise<void> {
   try {
     await client.query("BEGIN");
     await client.query(
-      `INSERT INTO rule_articles (slug, grp, raw_text, content_hash, forum_url, updated_label, checked_at, changed_at)
-       VALUES ($1, $2, $3, $4, $5, $6, now(), CASE WHEN $6::text IS NULL THEN NULL ELSE now() END)
+      `INSERT INTO rule_articles (slug, grp, raw_text, content_hash, forum_url, updated_label, checked_at, changed_at, origin)
+       VALUES ($1, $2, $3, $4, $5, $6, now(), CASE WHEN $6::text IS NULL THEN NULL ELSE now() END, 'sync')
        ON CONFLICT (slug) DO UPDATE SET
          grp = EXCLUDED.grp,
          raw_text = EXCLUDED.raw_text,
          content_hash = EXCLUDED.content_hash,
          forum_url = EXCLUDED.forum_url,
+         origin = 'sync',
+         last_error = NULL,
+         last_error_at = NULL,
          updated_label = COALESCE(EXCLUDED.updated_label, rule_articles.updated_label),
          checked_at = now(),
          changed_at = CASE WHEN EXCLUDED.updated_label IS NULL THEN rule_articles.changed_at ELSE now() END`,
@@ -186,9 +221,45 @@ export async function writeArticle(write: ArticleWrite): Promise<void> {
   }
 }
 
+/** Раздел проверен, расхождений нет: обновляем время сверки и снимаем прежнюю ошибку. */
 export async function touchArticles(slugs: string[]): Promise<void> {
   if (slugs.length === 0) return;
-  await query("UPDATE rule_articles SET checked_at = now() WHERE slug = ANY($1::text[])", [slugs]);
+  await query(
+    "UPDATE rule_articles SET checked_at = now(), last_error = NULL, last_error_at = NULL, origin = 'sync' WHERE slug = ANY($1::text[])",
+    [slugs],
+  );
+}
+
+/** Проверка раздела не удалась. Текст остаётся прежним, а раздел получает статус «Не удалось проверить». */
+export async function markArticleErrors(failures: { slug: string; message: string }[]): Promise<void> {
+  for (const failure of failures) {
+    await query("UPDATE rule_articles SET last_error = $2, last_error_at = now() WHERE slug = $1", [
+      failure.slug,
+      failure.message.slice(0, 500),
+    ]);
+  }
+}
+
+export type BuiltInArticle = { slug: string; group: RuleGroup; rawText: string; hash: string };
+
+/**
+ * Кладёт во встроенные тексты в базу всё, чего там ещё нет, — так база правил полна с первого запуска и не зависит
+ * от внешнего источника. Уже сохранённые статьи не трогаются. Возвращает число добавленных.
+ */
+export async function seedBuiltInArticles(items: BuiltInArticle[]): Promise<number> {
+  let added = 0;
+  for (const item of items) {
+    const rows = await query(
+      `INSERT INTO rule_articles (slug, grp, raw_text, content_hash, forum_url, updated_label, checked_at, origin)
+       VALUES ($1, $2, $3, $4, NULL, NULL, NULL, 'builtin')
+       ON CONFLICT (slug) DO NOTHING
+       RETURNING slug`,
+      [item.slug, item.group, item.rawText, item.hash],
+    );
+    added += rows.length;
+  }
+  if (added > 0) invalidateRulesCache();
+  return added;
 }
 
 export type RunRecord = {
@@ -258,25 +329,71 @@ export async function listChangelogFromDb(limit = 200): Promise<ChangelogEntry[]
   return entries;
 }
 
-export async function getLastRun(): Promise<SyncStatus> {
-  if (!hasRulesDatabase()) return { lastChecked: null, ok: true };
+const moscowFormat = new Intl.DateTimeFormat("ru-RU", {
+  timeZone: "Europe/Moscow",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/** «04.10.2026, 11:00 МСК» */
+export function formatMoscow(value: Date | string): string {
+  return `${moscowFormat.format(new Date(value)).replace(" г.", "")} МСК`;
+}
+
+/** Статус одного раздела по тому, что о нём записано в базе. Без записи в базе раздел считается непроверенным. */
+export function articleStatus(stored: StoredArticle | undefined, now = Date.now()): RuleArticleStatus {
+  if (!stored?.checkedAt) {
+    return { state: stored?.lastError ? "error" : "unknown", checkedAt: null };
+  }
+  const checkedAt = formatMoscow(stored.checkedAt);
+  if (stored.lastError) return { state: "error", checkedAt };
+  if (now - stored.checkedAt.getTime() > staleAfterMs()) return { state: "stale", checkedAt };
+  return { state: "fresh", checkedAt };
+}
+
+async function readLastRun(): Promise<{ lastChecked: string | null; ok: boolean }> {
+  const rows = await query("SELECT finished_at, ok FROM rule_sync_runs ORDER BY id DESC LIMIT 1");
+  const row = rows[0];
+  if (!row) return { lastChecked: null, ok: true };
+  return { lastChecked: formatMoscow(row.finished_at as string | Date), ok: Boolean(row.ok) };
+}
+
+const emptyStatus = (total: number): RulesStatus => ({
+  state: "unknown",
+  lastChecked: null,
+  ok: true,
+  total,
+  fresh: 0,
+  needsAttention: 0,
+});
+
+/**
+ * Общий статус актуальности правил: худший из статусов разделов плюс время последней фоновой проверки.
+ * Без базы или при её сбое статус «неизвестно», а сайт показывает встроенные тексты.
+ */
+export async function getRulesStatus(): Promise<RulesStatus> {
+  const metas = Object.values(ruleGroups).flatMap((group) => group.articles);
+  if (!hasRulesDatabase()) return emptyStatus(metas.length);
+
   try {
-    const rows = await query("SELECT finished_at, ok FROM rule_sync_runs ORDER BY id DESC LIMIT 1");
-    const row = rows[0];
-    if (!row) return { lastChecked: null, ok: true };
-    const label = new Intl.DateTimeFormat("ru-RU", {
-      timeZone: "Europe/Moscow",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-      .format(new Date(row.finished_at as string | Date))
-      .replace(" г.", "");
-    return { lastChecked: `${label} МСК`, ok: Boolean(row.ok) };
+    const [stored, lastRun] = await Promise.all([listStoredArticles(), readLastRun()]);
+    const now = Date.now();
+    const counts: Record<RuleFreshness, number> = { fresh: 0, stale: 0, error: 0, unknown: 0 };
+    for (const meta of metas) counts[articleStatus(stored.get(meta.slug), now).state] += 1;
+
+    const total = metas.length;
+    let state: RuleFreshness;
+    if (total === 0 || counts.unknown === total) state = "unknown";
+    else if (counts.error > 0) state = "error";
+    else if (counts.stale + counts.unknown > 0) state = "stale";
+    else state = "fresh";
+
+    return { state, ...lastRun, total, fresh: counts.fresh, needsAttention: total - counts.fresh };
   } catch (error) {
-    console.error("[rules] Не удалось прочитать журнал проверок", error);
-    return { lastChecked: null, ok: true };
+    console.error("[rules] Не удалось определить статус актуальности правил", error);
+    return emptyStatus(metas.length);
   }
 }

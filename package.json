@@ -11,12 +11,11 @@
     "check": "biome check",
     "check:fix": "biome check --write",
     "prepare": "husky",
-    "generate:presets": "ts-node -P tsconfig.scripts.json src/scripts/generate-theme-presets.ts"
+    "generate:presets": "ts-node -P tsconfig.scripts.json src/scripts/generate-theme-presets.ts",
+    "migrate:webp": "ts-node -P tsconfig.scripts.json src/scripts/convert-images-to-webp.ts"
   },
   "lint-staged": {
-    "*.{js,ts,jsx,tsx}": [
-      "biome check --write --no-errors-on-unmatched"
-    ]
+    "*.{js,ts,jsx,tsx}": ["biome check --write --no-errors-on-unmatched"]
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -46,6 +45,7 @@
     "react-hook-form": "^7.89.0",
     "react-resizable-panels": "^4.14.2",
     "recharts": "^3.10.1",
+    "sharp": "^0.35.5",
     "simple-icons": "^16.33.0",
     "sonner": "^2.0.8",
     "vaul": "^1.1.2",

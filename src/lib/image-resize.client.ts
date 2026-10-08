@@ -1,6 +1,6 @@
 /**
  * Подготовка картинки к загрузке в браузере. Фото с телефона обычно весят 4–12 МБ, бывают в HEIC или приходят
- * без типа файла, поэтому перед отправкой картинка читается как изображение, уменьшается и сохраняется в JPEG.
+ * без типа файла, поэтому перед отправкой картинка читается как изображение, уменьшается и сохраняется в WebP.
  * Тип определяется по содержимому (браузер сам декодирует файл), а не по file.type.
  */
 
@@ -19,7 +19,8 @@ type Options = {
   targetBytes?: number;
 };
 
-const KEEP_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+// Как есть отправляется только WebP: всё остальное конвертируется (на сервере это делается в любом случае)
+const KEEP_TYPES = new Set(["image/webp"]);
 
 type Decoded = { source: CanvasImageSource; width: number; height: number; release: () => void };
 
@@ -53,7 +54,7 @@ async function decode(file: File): Promise<Decoded> {
 }
 
 const toBlob = (canvas: HTMLCanvasElement, quality: number) =>
-  new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+  new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", quality));
 
 export async function prepareImage(file: File, options: Options = {}): Promise<File> {
   const { maxSide = 1920, keepIfUnderBytes = 1.5 * 1024 * 1024, targetBytes = 3 * 1024 * 1024 } = options;
@@ -76,9 +77,7 @@ export async function prepareImage(file: File, options: Options = {}): Promise<F
     const context = canvas.getContext("2d");
     if (!context) throw new ImagePrepareError("encode");
 
-    // JPEG не хранит прозрачность: подкладываем белый фон, иначе прозрачные места станут чёрными
-    context.fillStyle = "#fff";
-    context.fillRect(0, 0, canvas.width, canvas.height);
+    // WebP хранит прозрачность, поэтому фон не подкладывается
     context.drawImage(decoded.source, 0, 0, canvas.width, canvas.height);
 
     let blob: Blob | null = null;
@@ -88,8 +87,11 @@ export async function prepareImage(file: File, options: Options = {}): Promise<F
     }
     if (!blob || blob.size > targetBytes) throw new ImagePrepareError("encode");
 
-    const name = `${file.name.replace(/\.[^.]*$/, "") || "banner"}.jpg`;
-    return new File([blob], name, { type: "image/jpeg" });
+    // Старые браузеры (Safari до 14) не умеют кодировать WebP и отдают PNG: тогда имя и тип остаются честными,
+    // а в WebP файл превратит сервер
+    const isWebp = blob.type === "image/webp";
+    const name = `${file.name.replace(/\.[^.]*$/, "") || "image"}.${isWebp ? "webp" : "png"}`;
+    return new File([blob], name, { type: isWebp ? "image/webp" : "image/png" });
   } finally {
     decoded.release();
   }

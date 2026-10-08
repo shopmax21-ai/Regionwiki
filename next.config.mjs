@@ -21,6 +21,14 @@ const securityHeaders = [
 const nextConfig = {
   poweredByHeader: false,
   reactCompiler: true,
+  // sharp (конвертация загрузок в WebP, lib/images/webp.ts) содержит нативный код: его нельзя включать в сборку,
+  // он подключается на сервере как обычный пакет.
+  serverExternalPackages: ["sharp"],
+  images: {
+    // Если картинка идёт через оптимизатор next/image, отдаётся WebP. Загруженные картинки уже лежат в WebP.
+    formats: ["image/webp"],
+    minimumCacheTTL: 60 * 60 * 24 * 365,
+  },
   compiler: {
     // error/warn/info оставляем: по ним видно причину сбоя входа ([auth] ...) в логах хостинга.
     removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn", "info"] } : false,

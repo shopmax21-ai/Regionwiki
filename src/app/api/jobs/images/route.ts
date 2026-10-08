@@ -46,6 +46,12 @@ export async function POST(request: NextRequest) {
       if (error.code === "type") {
         return NextResponse.json({ error: "Подходят только PNG, JPEG, WebP и GIF" }, { status: 415 });
       }
+      if (error.code === "convert") {
+        return NextResponse.json(
+          { error: "Не удалось обработать картинку: файл повреждён или слишком большой по размеру изображения" },
+          { status: 415 },
+        );
+      }
       if (error.code === "size")
         return NextResponse.json({ error: "Картинка больше 5 МБ, уменьшите её" }, { status: 413 });
       if (error.code === "empty") return NextResponse.json({ error: "Файл пустой" }, { status: 400 });
