@@ -16,10 +16,12 @@ import {
   Map as MapIcon,
   MessageSquareReply,
   Package,
+  ScrollText,
   ShieldAlert,
   ShieldCheck,
   UserRound,
   Users,
+  UsersRound,
 } from "lucide-react";
 
 import { isPathVisible, type Viewer } from "@/lib/auth/protected-paths";
@@ -235,6 +237,24 @@ function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
           title: "Роли и права",
           url: "/roles",
           icon: Lock,
+        },
+      ],
+    },
+    {
+      id: 7,
+      label: "Администрация",
+      items: [
+        {
+          id: "staff",
+          title: "Администрация",
+          url: "/staff",
+          icon: UsersRound,
+        },
+        {
+          id: "audit",
+          title: "Аудит действий",
+          url: "/audit",
+          icon: ScrollText,
         },
       ],
     },
