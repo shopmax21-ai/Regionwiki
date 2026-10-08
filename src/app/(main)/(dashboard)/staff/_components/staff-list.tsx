@@ -5,15 +5,16 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 
 import { cn } from "cn";
-import { ChevronRight, Search, X } from "lucide-react";
+import { ChevronRight, Search, UserCheck, X } from "lucide-react";
 
 import { PersonAvatar } from "@/components/person-avatar";
 import { PersonName } from "@/components/person-name";
 import { ProfileBanner } from "@/components/profile-banner";
-import { RoleBadge } from "@/components/role-icon";
+import { RoleIcon } from "@/components/role-icon";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { type AdminGroup, adminGroups, groupLevel } from "@/lib/auth/groups";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { type AdminGroup, adminGroups, groupInfo, groupLevel } from "@/lib/auth/groups";
 import type { Person } from "@/lib/auth/person";
 import { personLabel } from "@/lib/auth/person";
 
@@ -40,14 +41,6 @@ export function StaffList({ members, meId }: { members: StaffMember[]; meId: str
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<readonly AdminGroup[]>([]);
   const [sort, setSort] = useState<SortMode>("senior");
-
-  const counts = useMemo(() => {
-    const result = new Map<AdminGroup, number>();
-    for (const { person } of members) {
-      if (person.group) result.set(person.group, (result.get(person.group) ?? 0) + 1);
-    }
-    return result;
-  }, [members]);
 
   const visible = useMemo(() => {
     const needle = normalize(query).replace(/^#/, "");
@@ -114,17 +107,17 @@ export function StaffList({ members, meId }: { members: StaffMember[]; meId: str
                 key={group}
                 type="button"
                 aria-pressed={active}
+                aria-label={groupInfo[group].label}
                 onClick={() => toggle(group)}
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-ring/50",
-                  active ? "ring-2 ring-ring" : selected.length > 0 ? "opacity-50 hover:opacity-100" : "hover:opacity-80",
+                  "flex size-9 items-center justify-center rounded-lg border outline-none transition focus-visible:ring-2 focus-visible:ring-ring/50",
+                  active
+                    ? "border-ring bg-muted ring-1 ring-ring"
+                    : "bg-background hover:bg-muted/60",
+                  !active && selected.length > 0 && "opacity-50 hover:opacity-100",
                 )}
               >
-                <RoleBadge group={group} className="h-7 cursor-pointer px-2.5 text-xs" />
-                <span className="sr-only">{counts.get(group) ?? 0}</span>
-                <span aria-hidden="true" className="-ml-1 pr-1 text-muted-foreground text-xs tabular-nums">
-                  {counts.get(group) ?? 0}
-                </span>
+                <RoleIcon group={group} className="size-5" />
               </button>
             );
           })}
@@ -172,19 +165,18 @@ export function StaffList({ members, meId }: { members: StaffMember[]; meId: str
             {visible.map(({ person, lastLoginAt }) => {
               const own = person.id === meId;
               return (
-                <li key={person.id}>
+                <li key={person.id} className="h-full">
                   <Link
                     href={own ? "/profile" : `/profile/${encodeURIComponent(person.id)}`}
                     prefetch={false}
-                    className="group block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    className="group block h-full rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                   >
                     <Card className="relative h-full overflow-hidden transition-colors group-hover:bg-muted/40">
                       {person.background && <ProfileBanner src={person.background} />}
-                      <CardContent className="relative z-10 flex items-center gap-3">
+                      <CardContent className="relative z-10 flex min-h-16 items-center gap-3">
                         <PersonAvatar id={person.id} name={person.name} className="size-12 rounded-xl text-base" />
                         <div className="flex min-w-0 flex-1 flex-col gap-1">
                           <PersonName person={person} showRole={true} className="text-sm" />
-                          {own && <span className="text-muted-foreground text-xs">это вы</span>}
                           <span className="truncate text-muted-foreground text-xs">
                             {lastLoginAt
                               ? `Был(а) на сайте: ${dateFormat.format(new Date(lastLoginAt))}`
@@ -193,6 +185,20 @@ export function StaffList({ members, meId }: { members: StaffMember[]; meId: str
                         </div>
                         <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                       </CardContent>
+                      {own && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span
+                              role="img"
+                              aria-label="Это вы"
+                              className="absolute top-2 right-2 z-20 inline-flex cursor-default text-primary"
+                            >
+                              <UserCheck className="size-4" aria-hidden="true" />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">Это вы</TooltipContent>
+                        </Tooltip>
+                      )}
                     </Card>
                   </Link>
                 </li>
