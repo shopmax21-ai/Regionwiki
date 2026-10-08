@@ -3,6 +3,7 @@ import { CalendarClock, Fingerprint, LogIn } from "lucide-react";
 import type { UserStats } from "@/lib/academy/store";
 import type { DbUser, LoginEvent } from "@/lib/auth/db";
 import type { AdminGroup } from "@/lib/auth/groups";
+import { identityLocked } from "@/lib/auth/identity";
 
 import { AcademyStatsCard } from "./academy-stats-card";
 import { IdentityCard } from "./identity-card";
@@ -77,7 +78,8 @@ export function ProfileView({
 
       <ProfileStatTiles stats={stats} />
 
-      {group && <IdentityCard person={person} mode="self" />}
+      {/* Карточка нужна только пока данные не указаны; после сохранения она скрывается */}
+      {group && !identityLocked(person) && <IdentityCard person={person} mode="self" />}
 
       {academy && <AcademyStatsCard stats={academy} />}
 
