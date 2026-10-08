@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 
 import Link from "next/link";
 
-import { ArrowRight, CloudSun, Info, Plus, Search, TriangleAlert, Users, X } from "lucide-react";
+import { ArrowRight, Info, Plus, Search, TriangleAlert, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,27 +71,24 @@ export function JobsHub({ jobs, editor, problem }: JobsHubProps) {
     .filter((group) => group.items.length > 0);
 
   return (
-    <main className="mx-auto flex w-full min-w-0 max-w-7xl flex-col gap-8 pb-10">
-      <section className="relative overflow-hidden rounded-3xl border bg-card px-4 py-8 shadow-sm sm:px-6 md:px-10 md:py-12">
-        <div className="pointer-events-none absolute -top-24 -right-20 size-72 rounded-md bg-primary/10 blur-3xl" />
-        <div className="relative max-w-2xl">
-          <h1 className="text-3xl font-semibold tracking-tight md:text-5xl">Всё о работах</h1>
-          <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground md:text-lg">
+    <main data-content-width="full" className="flex w-full min-w-0 flex-col gap-8 pb-10">
+      <section className="px-2 pt-6 pb-2 md:px-6 md:pt-8">
+        <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Всё о работах</h1>
+          <p className="mt-3 max-w-xl text-muted-foreground">
             Работы приносят деньги и открывают новые способы заработка. Одни рассчитаны на спокойную добычу, другие — на
             перевозки, командные задания или риск.
           </p>
           {editor === "on" && (
-            <div className="mt-6">
-              <Button asChild size="sm">
-                <Link href="/jobs/new" prefetch={false}>
-                  <Plus data-icon="inline-start" /> Добавить работу
-                </Link>
-              </Button>
-            </div>
+            <Button asChild size="sm" className="mt-4">
+              <Link href="/jobs/new" prefetch={false}>
+                <Plus data-icon="inline-start" /> Добавить работу
+              </Link>
+            </Button>
           )}
-          <div className="relative mt-8 max-w-xl">
+          <div className="relative mt-7 w-full">
             <Search
-              className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground"
+              className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground"
               aria-hidden="true"
             />
             <Input
@@ -100,14 +97,14 @@ export function JobsHub({ jobs, editor, problem }: JobsHubProps) {
               placeholder="Найти работу, например шахтёр или такси"
               aria-label="Поиск по работам"
               data-section-search
-              className="h-14 rounded-2xl bg-background pr-11 pl-12 text-base shadow-sm"
+              className="h-11 rounded-xl pr-11 pl-10"
             />
             {query && (
               <button
                 type="button"
                 onClick={() => setQuery("")}
                 aria-label="Очистить поиск"
-                className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <X className="size-4" />
               </button>
@@ -181,37 +178,8 @@ export function JobsHub({ jobs, editor, problem }: JobsHubProps) {
         </div>
       )}
 
-      <section className="grid gap-4 lg:grid-cols-[1fr_340px]">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-xl bg-muted">
-                <Users className="size-5" />
-              </div>
-              <div>
-                <CardTitle>Бонусы и совместная работа</CardTitle>
-                <CardDescription>Как увеличить заработок</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 text-sm leading-6">
-            <p>
-              Повышенная оплата зависит от профессии. Бонус может действовать в определённое время суток, при подходящей
-              погоде, с подпиской или при работе в группе.
-            </p>
-            <ul className="flex list-disc flex-col gap-1 pl-5 marker:text-muted-foreground">
-              <li>У шахтёра, строителя, мусорщика, почтальона и инкассатора есть групповой бонус для 2–4 игроков.</li>
-              <li>У электрика групповой бонус выше, чем у остальных.</li>
-              <li>Пожарные тушат общий вызов группой до четырёх человек.</li>
-              <li>Дальнобойщики открывают конвой отдельным умением.</li>
-            </ul>
-            <p className="flex items-start gap-2 rounded-lg border-l-2 border-primary bg-primary/5 px-3 py-2">
-              <CloudSun className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-              Перед стартом откройте гайд: проверьте уровень доступа, стоимость аренды и временные бонусы.
-            </p>
-          </CardContent>
-        </Card>
-        {starter && (
+      {starter && (
+        <section>
           <Card className="bg-primary text-primary-foreground">
             <CardHeader>
               <div className="flex size-10 items-center justify-center rounded-xl bg-primary-foreground/15">
@@ -232,8 +200,8 @@ export function JobsHub({ jobs, editor, problem }: JobsHubProps) {
               </Link>
             </CardContent>
           </Card>
-        )}
-      </section>
+        </section>
+      )}
 
       <p className="text-center text-xs text-muted-foreground">
         Вся информация на сайте носит ознакомительный характер и не является публичной офертой.

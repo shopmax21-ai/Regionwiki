@@ -14,8 +14,8 @@ import { listJobs } from "@/lib/jobs/store";
 import { getPreference } from "@/server/server-actions";
 
 import { SearchDialog } from "./_components/header/search-dialog";
-import { SectionSearchShortcut } from "./_components/section-search-shortcut";
 import { ThemeSwitcher } from "./_components/header/theme-switcher";
+import { SectionSearchShortcut } from "./_components/section-search-shortcut";
 
 export default async function Layout({ children }: Readonly<{ children: ReactNode }>) {
   const cookieStore = await cookies();
