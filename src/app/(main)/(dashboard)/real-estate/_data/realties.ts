@@ -63,6 +63,6 @@ const generated: Realty[] = Array.from({ length: 120 }, (_, index) => ({
 
 export const realties: Realty[] = [...featured, ...generated];
 
-export const formatPrice = (price: number) => `$${price.toLocaleString("ru-RU")}`;
+export const formatPrice = (price: number) => `${price.toLocaleString("ru-RU")}\u00A0₽`;
 
 export const realtyTitle = (realty: Realty) => `${singularTitles[realty.category]} #${realty.id}`;

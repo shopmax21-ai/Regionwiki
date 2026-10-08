@@ -61,7 +61,7 @@ export const businessTitle = (business: Business) => `${business.category} #${bu
 
 export const businessKey = (business: Business) => `${business.category}-${business.id}`;
 
-export const formatPrice = (price: number) => `$${price.toLocaleString("ru-RU")}`;
+export const formatPrice = (price: number) => `${price.toLocaleString("ru-RU")}\u00A0₽`;
 
 const categoryOrder = new Map<string, number>(categories.map((category, index) => [category, index]));
 

@@ -26,7 +26,7 @@ const vehicles = [
     type: "Легковые",
     speed: 290,
     fast: 325,
-    price: "$17 000 000",
+    price: "17 000 000\u00A0₽",
     tag: "Majestic Премиум",
     tone: "from-amber-950 via-zinc-900 to-slate-950",
     accent: "text-amber-300",
@@ -37,7 +37,7 @@ const vehicles = [
     type: "Водный транспорт",
     speed: 300,
     fast: 335,
-    price: "$20 000 000",
+    price: "20 000 000\u00A0₽",
     tag: "Majestic Премиум",
     tone: "from-cyan-950 via-slate-900 to-zinc-950",
     accent: "text-cyan-300",
@@ -48,7 +48,7 @@ const vehicles = [
     type: "Легковые",
     speed: 340,
     fast: 375,
-    price: "$29 000 000",
+    price: "29 000 000\u00A0₽",
     tag: "Осенний кейс 2026",
     tone: "from-violet-950 via-zinc-900 to-slate-950",
     accent: "text-violet-300",
@@ -59,7 +59,7 @@ const vehicles = [
     type: "Грузовые",
     speed: 135,
     fast: 170,
-    price: "$20 000 000",
+    price: "20 000 000\u00A0₽",
     tag: "Осенний кейс 2026",
     tone: "from-emerald-950 via-zinc-900 to-slate-950",
     accent: "text-emerald-300",
@@ -70,7 +70,7 @@ const vehicles = [
     type: "Легковые",
     speed: 245,
     fast: 280,
-    price: "$8 500 000",
+    price: "8 500 000\u00A0₽",
     tag: "Стандарт",
     tone: "from-rose-950 via-zinc-900 to-slate-950",
     accent: "text-rose-300",
@@ -81,7 +81,7 @@ const vehicles = [
     type: "Мототехника",
     speed: 265,
     fast: 300,
-    price: "$6 200 000",
+    price: "6 200 000\u00A0₽",
     tag: "Стандарт",
     tone: "from-blue-950 via-zinc-900 to-slate-950",
     accent: "text-blue-300",
@@ -131,7 +131,8 @@ export function VehicleCatalog() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Поиск транспорта..."
-              aria-label="Поиск транспорта" data-section-search
+              aria-label="Поиск транспорта"
+              data-section-search
               className="pl-10"
             />
           </div>

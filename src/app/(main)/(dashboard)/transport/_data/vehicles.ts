@@ -336,7 +336,7 @@ export const paintColors: PaintColor[] = [
   { name: "Бежевый", hex: "#d9c5a0" },
 ];
 
-export const formatPrice = (price: number) => `$${price.toLocaleString("ru-RU")}`;
+export const formatPrice = (price: number) => `${price.toLocaleString("ru-RU")}\u00A0₽`;
 
 export const vehicleTitle = (vehicle: Vehicle) => `${vehicle.name} ${vehicle.model}`;
 

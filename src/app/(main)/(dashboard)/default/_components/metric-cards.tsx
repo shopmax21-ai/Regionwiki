@@ -1,4 +1,4 @@
-import { DollarSign, TrendingDown, TrendingUp, UserPlus, Users, Waves } from "lucide-react";
+import { RussianRuble, TrendingDown, TrendingUp, UserPlus, Users, Waves } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,14 +10,14 @@ export function MetricCards() {
         <CardHeader>
           <CardTitle>
             <div className="flex size-7 items-center justify-center rounded-lg border bg-muted text-muted-foreground">
-              <DollarSign className="size-4" />
+              <RussianRuble className="size-4" />
             </div>
           </CardTitle>
           <CardDescription>Total Revenue</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="font-medium text-3xl tabular-nums leading-none tracking-tight">$1,250.00</div>
+            <div className="font-medium text-3xl tabular-nums leading-none tracking-tight">1 250,00&nbsp;₽</div>
             <Badge>
               <TrendingUp className="size-3" />
               +12.5%

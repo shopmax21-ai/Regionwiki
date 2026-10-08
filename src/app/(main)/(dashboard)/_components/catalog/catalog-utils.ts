@@ -15,7 +15,7 @@ export function formatPrice(input: string) {
 
   if (!digits) return "—";
 
-  return `$${digits.replace(/\B(?=(\d{3})+(?!\d))/g, " ")}`;
+  return `${digits.replace(/\B(?=(\d{3})+(?!\d))/g, " ")}\u00A0₽`;
 }
 
 export function getInitials(name: string) {

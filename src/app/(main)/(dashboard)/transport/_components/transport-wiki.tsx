@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { ChevronLeft, ChevronRight, CircleDollarSign, Funnel, LayoutGrid, Rows2, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Funnel, LayoutGrid, Rows2, RussianRuble, Search } from "lucide-react";
 
 import { FilterDropdown } from "@/app/(main)/(dashboard)/_components/filter-dropdown";
 import { Button } from "@/components/ui/button";
@@ -109,7 +109,8 @@ export function TransportWiki({ vehicles, editor = "off" }: { vehicles: Vehicle[
                 setPage(1);
               }}
               placeholder="Поиск транспорта..."
-              aria-label="Поиск транспорта" data-section-search
+              aria-label="Поиск транспорта"
+              data-section-search
               className="h-10 pl-9"
             />
           </div>
@@ -128,7 +129,7 @@ export function TransportWiki({ vehicles, editor = "off" }: { vehicles: Vehicle[
               {view === "list" ? <LayoutGrid className="size-4" /> : <Rows2 className="size-4" />}
             </Button>
             <FilterDropdown
-              icon={CircleDollarSign}
+              icon={RussianRuble}
               label="Источник"
               value={source}
               options={sourceOptions}
