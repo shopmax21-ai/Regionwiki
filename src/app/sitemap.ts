@@ -13,6 +13,7 @@ const PUBLIC_ROUTES = [
   "/business",
   "/jobs",
   "/map",
+  "/media",
   "/rules/general",
   "/rules/government",
   "/rules/changelog",

@@ -15,6 +15,7 @@ import {
   History,
   House,
   Map as MapIcon,
+  MonitorPlay,
   Scale,
   Search,
   Sparkles,
@@ -134,6 +135,12 @@ function buildSections(stats: WikiStats, rulesStatus?: RulesStatusLabel): Sectio
       icon: MapIcon,
       meta: plural(stats.places, ["метка", "метки", "меток"]),
       href: "/map",
+    },
+    {
+      title: "Медиа",
+      description: "Трансляции игроков REGION на Twitch: кто в эфире прямо сейчас",
+      icon: MonitorPlay,
+      href: "/media",
     },
     {
       title: "Начало игры",
