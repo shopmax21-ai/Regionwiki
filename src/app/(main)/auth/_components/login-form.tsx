@@ -107,9 +107,11 @@ export function LoginForm({ next, disabled = false }: { next: string; disabled?:
           error?: string;
           message?: string;
           status?: string;
+          needsProfile?: boolean;
           next?: string;
         };
         if (res.ok) {
+          if (data.needsProfile) return window.location.assign("/auth/v2/onboarding");
           return window.location.assign(data.status === "approved" ? (data.next ?? next) : "/auth/v2/pending");
         }
         if (data.error === "expired") return reset("Код истёк или попытки закончились. Начните вход заново.");

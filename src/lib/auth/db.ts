@@ -90,6 +90,8 @@ function ensureSchema(): Promise<void> {
     // Игровой профиль администратора: Никнейм и Static ID. Показываются на сайте вместо имени из Telegram.
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS nickname text`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS static_id text`;
+    // Уровень администрации, на который человек рассчитывает при регистрации (указывает сам, решает вышестоящий)
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS requested_group text`;
     // Фон блока профиля: адрес загруженной картинки (/api/jobs/images/<хеш>)
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_background text`;
     // Администраторы, назначенные до появления групп, становятся Гл.Администраторами
@@ -140,6 +142,8 @@ export type DbUser = {
   nickname: string | null;
   /** Static ID администратора (не указан: null) */
   staticId: string | null;
+  /** Предположительный уровень администрации, который человек указал при первой авторизации */
+  requestedGroup: AdminGroup | null;
   /** Фон блока профиля: адрес картинки или null */
   profileBackground: string | null;
   createdAt: Date;
@@ -159,6 +163,7 @@ type UserRow = {
   notify_calendar: boolean;
   nickname: string | null;
   static_id: string | null;
+  requested_group: string | null;
   profile_background: string | null;
   created_at: string;
   decided_at: string | null;
@@ -183,6 +188,7 @@ const toUser = (row: UserRow): DbUser => ({
   notifyCalendar: row.notify_calendar === true,
   nickname: row.nickname ?? null,
   staticId: row.static_id ?? null,
+  requestedGroup: isAdminGroup(row.requested_group) ? row.requested_group : null,
   profileBackground: safeBackground(row.profile_background),
   createdAt: new Date(row.created_at),
   decidedAt: row.decided_at ? new Date(row.decided_at) : null,
@@ -508,7 +514,25 @@ export async function setUserIdentityOnce(
 ): Promise<DbUser | null> {
   await ensureSchema();
   const rows = await sql`UPDATE users SET nickname = ${nickname}, static_id = ${staticId}
-    WHERE telegram_id = ${telegramId} AND nickname IS NULL AND static_id IS NULL RETURNING *`;
+    WHERE telegram_id = ${telegramId} AND (nickname IS NULL OR static_id IS NULL) RETURNING *`;
+  return rows[0] ? toUser(rows[0] as UserRow) : null;
+}
+
+/**
+ * Первичная анкета при первой авторизации: Никнейм, Static ID и предположительный уровень администрации.
+ * Записывается один раз: если Никнейм и Static ID уже есть, строка не обновится и вернётся null.
+ * requestedGroup null оставляет поле пустым (например, у тех, кто уже назначен в группу).
+ */
+export async function setUserOnboarding(
+  telegramId: string,
+  nickname: string,
+  staticId: string,
+  requestedGroup: AdminGroup | null,
+): Promise<DbUser | null> {
+  await ensureSchema();
+  const rows = await sql`UPDATE users SET nickname = ${nickname}, static_id = ${staticId},
+      requested_group = COALESCE(${requestedGroup}::text, requested_group)
+    WHERE telegram_id = ${telegramId} AND (nickname IS NULL OR static_id IS NULL) RETURNING *`;
   return rows[0] ? toUser(rows[0] as UserRow) : null;
 }
 

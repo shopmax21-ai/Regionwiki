@@ -1,10 +1,11 @@
 import { cn } from "cn";
 import type { LucideIcon } from "lucide-react";
-import { CheckCircle2, Clock, Fingerprint, Inbox, Users, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Fingerprint, Inbox, Shield, UserRound, Users, XCircle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { DbUser } from "@/lib/auth/db";
+import { groupInfo } from "@/lib/auth/groups";
 
 import { AccessAvatar } from "./access-avatar";
 import { DecisionButtons } from "./decision-buttons";
@@ -90,6 +91,27 @@ function PendingCard({ user, now }: { user: DbUser; now: number }) {
             </dt>
             <dd className="font-medium tabular-nums">{user.telegramId}</dd>
           </div>
+          {user.nickname && (
+            <div className="flex items-center justify-between gap-3">
+              <dt className="flex items-center gap-1.5 text-muted-foreground">
+                <UserRound className="size-3.5" aria-hidden="true" />
+                Ник / Static
+              </dt>
+              <dd className="truncate font-medium">
+                {user.nickname}
+                {user.staticId ? ` · ${user.staticId}` : ""}
+              </dd>
+            </div>
+          )}
+          {user.requestedGroup && (
+            <div className="flex items-center justify-between gap-3">
+              <dt className="flex items-center gap-1.5 text-muted-foreground">
+                <Shield className="size-3.5" aria-hidden="true" />
+                Ожидаемый уровень
+              </dt>
+              <dd className="font-medium">{groupInfo[user.requestedGroup].label}</dd>
+            </div>
+          )}
         </dl>
 
         <div className="mt-auto">

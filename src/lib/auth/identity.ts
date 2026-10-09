@@ -1,5 +1,7 @@
 /** Никнейм и Static ID администратора. Файл без серверного кода: можно импортировать и в клиентских компонентах. */
 
+import { type AdminGroup, isAdminGroup } from "./groups";
+
 export const IDENTITY_LIMITS = {
   nicknameMin: 2,
   nicknameMax: 32,
@@ -50,10 +52,13 @@ export function validateIdentity(input: {
 
 /**
  * Никнейм и Static ID указываются один раз. Дальше их меняет только вышестоящий администратор.
- * Признак «уже указано» — любое из двух полей заполнено.
+ * Признак «уже указано» — заполнены оба поля.
  */
 export const identityLocked = (value: { nickname: string | null; staticId: string | null }): boolean =>
-  value.nickname !== null || value.staticId !== null;
+  value.nickname !== null && value.staticId !== null;
+
+/** Анкета при первой авторизации заполнена: есть и Никнейм, и Static ID. */
+export const identityComplete = identityLocked;
 
 /** Первое заполнение: нужны оба поля, потому что потом самому исправить их будет нельзя. */
 export function validateFirstIdentity(input: {
@@ -65,4 +70,16 @@ export function validateFirstIdentity(input: {
   const { nickname, staticId } = parsed.value;
   if (!nickname || !staticId) return { ok: false, error: "Укажите и Никнейм, и Static ID" };
   return { ok: true, value: { nickname, staticId } };
+}
+
+/** Анкета первой авторизации: Никнейм, Static ID и предположительный уровень администрации (если он нужен). */
+export function validateOnboarding(
+  input: { nickname?: unknown; staticId?: unknown; group?: unknown },
+  options: { groupRequired: boolean },
+): { ok: true; value: { nickname: string; staticId: string; group: AdminGroup | null } } | { ok: false; error: string } {
+  const parsed = validateFirstIdentity(input);
+  if (!parsed.ok) return parsed;
+  if (!options.groupRequired) return { ok: true, value: { ...parsed.value, group: null } };
+  if (!isAdminGroup(input.group)) return { ok: false, error: "Выберите предположительный уровень администрации" };
+  return { ok: true, value: { ...parsed.value, group: input.group } };
 }

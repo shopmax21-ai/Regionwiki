@@ -7,6 +7,7 @@ export const SESSION_RECHECK_SECONDS = 5 * 60;
 export const LOGIN_PATH = "/auth/v2/login";
 
 export { isProtectedPath, PROTECTED_PATHS } from "./protected-paths";
+export const ONBOARDING_PATH = "/auth/v2/onboarding";
 export const PENDING_PATH = "/auth/v2/pending";
 export const DEFAULT_REDIRECT = "/";
 

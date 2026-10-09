@@ -1,6 +1,6 @@
 import { type AuthConfig, CODE_LENGTH, CODE_TTL_SECONDS, TELEGRAM_API_URL } from "./config";
 import { type DbUser, getGroupPermissions, listAdmins, listUserOverrides } from "./db";
-import { effectivePermissions } from "./groups";
+import { effectivePermissions, groupInfo } from "./groups";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 type InlineButton = { text: string; callback_data: string };
@@ -83,7 +83,12 @@ export async function requestRecipients(config: AuthConfig): Promise<string[]> {
 
 /** Новая заявка уходит администраторам с кнопками «Одобрить» и «Отклонить». */
 export async function notifyAdminsAboutRequest(config: AuthConfig, user: DbUser) {
-  const text = `🆕 <b>Новая заявка на доступ</b>\n\n${userLabel(user)}`;
+  const details = [
+    user.nickname ? `Никнейм: ${escapeHtml(user.nickname)}` : null,
+    user.staticId ? `Static ID: ${user.staticId}` : null,
+    user.requestedGroup ? `Предположительный уровень: ${groupInfo[user.requestedGroup].label}` : null,
+  ].filter(Boolean);
+  const text = `🆕 <b>Новая заявка на доступ</b>\n\n${userLabel(user)}${details.length ? `\n${details.join("\n")}` : ""}`;
   await Promise.allSettled(
     (await requestRecipients(config)).map((adminId) =>
       sendMessage(config, adminId, text, [

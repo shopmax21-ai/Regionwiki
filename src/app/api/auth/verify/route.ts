@@ -13,9 +13,9 @@ import {
 } from "@/lib/auth/config";
 import { consumeAttempt, recordLogin, takeAttempt } from "@/lib/auth/db";
 import { authErrorResponse } from "@/lib/auth/errors";
+import { identityComplete } from "@/lib/auth/identity";
 import { clientIp } from "@/lib/auth/request";
 import { createSessionToken } from "@/lib/auth/session";
-import { notifyAdminsAboutRequest } from "@/lib/auth/telegram";
 
 /** Проверка 6 цифр. Первый вход создаёт заявку, дальше вход просто пишется в базу. */
 export async function POST(request: NextRequest) {
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
     if (!(await consumeAttempt(tokenHash))) return expired();
 
-    const { user, created, loginId } = await recordLogin({
+    const { user, loginId } = await recordLogin({
       telegramId: attempt.telegramId,
       name: attempt.name ?? attempt.telegramId,
       username: attempt.username,
@@ -54,7 +54,8 @@ export async function POST(request: NextRequest) {
       userAgent: request.headers.get("user-agent") ?? "",
     });
 
-    if (created && user.status === "pending") await notifyAdminsAboutRequest(config, user);
+    // Заявка уходит администраторам после анкеты первой авторизации (см. completeOnboarding), чтобы в ней были данные
+    const needsProfile = !identityComplete(user);
 
     const session = await createSessionToken(
       {
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({
       ok: true,
       status: user.status,
+      needsProfile,
       next: safeNext(typeof body?.next === "string" ? body.next : null),
     });
     response.cookies.set(SESSION_COOKIE, session, {

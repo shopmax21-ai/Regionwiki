@@ -78,7 +78,7 @@ export function ProfileView({
 
       <ProfileStatTiles stats={stats} />
 
-      {/* Карточка нужна только пока данные не указаны; после сохранения она скрывается */}
+      {/* Запасной вариант: анкета первой авторизации обычно уже заполнена, тогда карточки здесь нет */}
       {group && !identityLocked(person) && <IdentityCard person={person} mode="self" />}
 
       {academy && <AcademyStatsCard stats={academy} />}

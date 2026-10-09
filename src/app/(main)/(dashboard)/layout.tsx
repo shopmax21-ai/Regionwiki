@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { cn } from "cn";
 
@@ -8,8 +9,10 @@ import { AppSidebar } from "@/app/(main)/(dashboard)/_components/sidebar/app-sid
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { getViewerAccess } from "@/lib/auth/admin";
+import { ONBOARDING_PATH } from "@/lib/auth/config";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getPeopleSafe } from "@/lib/auth/db";
+import { identityComplete } from "@/lib/auth/identity";
 import { listJobs } from "@/lib/jobs/store";
 import { getPreference } from "@/server/server-actions";
 
@@ -31,6 +34,8 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
   const { isAdmin, permissions } = authorized ? await getViewerAccess() : { isAdmin: false, permissions: [] };
   // Группа, Никнейм и Static ID берутся из базы: в сессии только имя из Telegram
   const me = session ? (await getPeopleSafe([session.id])).get(session.id) : undefined;
+  // Первая авторизация: пока не указаны Никнейм и Static ID, дальше сайта не пускаем
+  if (session && me && !identityComplete(me)) redirect(ONBOARDING_PATH);
   const user = session
     ? {
         id: session.id,
