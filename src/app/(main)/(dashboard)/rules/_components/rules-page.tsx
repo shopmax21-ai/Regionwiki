@@ -10,7 +10,6 @@ import { ArrowUpRight, CornerDownLeft, Search, Sparkles, X } from "lucide-react"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { quickSituations } from "@/lib/rules/search-dictionary";
 import { createRuleSearcher, findNoteMatch, textMatchesQuery } from "@/lib/rules/smart-search";
 
 import { ChangelogFeed } from "./changelog-feed";
@@ -181,25 +180,6 @@ export function RulesPage({
               )}
             </div>
           </div>
-
-          {!isSearching && (
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-              <span className="text-xs text-muted-foreground">Частые ситуации:</span>
-              {quickSituations.map((situation) => (
-                <button
-                  key={situation.label}
-                  type="button"
-                  onClick={() => {
-                    setQuery(situation.query);
-                    inputRef.current?.focus();
-                  }}
-                  className="rounded-full border bg-card px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:bg-muted/40 hover:text-foreground"
-                >
-                  {situation.label}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </section>
 
