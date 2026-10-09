@@ -138,10 +138,6 @@ export function JobsHub({ jobs, editor, problem }: JobsHubProps) {
       )}
 
       <section className="flex flex-col gap-3" aria-label="Фильтр работ">
-        <p className="text-sm text-muted-foreground">
-          Большинство работ открывается с нужного уровня персонажа. Альтернатива — получить 2 ранг на одной из двух
-          работ предыдущего этапа. Точные условия смотрите в гайде каждой работы.
-        </p>
         <fieldset className="m-0 flex min-w-0 gap-2 overflow-x-auto border-0 p-0 pb-1">
           <legend className="sr-only">Тип работ</legend>
           {filters.map((item) => (
@@ -167,9 +163,6 @@ export function JobsHub({ jobs, editor, problem }: JobsHubProps) {
                 <h2 className="text-2xl font-semibold tracking-tight">{jobKinds[kind].title}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">{jobKinds[kind].description}</p>
               </div>
-              <span className="shrink-0 text-sm text-muted-foreground">
-                {items.length} {pluralJobs(items.length)}
-              </span>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {items.map((job) => (
