@@ -66,10 +66,6 @@ export async function getGroupCards(group: RuleGroup): Promise<RuleArticleCard[]
 }
 
 function toSearchEntry(article: RuleArticleView, sectionTitle: string, rule: RuleItem): RuleSearchEntry {
-  const extra = [...rule.items, ...rule.fields.flatMap((field) => [field.label, field.text, ...field.items])]
-    .filter(Boolean)
-    .join(" ");
-
   return {
     group: article.group,
     slug: article.slug,
@@ -80,7 +76,11 @@ function toSearchEntry(article: RuleArticleView, sectionTitle: string, rule: Rul
     anchor: rule.anchor,
     text: rule.text,
     punishments: rule.punishments,
-    extra,
+    items: rule.items,
+    notes: rule.fields.map((field) => ({
+      label: field.label,
+      text: [field.text, ...field.items].filter(Boolean).join(" "),
+    })),
   };
 }
 

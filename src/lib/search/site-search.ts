@@ -12,7 +12,12 @@ import {
 } from "@/app/(main)/(dashboard)/real-estate/_data/realties";
 import { terms } from "@/app/(main)/(dashboard)/rp-terms/_data/terms";
 import { getSearchIndex } from "@/app/(main)/(dashboard)/rules/_components/rules-content";
-import { articleHref, formatRuleRef, ruleGroups } from "@/app/(main)/(dashboard)/rules/_components/rules-meta";
+import {
+  articleHref,
+  formatRuleRef,
+  ruleExtraText,
+  ruleGroups,
+} from "@/app/(main)/(dashboard)/rules/_components/rules-meta";
 import {
   formatPrice as formatVehiclePrice,
   type Vehicle,
@@ -95,7 +100,7 @@ async function buildRules(): Promise<IndexEntry[]> {
     }
 
     for (const rule of await getSearchIndex(group)) {
-      const body = [rule.text, rule.extra, rule.punishments.join(" ")].filter(Boolean).join(" ");
+      const body = [rule.text, ruleExtraText(rule), rule.punishments.join(" ")].filter(Boolean).join(" ");
       const ref = formatRuleRef(rule.tag, rule.number);
       result.push(
         entry(

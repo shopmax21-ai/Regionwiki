@@ -4,38 +4,30 @@ import { cn } from "cn";
 
 import type { RuleFieldKind } from "@/lib/rules/parse";
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
+/** Подсвечивает найденные слова (регулярное выражение строит умный поиск, см. lib/rules/smart-search). */
+export function Highlight({ text, regex }: { text: string; regex: RegExp | null }) {
+  if (!regex) return <>{text}</>;
 
-export function queryTerms(query: string): string[] {
-  return query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-}
-
-/** Все слова запроса должны встретиться в тексте (регистр не важен). */
-export function matchesQuery(haystack: string, query: string): boolean {
-  const terms = queryTerms(query);
-  if (terms.length === 0) return true;
-  const lower = haystack.toLowerCase();
-  return terms.every((term) => lower.includes(term));
-}
-
-export function Highlight({ text, query }: { text: string; query: string }) {
-  const terms = queryTerms(query);
-  if (terms.length === 0) return <>{text}</>;
-
-  const pattern = new RegExp(`(${terms.map(escapeRegExp).join("|")})`, "gi");
-  const parts = text.split(pattern);
+  const parts: { value: string; match: boolean }[] = [];
+  let cursor = 0;
+  for (const match of text.matchAll(regex)) {
+    const start = match.index ?? 0;
+    if (start > cursor) parts.push({ value: text.slice(cursor, start), match: false });
+    parts.push({ value: match[0], match: true });
+    cursor = start + match[0].length;
+  }
+  if (parts.length === 0) return <>{text}</>;
+  if (cursor < text.length) parts.push({ value: text.slice(cursor), match: false });
 
   return (
     <>
       {parts.map((part, index) =>
-        index % 2 === 1 ? (
-          <mark key={`${index}-${part}`} className="rounded-sm bg-primary/20 px-0.5 text-foreground">
-            {part}
+        part.match ? (
+          <mark key={`${index}-${part.value}`} className="rounded-sm bg-primary/20 px-0.5 text-foreground">
+            {part.value}
           </mark>
         ) : (
-          <span key={`${index}-${part}`}>{part}</span>
+          <span key={`${index}-${part.value}`}>{part.value}</span>
         ),
       )}
     </>
@@ -66,7 +58,7 @@ const severityClass: Record<Severity, string> = {
   neutral: "border-border bg-muted text-foreground",
 };
 
-export function PunishmentList({ items }: { items: string[] }) {
+export function PunishmentList({ items, highlight = null }: { items: string[]; highlight?: RegExp | null }) {
   if (items.length === 0) return null;
 
   return (
@@ -80,7 +72,7 @@ export function PunishmentList({ items }: { items: string[] }) {
             severityClass[severityOf(item)],
           )}
         >
-          {item}
+          <Highlight text={item} regex={highlight} />
         </span>
       ))}
     </div>

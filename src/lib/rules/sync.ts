@@ -1,6 +1,7 @@
 import { type RuleGroup, ruleGroups } from "@/app/(main)/(dashboard)/rules/_components/rules-meta";
 
 import { diffRules } from "./diff";
+import { warmRuleEmbeddings } from "./embeddings";
 import { discoverThreads, extractRulesText, fetchForumHtml } from "./forum";
 import { countRules, parseRules } from "./parse";
 import {
@@ -137,7 +138,10 @@ async function synchronize(): Promise<Exclude<SyncResult, { skipped: string }>> 
 export async function runRulesSync(): Promise<SyncResult> {
   if (!hasRulesDatabase()) return { skipped: "no-database" };
   const outcome = await withSyncLock(synchronize);
-  return outcome.locked ? { skipped: "locked" } : outcome.value;
+  if (outcome.locked) return { skipped: "locked" };
+  // Правила могли измениться: заранее обновляем векторы для поиска по смыслу (если он включён)
+  warmRuleEmbeddings();
+  return outcome.value;
 }
 
 function logResult(result: SyncResult) {

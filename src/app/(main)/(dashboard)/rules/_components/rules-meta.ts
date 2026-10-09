@@ -163,9 +163,16 @@ export type RuleSearchEntry = {
   anchor: string;
   text: string;
   punishments: string[];
-  /** Всё остальное: списки, примечания, пояснения, примеры, исключения */
-  extra: string;
+  /** Пункты списка внутри правила */
+  items: string[];
+  /** Примечания, пояснения, примеры, исключения */
+  notes: { label: string; text: string }[];
 };
+
+/** Всё, кроме основного текста и наказаний, одной строкой (для общего поиска по сайту). */
+export function ruleExtraText(entry: Pick<RuleSearchEntry, "items" | "notes">): string {
+  return [...entry.items, ...entry.notes.flatMap((note) => [note.label, note.text])].filter(Boolean).join(" ");
+}
 
 export type RuleArticleCard = RuleArticleMeta & { ruleCount: number; status: RuleArticleStatus };
 

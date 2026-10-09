@@ -1,54 +1,41 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 
 import Link from "next/link";
 
 import { ArrowLeft, Check, Copy, Search, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
-import type { RuleItem, RuleSectionData, SectionEntry } from "@/lib/rules/parse";
+import type { RuleItem, RuleSectionData, TextItem } from "@/lib/rules/parse";
+import { createRuleSearcher } from "@/lib/rules/smart-search";
 
+import { RuleSearchNotes } from "./rule-search-notes";
 import { RuleStatusBlock } from "./rule-status";
-import { fieldStyles, Highlight, matchesQuery, PunishmentLegend, PunishmentList } from "./rule-ui";
+import { fieldStyles, Highlight, PunishmentLegend, PunishmentList } from "./rule-ui";
 import { formatRuleRef, type RuleArticleView, ruleGroups } from "./rules-meta";
+import { articleToDocs, textBlockKey } from "./rules-search";
 
-function ruleHaystack(rule: RuleItem): string {
-  return [
-    rule.number,
-    rule.text,
-    ...rule.items,
-    ...rule.punishments,
-    ...rule.fields.flatMap((field) => [field.label, field.text, ...field.items]),
-  ].join(" ");
-}
-
-function entryMatches(entry: SectionEntry, query: string): boolean {
-  if (!query.trim()) return true;
-  if (entry.type === "rule") return matchesQuery(ruleHaystack(entry), query);
-  return matchesQuery([entry.text, ...entry.items].join(" "), query);
-}
-
-function Paragraphs({ text, query, className }: { text: string; query: string; className?: string }) {
+function Paragraphs({ text, regex, className }: { text: string; regex: RegExp | null; className?: string }) {
   if (!text) return null;
   return (
     <>
       {text.split("\n").map((line, index) => (
         <p key={`${index}-${line.slice(0, 24)}`} className={className}>
-          <Highlight text={line} query={query} />
+          <Highlight text={line} regex={regex} />
         </p>
       ))}
     </>
   );
 }
 
-function BulletList({ items, query }: { items: string[]; query: string }) {
+function BulletList({ items, regex }: { items: string[]; regex: RegExp | null }) {
   if (items.length === 0) return null;
   return (
     <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-sm leading-6 marker:text-muted-foreground">
       {items.map((item) => (
         <li key={item}>
-          <Highlight text={item} query={query} />
+          <Highlight text={item} regex={regex} />
         </li>
       ))}
     </ul>
@@ -81,12 +68,12 @@ async function copyText(value: string): Promise<boolean> {
 function RuleCard({
   rule,
   tag,
-  query,
+  regex,
   highlighted,
 }: {
   rule: RuleItem;
   tag?: string;
-  query: string;
+  regex: RegExp | null;
   highlighted: boolean;
 }) {
   const [copied, setCopied] = useState(false);
@@ -122,14 +109,14 @@ function RuleCard({
           </span>
         </button>
         <div className="min-w-0 w-full flex-1">
-          <Paragraphs text={rule.text} query={query} className="text-sm leading-6 [&:not(:first-child)]:mt-2" />
-          <BulletList items={rule.items} query={query} />
+          <Paragraphs text={rule.text} regex={regex} className="text-sm leading-6 [&:not(:first-child)]:mt-2" />
+          <BulletList items={rule.items} regex={regex} />
         </div>
       </div>
 
       {rule.punishments.length > 0 && (
         <div className="mt-3 border-t pt-3">
-          <PunishmentList items={rule.punishments} />
+          <PunishmentList items={rule.punishments} highlight={regex} />
         </div>
       )}
 
@@ -143,8 +130,8 @@ function RuleCard({
                 className={`min-w-0 rounded-lg border-l-2 px-3 py-2 text-sm leading-6 ${style.box}`}
               >
                 <span className={`mr-1.5 font-semibold ${style.label}`}>{field.label}:</span>
-                {field.text && <Paragraphs text={field.text} query={query} className="inline whitespace-pre-line" />}
-                <BulletList items={field.items} query={query} />
+                {field.text && <Paragraphs text={field.text} regex={regex} className="inline whitespace-pre-line" />}
+                <BulletList items={field.items} regex={regex} />
               </div>
             );
           })}
@@ -154,11 +141,11 @@ function RuleCard({
   );
 }
 
-function TextBlock({ entry, query }: { entry: Extract<SectionEntry, { type: "text" }>; query: string }) {
+function TextBlock({ entry, regex }: { entry: TextItem; regex: RegExp | null }) {
   return (
     <div className="rounded-xl border border-dashed bg-muted/30 p-4 text-sm leading-6">
-      <Paragraphs text={entry.text} query={query} className="[&:not(:first-child)]:mt-2" />
-      <BulletList items={entry.items} query={query} />
+      <Paragraphs text={entry.text} regex={regex} className="[&:not(:first-child)]:mt-2" />
+      <BulletList items={entry.items} regex={regex} />
     </div>
   );
 }
@@ -211,16 +198,27 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const sections = useMemo(
-    () =>
-      article.sections
-        .map((section) => ({ ...section, entries: section.entries.filter((entry) => entryMatches(entry, query)) }))
-        .filter((section) => section.entries.length > 0),
-    [article.sections, query],
-  );
+  const deferredQuery = useDeferredValue(query);
+  const searcher = useMemo(() => createRuleSearcher(articleToDocs(article)), [article]);
+  const result = useMemo(() => searcher.search(deferredQuery), [searcher, deferredQuery]);
+  const isFiltering = query.trim().length > 0;
+
+  // Остаются только найденные пункты, порядок и разделы сохраняются как в правилах
+  const sections = useMemo(() => {
+    if (!deferredQuery.trim()) return article.sections;
+    const found = new Set(result.hits.map((hit) => hit.doc.key));
+    return article.sections
+      .map((section) => ({
+        ...section,
+        entries: section.entries.filter((entry, position) =>
+          found.has(entry.type === "rule" ? entry.anchor : textBlockKey(section.id, position)),
+        ),
+      }))
+      .filter((section) => section.entries.length > 0);
+  }, [article.sections, deferredQuery, result]);
 
   const shownRules = sections.reduce((total, section) => total + ruleCountOf(section), 0);
-  const isFiltering = query.trim().length > 0;
+  const regex = isFiltering ? result.highlight : null;
 
   return (
     <main className="flex w-full min-w-0 flex-col gap-6 pb-10">
@@ -245,7 +243,7 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
               ref={inputRef}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Номер пункта или слова из правила, например 4.9 или DM"
+              placeholder="Номер пункта, слова или ситуация: 4.9, DM, убили без причины"
               className="h-11 rounded-xl pl-10 pr-24"
               aria-label="Поиск по пунктам раздела"
             />
@@ -300,11 +298,14 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
 
         <div className="flex min-w-0 flex-col gap-6 sm:gap-8">
           {isFiltering && (
-            <p className="text-sm text-muted-foreground">
-              {shownRules > 0
-                ? `Найдено пунктов: ${shownRules}`
-                : "Ничего не найдено. Попробуйте другие слова или номер пункта."}
-            </p>
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-muted-foreground">
+                {shownRules > 0
+                  ? `Найдено пунктов: ${shownRules}`
+                  : "Ничего не найдено. Опишите ситуацию другими словами или укажите номер пункта."}
+              </p>
+              <RuleSearchNotes result={result} />
+            </div>
           )}
 
           {sections.map((section) => (
@@ -316,14 +317,14 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
                     key={entry.anchor}
                     rule={entry}
                     tag={article.tag}
-                    query={query}
+                    regex={regex}
                     highlighted={highlighted === entry.anchor}
                   />
                 ) : (
                   <TextBlock
                     key={`${section.id}-${entry.text.slice(0, 32)}-${entry.items.length}`}
                     entry={entry}
-                    query={query}
+                    regex={regex}
                   />
                 ),
               )}

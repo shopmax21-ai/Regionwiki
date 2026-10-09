@@ -1,3 +1,4 @@
+import { isSemanticSearchEnabled } from "@/lib/rules/embeddings";
 import { getRulesStatus } from "@/lib/rules/store";
 
 import { getGroupCards, getSearchIndex } from "../_components/rules-content";
@@ -11,5 +12,13 @@ export default async function GeneralRulesPage() {
     getSearchIndex("general"),
     getRulesStatus(),
   ]);
-  return <RulesPage group="general" cards={cards} searchIndex={searchIndex} status={status} />;
+  return (
+    <RulesPage
+      group="general"
+      cards={cards}
+      searchIndex={searchIndex}
+      status={status}
+      semanticEnabled={isSemanticSearchEnabled()}
+    />
+  );
 }
