@@ -61,6 +61,8 @@ export type Permission =
   | "academy.results"
   | "calendar.manage"
   | "audit.view"
+  | "bugs.view"
+  | "bugs.manage"
   | "permissions.view"
   | "permissions.edit";
 
@@ -195,6 +197,18 @@ export const permissionDefs: readonly PermissionDef[] = [
     locked: true,
   },
   {
+    key: "bugs.view",
+    label: "Просмотр баг-репортов",
+    description: "Открывает раздел «Баг-репорты» и позволяет читать сообщения об ошибках на сайте.",
+    category: "Баг-репорты",
+  },
+  {
+    key: "bugs.manage",
+    label: "Обработка баг-репортов",
+    description: "Отмечать баг-репорты «Взято в работу» и «Выполнено», а также возвращать их в очередь.",
+    category: "Баг-репорты",
+  },
+  {
     key: "permissions.view",
     label: "Просмотр прав",
     description: "Открывает раздел «Роли и права» только для чтения.",
@@ -239,6 +253,8 @@ export const defaultPermissions: Record<EditableGroup, readonly Permission[]> = 
     "punishments.request",
     "punishments.review",
     "punishments.all",
+    "bugs.view",
+    "bugs.manage",
     "permissions.view",
   ],
 };
