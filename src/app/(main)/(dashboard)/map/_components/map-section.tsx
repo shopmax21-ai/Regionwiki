@@ -5,20 +5,24 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import dynamic from "next/dynamic";
 
 import { cn } from "cn";
-import { LayoutGrid, List, PanelLeftClose, PanelLeftOpen, Plus, Search, Upload, X } from "lucide-react";
+import { Check, ChevronDown, Layers, List, Plus, Search, Upload, X } from "lucide-react";
 
 import { LegendList, MapLegend } from "@/app/(main)/(dashboard)/map/_components/map-legend";
 import { PlaceCard } from "@/app/(main)/(dashboard)/map/_components/place-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { createPlaceAction, updatePlaceAction } from "../_actions";
 import type { DraftMarker, FocusRequest } from "./game-map";
-import { isInsideWorld, type MapPlace, type PlaceCategoryId, placeCategories } from "./map-data";
+import { isInsideWorld, type MapPlace } from "./map-data";
 import { MapTip, MapTipContainer } from "./map-tip";
 import { type PlaceDraft, PlaceEditor } from "./place-editor";
 import { PlaceImport } from "./place-import";
+import { zones as allZones, zoneCenter } from "./zone-data";
+import { ZonesList, ZonesPanel } from "./zones-panel";
 
 // Карта работает только в браузере
 const GameMap = dynamic(() => import("@/app/(main)/(dashboard)/map/_components/game-map"), {
@@ -26,7 +30,13 @@ const GameMap = dynamic(() => import("@/app/(main)/(dashboard)/map/_components/g
   loading: () => <Skeleton className="size-full rounded-none" />,
 });
 
-type CategoryFilter = PlaceCategoryId | "all";
+/** world — обычная карта мира с метками; zones — та же карта с контурами игровых зон */
+type MapMode = "world" | "zones";
+
+const MAP_MODES: { id: MapMode; label: string }[] = [
+  { id: "world", label: "Карта мира" },
+  { id: "zones", label: "Карта игровых зон" },
+];
 
 /** off — обычный режим; native — нативный полноэкранный режим браузера; css — запасной вариант для iPhone и т. п. */
 type FullscreenMode = "off" | "native" | "css";
@@ -47,68 +57,91 @@ export interface LinkedPlace {
   name: string;
 }
 
-function CategoryChips({
+/** Запоминается, открыт ли блок «Условные обозначения». */
+const LEGEND_STORAGE_KEY = "region-map-legend-open";
+
+/**
+ * Выбор карты. Список раскрывается внутри раздела карты, а не в портале: в полноэкранном режиме браузер
+ * показывает только сам раздел, и меню из портала в нём не было бы видно.
+ */
+function MapSwitcher({
   value,
   onChange,
   className,
 }: {
-  value: CategoryFilter;
-  onChange: (value: CategoryFilter) => void;
+  value: MapMode;
+  onChange: (value: MapMode) => void;
   className?: string;
 }) {
-  const chips: { id: CategoryFilter; label: string }[] = [
-    { id: "all", label: "Все" },
-    ...placeCategories.map(({ id, label }) => ({ id, label })),
-  ];
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const current = MAP_MODES.find((item) => item.id === value) ?? MAP_MODES[0];
+
+  // Закрываем по клику вне списка и по Escape
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
 
   return (
-    <fieldset
-      aria-label="Категории"
-      className={cn("flex min-w-0 gap-2 overflow-x-auto border-0 p-0 [scrollbar-width:none]", className)}
-    >
-      {chips.map((chip) => (
-        <Button
-          key={chip.id}
-          variant={value === chip.id ? "default" : "outline"}
-          aria-pressed={value === chip.id}
-          className={cn("h-11 shrink-0 px-4 shadow-sm md:h-9", value !== chip.id && "bg-card/90 backdrop-blur")}
-          onClick={() => onChange(chip.id)}
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Выбрать карту"
+        onClick={() => setOpen((current) => !current)}
+        className={cn(
+          className,
+          "flex h-12 min-w-44 items-center gap-3 px-4 font-medium text-sm outline-none transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-ring/50",
+        )}
+      >
+        <Layers aria-hidden="true" className="size-5 shrink-0" />
+        <span className="flex-1 text-left">{current.label}</span>
+        <ChevronDown
+          aria-hidden="true"
+          className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
+        />
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          aria-label="Карта"
+          className="absolute top-full left-0 z-20 mt-1 w-max min-w-full rounded-xl bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
         >
-          {chip.label}
-        </Button>
-      ))}
-    </fieldset>
-  );
-}
-
-/** Свёрнутая панель запоминается в браузере: на следующем заходе карта откроется так же. */
-const PANEL_STORAGE_KEY = "region-map-panel-collapsed";
-/** Так же запоминается, открыт ли блок «Условные обозначения». */
-const LEGEND_STORAGE_KEY = "region-map-legend-open";
-
-/** Узкие кнопки категорий для свёрнутой панели: «Все» и по значку на категорию. */
-function CategoryRail({ value, onChange }: { value: CategoryFilter; onChange: (value: CategoryFilter) => void }) {
-  const items: { id: CategoryFilter; label: string; icon: typeof LayoutGrid }[] = [
-    { id: "all", label: "Все категории", icon: LayoutGrid },
-    ...placeCategories.map(({ id, label, icon }) => ({ id, label, icon })),
-  ];
-  return (
-    <fieldset aria-label="Категории" className="flex flex-col items-center gap-1 border-0 p-0">
-      {items.map(({ id, label, icon: Icon }) => (
-        <MapTip key={id} label={label} side="right">
-          <Button
-            variant={value === id ? "default" : "ghost"}
-            size="icon"
-            aria-label={label}
-            aria-pressed={value === id}
-            className="size-10"
-            onClick={() => onChange(id)}
-          >
-            <Icon aria-hidden="true" className="size-4" />
-          </Button>
-        </MapTip>
-      ))}
-    </fieldset>
+          {MAP_MODES.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              role="menuitemradio"
+              aria-checked={item.id === value}
+              onClick={() => {
+                onChange(item.id);
+                setOpen(false);
+              }}
+              className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-1.5 text-left text-sm outline-none transition-colors hover:bg-muted focus-visible:bg-muted md:min-h-9"
+            >
+              <span className="flex-1">{item.label}</span>
+              {item.id === value && <Check aria-hidden="true" className="size-4" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -127,10 +160,12 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
   const [tipContainer, setTipContainer] = useState<HTMLElement | null>(null);
   useEffect(() => setTipContainer(sectionRef.current), []);
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<CategoryFilter>("all");
+  const [mode, setMode] = useState<MapMode>("world");
+  const [showMarkers, setShowMarkers] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
   const [legendOpen, setLegendOpen] = useState(true);
   const [linkedPlace, setLinkedPlace] = useState<LinkedPlace | null>(linked);
   // Если пришли по ссылке, карта сразу приближается к этому месту
@@ -146,15 +181,17 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
   const canEdit = editor === "on";
 
   // Метка, которую сейчас правят, рисуется отдельно (в новой позиции), поэтому из общего набора её убираем.
+  // Если «Стандартные метки» выключены, на карте нет ни меток, ни их списка.
   const visiblePlaces = useMemo(() => {
+    if (!showMarkers) return [];
     const normalized = query.trim().toLowerCase();
-    return allPlaces.filter(
-      (place) =>
-        place.id !== draft?.id &&
-        (category === "all" || place.category === category) &&
-        place.name.toLowerCase().includes(normalized),
-    );
-  }, [allPlaces, query, category, draft?.id]);
+    return allPlaces.filter((place) => place.id !== draft?.id && place.name.toLowerCase().includes(normalized));
+  }, [allPlaces, query, showMarkers, draft?.id]);
+
+  const visibleZones = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return allZones.filter((zone) => zone.name.toLowerCase().includes(normalized));
+  }, [query]);
 
   const selected = visiblePlaces.find((place) => place.id === selectedId) ?? null;
 
@@ -175,22 +212,38 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
     setListOpen(false);
   };
 
+  const handleSelectZone = (id: string) => {
+    const zone = allZones.find((item) => item.id === id);
+    if (!zone) return;
+    setSelectedZoneId(id);
+    focusPlace(id, zoneCenter(zone));
+    setListOpen(false);
+  };
+
+  const changeMode = (next: MapMode) => {
+    setMode(next);
+    setListOpen(false);
+    setSelectedId(null);
+    setSelectedZoneId(null);
+    // Метки ставят и правят на карте мира: на карте зон редактор закрывается
+    if (next === "zones") {
+      setDraft(null);
+      setImportOpen(false);
+      setEditorError(null);
+    }
+  };
+
+  const toggleSearch = () => {
+    if (searchOpen) setQuery("");
+    setSearchOpen(!searchOpen);
+  };
+
   // Свёрнутая боковая панель
   useEffect(() => {
     try {
-      if (window.localStorage.getItem(PANEL_STORAGE_KEY) === "1") setCollapsed(true);
       if (window.localStorage.getItem(LEGEND_STORAGE_KEY) === "0") setLegendOpen(false);
     } catch {
       // Хранилище браузера недоступно: панель просто открывается развёрнутой
-    }
-  }, []);
-
-  const changeCollapsed = useCallback((next: boolean) => {
-    setCollapsed(next);
-    try {
-      window.localStorage.setItem(PANEL_STORAGE_KEY, next ? "1" : "0");
-    } catch {
-      // Не страшно: выбор просто не запомнится
     }
   }, []);
 
@@ -256,6 +309,7 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
 
   // Редактор меток
   const startCreate = () => {
+    setShowMarkers(true);
     setSelectedId(null);
     setListOpen(false);
     setImportOpen(false);
@@ -263,7 +317,7 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
     setDraft({
       id: null,
       name: "",
-      category: category === "all" ? "other" : category,
+      category: "other",
       description: "",
       icon: "",
       x: "",
@@ -272,6 +326,7 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
   };
 
   const startImport = () => {
+    setShowMarkers(true);
     setSelectedId(null);
     setListOpen(false);
     setDraft(null);
@@ -318,7 +373,7 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
         }
         // Фильтры могли бы спрятать сохранённую метку, поэтому сбрасываем их
         setQuery("");
-        setCategory("all");
+        setShowMarkers(true);
         setDraft(null);
         setSelectedId(result.id);
         // Координаты известны заранее, ждать обновления списка с сервера не нужно
@@ -345,16 +400,10 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [listOpen, importOpen, draft, saving, fullscreen, cancelDraft]);
 
-  const editorButtons = (
-    <div className="flex gap-2">
-      <Button className="h-9 flex-1" onClick={startCreate} disabled={draft !== null}>
-        <Plus data-icon="inline-start" /> Добавить метку
-      </Button>
-      <Button variant="outline" className="h-9" onClick={startImport} disabled={draft !== null || importOpen}>
-        <Upload data-icon="inline-start" /> Загрузить
-      </Button>
-    </div>
-  );
+  // Общий вид плашек панели: тёмная полупрозрачная подложка, как у остальных элементов карты
+  const plate = "rounded-xl bg-card/95 shadow-sm ring-1 ring-foreground/10 backdrop-blur";
+  const searchTip = mode === "world" ? "Поиск по меткам" : "Поиск по зонам";
+  const listCount = mode === "world" ? visiblePlaces.length : visibleZones.length;
 
   return (
     <MapTipContainer value={tipContainer}>
@@ -385,6 +434,8 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
           }
           draft={draftMarker ?? (linkedPlace ? { x: linkedPlace.x, y: linkedPlace.y, category: "other" } : null)}
           focus={focus}
+          zones={mode === "zones" ? visibleZones : undefined}
+          selectedZoneId={selectedZoneId}
         />
 
         {linkedPlace && !draft && (
@@ -405,132 +456,113 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
           </div>
         )}
 
-        {/* Десктоп: боковая панель. Сворачивается в узкую полосу со значками, чтобы не закрывать карту. */}
-        {collapsed ? (
-          <aside
-            aria-label="Панель карты (свёрнута)"
-            className="absolute top-4 left-4 z-10 hidden w-14 flex-col items-center gap-2 rounded-xl bg-card/95 py-2 shadow-sm ring-1 ring-foreground/10 backdrop-blur md:flex"
-          >
-            <MapTip label="Развернуть панель" side="right">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-10"
-                aria-label="Развернуть панель"
-                aria-expanded={false}
-                onClick={() => changeCollapsed(false)}
-              >
-                <PanelLeftOpen aria-hidden="true" className="size-4" />
-              </Button>
-            </MapTip>
-            <CategoryRail value={category} onChange={setCategory} />
-            <div className="flex flex-col items-center gap-1 border-t pt-2">
-              <MapTip label={query ? `Поиск: «${query}». Открыть обозначения` : "Поиск по меткам"} side="right">
-                <Button
-                  variant={query ? "default" : "ghost"}
-                  size="icon"
-                  className="size-10"
-                  aria-label="Открыть поиск по меткам"
-                  onClick={() => changeLegendOpen(true)}
-                >
-                  <Search aria-hidden="true" className="size-4" />
-                </Button>
-              </MapTip>
-              {canEdit && (
-                <>
-                  <MapTip label="Добавить метку" side="right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-10"
-                      aria-label="Добавить метку"
-                      onClick={startCreate}
-                      disabled={draft !== null}
-                    >
-                      <Plus aria-hidden="true" className="size-4" />
-                    </Button>
-                  </MapTip>
-                  <MapTip label="Загрузить метки из файла" side="right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-10"
-                      aria-label="Загрузить метки из файла"
-                      onClick={startImport}
-                      disabled={draft !== null || importOpen}
-                    >
-                      <Upload aria-hidden="true" className="size-4" />
-                    </Button>
-                  </MapTip>
-                </>
-              )}
-            </div>
-          </aside>
-        ) : (
-          <aside className="absolute top-4 left-4 z-10 hidden w-80 flex-col gap-3 rounded-xl bg-card/95 py-4 shadow-sm ring-1 ring-foreground/10 backdrop-blur md:flex">
-            <div className="flex flex-col gap-3 px-4">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h2 className="font-medium text-lg leading-none tracking-tight">Карта штата</h2>
-                  <p className="mt-1 text-muted-foreground text-sm">Важные места и полезные адреса</p>
-                </div>
-                <MapTip label="Свернуть панель" side="bottom">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="-mt-1 -mr-2 size-9 shrink-0"
-                    aria-label="Свернуть панель"
-                    aria-expanded
-                    onClick={() => changeCollapsed(true)}
-                  >
-                    <PanelLeftClose aria-hidden="true" className="size-4" />
-                  </Button>
-                </MapTip>
-              </div>
-              <CategoryChips value={category} onChange={setCategory} className="flex-wrap overflow-visible" />
-              {canEdit && editorButtons}
-              {editor === "unavailable" && (
-                <p className="text-muted-foreground text-xs">
-                  Редактирование карты сейчас недоступно{problem ? `: ${problem}` : ""}
-                </p>
-              )}
-            </div>
-          </aside>
-        )}
+        {/* Панель сверху слева: выбор карты, поиск и переключатель меток (вместо прежней боковой панели) */}
+        <div className="absolute top-3 left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-wrap items-start gap-2 md:top-4 md:left-4">
+          <MapSwitcher value={mode} onChange={changeMode} className={plate} />
 
-        {/* Телефон: кнопка списка и категории сверху */}
-        <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-2 p-3 md:hidden">
-          <Button
-            variant="outline"
-            className="h-11 shrink-0 gap-2 bg-card/90 px-4 shadow-sm backdrop-blur"
-            onClick={() => setListOpen(true)}
+          <MapTip label={searchOpen ? "Закрыть поиск" : searchTip} side="bottom">
+            <button
+              type="button"
+              aria-label={searchOpen ? "Закрыть поиск" : "Открыть поиск"}
+              aria-expanded={searchOpen}
+              onClick={toggleSearch}
+              className={cn(
+                plate,
+                "relative flex size-12 shrink-0 items-center justify-center outline-none transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-ring/50",
+                searchOpen && "bg-card text-primary",
+              )}
+            >
+              {searchOpen ? (
+                <X aria-hidden="true" className="size-5" />
+              ) : (
+                <Search aria-hidden="true" className="size-5" />
+              )}
+            </button>
+          </MapTip>
+
+          {searchOpen && (
+            <div className={cn(plate, "flex h-12 w-full items-center px-2 sm:w-64")}>
+              <Input
+                autoFocus
+                type="search"
+                enterKeyHint="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={mode === "world" ? "Найти метку" : "Найти зону"}
+                aria-label={mode === "world" ? "Поиск по меткам на карте" : "Поиск по игровым зонам"}
+                data-section-search
+                className="h-9 border-0 bg-transparent text-base shadow-none focus-visible:ring-0 md:text-sm dark:bg-transparent"
+              />
+            </div>
+          )}
+
+          <label
+            htmlFor="map-standard-markers"
+            className={cn(plate, "flex h-12 cursor-pointer items-center gap-3 px-3 font-medium text-sm")}
           >
-            <List className="size-4" />
-            Метки
-            <Badge variant="secondary">{visiblePlaces.length}</Badge>
-          </Button>
-          {canEdit && (
+            <Checkbox
+              id="map-standard-markers"
+              checked={showMarkers}
+              onCheckedChange={(checked) => {
+                setShowMarkers(checked === true);
+                if (checked !== true) setSelectedId(null);
+              }}
+              className="size-6 rounded-md"
+            />
+            Стандартные метки
+          </label>
+
+          {canEdit && mode === "world" && (
             <>
-              <Button
-                className="size-11 shrink-0 shadow-sm"
-                onClick={startCreate}
-                disabled={draft !== null}
-                aria-label="Добавить метку"
-              >
-                <Plus className="size-5" />
-              </Button>
-              <Button
-                variant="outline"
-                className="size-11 shrink-0 bg-card/90 shadow-sm backdrop-blur"
-                onClick={startImport}
-                disabled={draft !== null || importOpen}
-                aria-label="Загрузить метки из файла"
-              >
-                <Upload className="size-5" />
-              </Button>
+              <MapTip label="Добавить метку" side="bottom">
+                <button
+                  type="button"
+                  aria-label="Добавить метку"
+                  onClick={startCreate}
+                  disabled={draft !== null}
+                  className={cn(
+                    plate,
+                    "flex size-12 shrink-0 items-center justify-center outline-none transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
+                  )}
+                >
+                  <Plus aria-hidden="true" className="size-5" />
+                </button>
+              </MapTip>
+              <MapTip label="Загрузить метки из файла" side="bottom">
+                <button
+                  type="button"
+                  aria-label="Загрузить метки из файла"
+                  onClick={startImport}
+                  disabled={draft !== null || importOpen}
+                  className={cn(
+                    plate,
+                    "flex size-12 shrink-0 items-center justify-center outline-none transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
+                  )}
+                >
+                  <Upload aria-hidden="true" className="size-5" />
+                </button>
+              </MapTip>
             </>
           )}
-          <CategoryChips value={category} onChange={setCategory} className="-mr-3 min-w-0 pr-3" />
+
+          {/* Телефон: список меток или зон открывается снизу */}
+          {(mode === "zones" || showMarkers) && (
+            <Button
+              variant="outline"
+              className={cn(plate, "h-12 shrink-0 gap-2 px-4 md:hidden")}
+              onClick={() => setListOpen(true)}
+            >
+              <List className="size-4" />
+              {mode === "world" ? "Метки" : "Зоны"}
+              <Badge variant="secondary">{listCount}</Badge>
+            </Button>
+          )}
+
+          {editor === "unavailable" && mode === "world" && (
+            <p className={cn(plate, "max-w-80 px-3 py-2 text-muted-foreground text-xs")}>
+              Редактирование карты сейчас недоступно{problem ? `: ${problem}` : ""}
+            </p>
+          )}
         </div>
 
         {/* Правая колонка: карточка метки, редактор или загрузка лежат над блоком обозначений, чтобы не перекрывать его.
@@ -546,9 +578,9 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
               places={allPlaces}
               onClose={() => setImportOpen(false)}
               onImported={() => {
-                // Фильтры могли бы спрятать загруженные метки
+                // Поиск мог бы спрятать загруженные метки
                 setQuery("");
-                setCategory("all");
+                setShowMarkers(true);
               }}
             />
           )}
@@ -576,15 +608,22 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
             )
           )}
 
-          <MapLegend
-            open={legendOpen}
-            onOpenChange={changeLegendOpen}
-            places={visiblePlaces}
-            query={query}
-            onQueryChange={setQuery}
-            selectedId={selected?.id ?? null}
-            onSelect={handleSelectFromList}
-          />
+          {mode === "world" && showMarkers && (
+            <MapLegend
+              open={legendOpen}
+              onOpenChange={changeLegendOpen}
+              places={visiblePlaces}
+              query={query}
+              onQueryChange={setQuery}
+              showSearch={false}
+              selectedId={selected?.id ?? null}
+              onSelect={handleSelectFromList}
+            />
+          )}
+
+          {mode === "zones" && (
+            <ZonesPanel zones={visibleZones} query={query} selectedId={selectedZoneId} onSelect={handleSelectZone} />
+          )}
         </div>
 
         {/* Телефон: обозначения списком. Лежит внутри раздела, а не в портале, поэтому виден и в полноэкранном режиме. */}
@@ -604,8 +643,14 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
             >
               <div className="flex items-start justify-between gap-2 px-4">
                 <div>
-                  <h2 className="font-medium text-base leading-none">Условные обозначения</h2>
-                  <p className="mt-1 text-muted-foreground text-sm">Выберите место, чтобы показать его на карте</p>
+                  <h2 className="font-medium text-base leading-none">
+                    {mode === "world" ? "Условные обозначения" : "Игровые зоны"}
+                  </h2>
+                  <p className="mt-1 text-muted-foreground text-sm">
+                    {mode === "world"
+                      ? "Выберите место, чтобы показать его на карте"
+                      : "Выберите зону, чтобы показать её на карте"}
+                  </p>
                 </div>
                 <Button
                   variant="ghost"
@@ -616,14 +661,25 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
                   <X className="size-5" />
                 </Button>
               </div>
-              <LegendList
-                places={visiblePlaces}
-                query={query}
-                onQueryChange={setQuery}
-                selectedId={selected?.id ?? null}
-                onSelect={handleSelectFromList}
-                className="flex-1 pt-0"
-              />
+              {mode === "world" ? (
+                <LegendList
+                  places={visiblePlaces}
+                  query={query}
+                  onQueryChange={setQuery}
+                  showSearch={false}
+                  selectedId={selected?.id ?? null}
+                  onSelect={handleSelectFromList}
+                  className="flex-1 pt-0"
+                />
+              ) : (
+                <ZonesList
+                  zones={visibleZones}
+                  query={query}
+                  selectedId={selectedZoneId}
+                  onSelect={handleSelectZone}
+                  className="flex-1 pt-0"
+                />
+              )}
             </div>
           </div>
         )}

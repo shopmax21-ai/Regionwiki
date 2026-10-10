@@ -99,10 +99,20 @@ interface LegendListProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   className?: string;
+  /** Поле поиска внутри списка. Выключается, когда поиск вынесен на панель карты. */
+  showSearch?: boolean;
 }
 
 /** Содержимое обозначений: поиск и метки карты, сгруппированные по категориям. */
-export function LegendList({ places, query, onQueryChange, selectedId, onSelect, className }: LegendListProps) {
+export function LegendList({
+  places,
+  query,
+  onQueryChange,
+  selectedId,
+  onSelect,
+  className,
+  showSearch = true,
+}: LegendListProps) {
   const [cursors, setCursors] = useState<Partial<Record<PlaceCategoryId, number>>>({});
 
   const groups = useMemo(
@@ -115,19 +125,21 @@ export function LegendList({ places, query, onQueryChange, selectedId, onSelect,
 
   return (
     <div className={cn("flex min-h-0 flex-col gap-2 pt-3", className)}>
-      <div className="relative px-3">
-        <Search className="pointer-events-none absolute top-1/2 left-6 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="search"
-          enterKeyHint="search"
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="Найти метку"
-          aria-label="Поиск по меткам на карте"
-          data-section-search
-          className="h-11 pl-9 text-base md:h-9 md:text-sm"
-        />
-      </div>
+      {showSearch && (
+        <div className="relative px-3">
+          <Search className="pointer-events-none absolute top-1/2 left-6 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            enterKeyHint="search"
+            value={query}
+            onChange={(event) => onQueryChange(event.target.value)}
+            placeholder="Найти метку"
+            aria-label="Поиск по меткам на карте"
+            data-section-search
+            className="h-11 pl-9 text-base md:h-9 md:text-sm"
+          />
+        </div>
+      )}
 
       <h3 className="px-4 pt-1 font-medium text-[10px] text-muted-foreground uppercase tracking-wider">Метки</h3>
 

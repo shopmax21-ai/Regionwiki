@@ -15,6 +15,7 @@ import {
 } from "./map-data";
 import { MapTip } from "./map-tip";
 import { MarkerBadge } from "./place-icons";
+import { getZoneKind, type MapZone, zoneCenter } from "./zone-data";
 
 /** Карта нарезана на плитки 256 px: /images/map-tiles/{z}/{x}x{y}.webp, на уровне z сетка 2^z × 2^z. */
 const TILE_URL = "/images/map-tiles";
@@ -61,6 +62,9 @@ interface GameMapProps {
   hideFullscreen?: boolean;
   /** Точки, которые нужно уместить в окно при открытии и при смене набора. Без них карта открывается целиком. */
   fit?: readonly { x: number; y: number }[];
+  /** Игровые зоны поверх карты (режим «Карта игровых зон») */
+  zones?: readonly MapZone[];
+  selectedZoneId?: string | null;
 }
 
 interface View {
@@ -126,6 +130,8 @@ export default function GameMap({
   embedded = false,
   hideFullscreen = false,
   fit,
+  zones,
+  selectedZoneId = null,
 }: GameMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<Size>({ width: 0, height: 0 });
@@ -387,7 +393,8 @@ export default function GameMap({
   }, [side, size.width, size.height, view.x, view.y, view.zoom, tileLevel]);
   const backdrop = useMemo(() => {
     const list: { z: number; x: number; y: number }[] = [];
-    for (let y = 0; y < 2 ** BACKDROP_Z; y++) for (let x = 0; x < 2 ** BACKDROP_Z; x++) list.push({ z: BACKDROP_Z, x, y });
+    for (let y = 0; y < 2 ** BACKDROP_Z; y++)
+      for (let x = 0; x < 2 ** BACKDROP_Z; x++) list.push({ z: BACKDROP_Z, x, y });
     return list;
   }, []);
   const stopPropagation = (event: React.SyntheticEvent) => event.stopPropagation();
@@ -427,10 +434,7 @@ export default function GameMap({
       {/* Кнопки управления лежат внутри окна карты, поэтому работают и в полноэкранном режиме */}
       {/* biome-ignore lint/a11y/noStaticElementInteractions: обработчики только останавливают всплытие событий карты */}
       <div
-        className={cn(
-          "absolute z-10 flex gap-2.5",
-          embedded ? "top-3 right-3" : "top-20 right-4 md:top-4",
-        )}
+        className={cn("absolute z-10 flex gap-2.5", embedded ? "top-3 right-3" : "top-20 right-4 md:top-4")}
         onPointerDown={stopPropagation}
         onDoubleClick={stopPropagation}
       >
@@ -502,6 +506,57 @@ export default function GameMap({
               }}
             />
           )),
+        )}
+
+        {zones && zones.length > 0 && (
+          <>
+            {/* Контуры зон: система координат 0..1 совпадает с долями карты, поэтому масштаб подхватывается сам */}
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 1 1"
+              preserveAspectRatio="none"
+              className="pointer-events-none absolute inset-0 size-full"
+            >
+              {zones.map((zone) => {
+                const kind = getZoneKind(zone.kind);
+                const active = selectedZoneId === zone.id;
+                return (
+                  <polygon
+                    key={zone.id}
+                    points={zone.points
+                      .map((point) => {
+                        const { fx, fy } = worldToFraction(point.x, point.y);
+                        return `${fx},${fy}`;
+                      })
+                      .join(" ")}
+                    vectorEffect="non-scaling-stroke"
+                    strokeWidth={active ? 3 : 1.5}
+                    strokeLinejoin="round"
+                    className={cn(kind.fillClass, kind.strokeClass, active && "brightness-125")}
+                  />
+                );
+              })}
+            </svg>
+            {zones.map((zone) => {
+              const center = zoneCenter(zone);
+              const { fx, fy } = worldToFraction(center.x, center.y);
+              const kind = getZoneKind(zone.kind);
+              return (
+                <span
+                  key={zone.id}
+                  className="pointer-events-none absolute flex items-center gap-1.5 whitespace-nowrap rounded-md bg-background/85 px-2 py-1 font-medium text-foreground text-xs shadow-sm ring-1 ring-foreground/10 backdrop-blur-sm"
+                  style={{
+                    left: `${fx * 100}%`,
+                    top: `${fy * 100}%`,
+                    transform: `translate(-50%, -50%) scale(${1 / view.zoom})`,
+                  }}
+                >
+                  <span aria-hidden="true" className={cn("size-2 rounded-full", kind.dotClass)} />
+                  {zone.name}
+                </span>
+              );
+            })}
+          </>
         )}
 
         {places.map((place) => {
