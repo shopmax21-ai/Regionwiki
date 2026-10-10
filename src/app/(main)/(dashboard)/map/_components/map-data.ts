@@ -1,15 +1,18 @@
 import { Car, HardHat, Landmark, type LucideIcon, MapPin, Store, Ticket } from "lucide-react";
 
 /**
- * Границы игрового мира по краям картинки карты (4096×4096): центр (0, 0), одна единица = один пиксель.
- * TODO: подставить реальные координаты углов карты.
+ * Границы игрового мира по краям тайловой карты (пропорции 2:3). Совпадают с системой координат тайлов:
+ * x и y — игровые координаты, как у меток на старой карте.
  */
 export const MAP_WORLD = {
-  minX: -2048,
-  maxX: 2048,
-  minY: -2048,
-  maxY: 2048,
+  minX: -4138.44,
+  maxX: 4856.64,
+  minY: -5101.9,
+  maxY: 8390.72,
 } as const;
+
+/** Ширина карты, делённая на высоту */
+export const MAP_ASPECT = (MAP_WORLD.maxX - MAP_WORLD.minX) / (MAP_WORLD.maxY - MAP_WORLD.minY);
 
 export const placeCategoryIds = ["job", "shop", "state", "transport", "leisure", "other"] as const;
 export type PlaceCategoryId = (typeof placeCategoryIds)[number];
@@ -150,7 +153,6 @@ export interface MapPlace {
 }
 
 // Начальный набор меток: при первом обращении к базе копируется в таблицу map_places.
-// TODO: координаты взяты со старой карты, заменить на координаты текущей.
 const allPlaces: MapPlace[] = [
   { id: "job-electrician", name: "Работа Электрик", x: 734.63855, y: 128.54727, category: "job" },
   { id: "job-bus", name: "Работа Автобусник", x: 432.01242, y: -628.3286, category: "job" },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "cn";
 import { Maximize2, Minimize2, Minus, Plus } from "lucide-react";
@@ -9,6 +9,7 @@ import {
   fractionToWorld,
   getCategory,
   isPlaceIconImage,
+  MAP_ASPECT,
   type MapPlace,
   type PlaceCategoryId,
   worldToFraction,
@@ -16,7 +17,16 @@ import {
 import { MapTip } from "./map-tip";
 import { MarkerBadge } from "./place-icons";
 
-const mapImageUrl = "/map.png";
+/** Тайлы карты: /images/map-tiles/{z}/{x}x{y}.png. На уровне z сетка 2^(z-1) × 3·2^(z-1) плиток по 256 px. */
+const TILE_URL = "/images/map-tiles";
+const TILE_SIZE = 256;
+const TILE_MIN_Z = 2;
+const TILE_MAX_Z = 7;
+/** Фон карты и пустых мест между плитками: сами плитки прозрачные и рассчитаны на тёмную подложку. */
+const MAP_BACKGROUND = "#161616";
+
+const tileCols = (z: number) => 2 ** (z - 1);
+const tileRows = (z: number) => 3 * 2 ** (z - 1);
 
 /** Метка, которую администратор сейчас ставит или двигает. */
 export interface DraftMarker {
@@ -80,16 +90,19 @@ const CLICK_SLOP = 5;
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-/** Карта квадратная и при масштабе 1 целиком помещается в окно, поэтому её базовая сторона равна меньшей стороне окна. */
-const baseSide = (size: Size) => Math.min(size.width, size.height);
+/** Карта вытянута вверх (2:3) и при масштабе 1 целиком помещается в окно: берём наибольший размер, который влезает. */
+const baseSize = (size: Size): Size => {
+  const width = Math.min(size.width, size.height * MAP_ASPECT);
+  return { width, height: width / MAP_ASPECT };
+};
 
 /** Предел сдвига по одной оси: пока карта больше окна — её края, плюс небольшой запас, чтобы край можно было отодвинуть. */
 const panLimit = (side: number, viewport: number) => Math.max(0, (side - viewport) / 2) + viewport * PAN_SLACK;
 
 function clampView(view: View, size: Size): View {
-  const side = baseSide(size) * view.zoom;
-  const limitX = panLimit(side, size.width);
-  const limitY = panLimit(side, size.height);
+  const base = baseSize(size);
+  const limitX = panLimit(base.width * view.zoom, size.width);
+  const limitY = panLimit(base.height * view.zoom, size.height);
   return { zoom: view.zoom, x: clamp(view.x, -limitX, limitX), y: clamp(view.y, -limitY, limitY) };
 }
 
@@ -212,9 +225,11 @@ export default function GameMap({
     appliedFocus.current = focus.n;
     const { fx, fy } = worldToFraction(point.x, point.y);
     const zoom = Math.max(current.zoom, FOCUS_ZOOM);
-    const side = baseSide(currentSize) * zoom;
+    const base = baseSize(currentSize);
     setAnimating(true);
-    setView(clampView({ zoom, x: -(fx - 0.5) * side, y: -(fy - 0.5) * side }, currentSize));
+    setView(
+      clampView({ zoom, x: -(fx - 0.5) * base.width * zoom, y: -(fy - 0.5) * base.height * zoom }, currentSize),
+    );
     const timer = window.setTimeout(() => setAnimating(false), 400);
     return () => window.clearTimeout(timer);
   }, [focus, places, setView]);
@@ -236,15 +251,16 @@ export default function GameMap({
     const maxY = Math.max(...ys);
     const cx = (minX + maxX) / 2;
     const cy = (minY + maxY) / 2;
-    const base = baseSide(currentSize);
+    const base = baseSize(currentSize);
     // Запас по краям, чтобы крайние метки и их подписи не прилипали к границе окна
     const padding = 1.8;
-    const zoomX = currentSize.width / (base * Math.max(maxX - minX, 0.01) * padding);
-    const zoomY = currentSize.height / (base * Math.max(maxY - minY, 0.01) * padding);
+    const zoomX = currentSize.width / (base.width * Math.max(maxX - minX, 0.01) * padding);
+    const zoomY = currentSize.height / (base.height * Math.max(maxY - minY, 0.01) * padding);
     const zoom = clamp(Math.min(zoomX, zoomY), MIN_ZOOM, fit.length === 1 ? FOCUS_ZOOM : MAX_ZOOM - 2);
-    const side = base * zoom;
     setAnimating(false);
-    setView(clampView({ zoom, x: -(cx - 0.5) * side, y: -(cy - 0.5) * side }, currentSize));
+    setView(
+      clampView({ zoom, x: -(cx - 0.5) * base.width * zoom, y: -(cy - 0.5) * base.height * zoom }, currentSize),
+    );
   }, [fitKey, ready, setView]);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -308,9 +324,9 @@ export default function GameMap({
       if (!cancelled && start && !start.moved && pickModeRef.current && onPickRef.current) {
         const anchor = pointerToCenter(event.clientX, event.clientY);
         const current = viewRef.current;
-        const side = baseSide(sizeRef.current) * current.zoom;
-        const fx = (anchor.x - current.x) / side + 0.5;
-        const fy = (anchor.y - current.y) / side + 0.5;
+        const base = baseSize(sizeRef.current);
+        const fx = (anchor.x - current.x) / (base.width * current.zoom) + 0.5;
+        const fy = (anchor.y - current.y) / (base.height * current.zoom) + 0.5;
         if (fx >= 0 && fx <= 1 && fy >= 0 && fy <= 1) onPickRef.current(fractionToWorld(fx, fy));
       }
     } else if (pointers.current.size === 1) {
@@ -354,7 +370,40 @@ export default function GameMap({
     }
   };
 
-  const side = baseSide(size);
+  const base = baseSize(size);
+
+  // Какие плитки сейчас видны: подбираем уровень по размеру карты на экране и берём только те, что попадают в окно.
+  const tileLevel = clamp(
+    Math.ceil(Math.log2(Math.max(1, (base.width * view.zoom * (globalThis.devicePixelRatio || 1)) / TILE_SIZE))) + 1,
+    TILE_MIN_Z,
+    TILE_MAX_Z,
+  );
+  const tiles = useMemo(() => {
+    if (base.width === 0) return [];
+    const cols = tileCols(tileLevel);
+    const rows = tileRows(tileLevel);
+    const width = base.width * view.zoom;
+    const height = base.height * view.zoom;
+    // Границы окна в долях карты
+    const left = (-size.width / 2 - view.x) / width + 0.5;
+    const right = (size.width / 2 - view.x) / width + 0.5;
+    const top = (-size.height / 2 - view.y) / height + 0.5;
+    const bottom = (size.height / 2 - view.y) / height + 0.5;
+    const x0 = Math.max(0, Math.floor(left * cols));
+    const x1 = Math.min(cols - 1, Math.floor(right * cols));
+    const y0 = Math.max(0, Math.floor(top * rows));
+    const y1 = Math.min(rows - 1, Math.floor(bottom * rows));
+    const list: { z: number; x: number; y: number }[] = [];
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) list.push({ z: tileLevel, x, y });
+    return list;
+  }, [base.width, base.height, size.width, size.height, view.x, view.y, view.zoom, tileLevel]);
+  // Грубая подложка из всей карты целиком: пока подгружаются детальные плитки, пустоты не видны.
+  const backdrop = useMemo(() => {
+    const z = TILE_MIN_Z + 1;
+    const list: { z: number; x: number; y: number }[] = [];
+    for (let y = 0; y < tileRows(z); y++) for (let x = 0; x < tileCols(z); x++) list.push({ z, x, y });
+    return list;
+  }, []);
   const stopPropagation = (event: React.SyntheticEvent) => event.stopPropagation();
   const controlClass =
     "flex size-10 items-center justify-center text-foreground outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset disabled:cursor-not-allowed disabled:opacity-50";
@@ -368,9 +417,10 @@ export default function GameMap({
       // biome-ignore lint/a11y/noNoninteractiveTabindex: карту можно двигать стрелками, поэтому ей нужен фокус
       tabIndex={0}
       className={cn(
-        "relative size-full touch-none overflow-hidden bg-muted outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset",
+        "relative size-full touch-none overflow-hidden outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset",
         pickMode ? "cursor-crosshair" : dragging ? "cursor-grabbing" : "cursor-grab",
       )}
+      style={{ background: MAP_BACKGROUND }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={(event) => finishPointer(event, false)}
@@ -442,19 +492,35 @@ export default function GameMap({
       <div
         className={cn("absolute top-1/2 left-1/2", animating && "transition-transform duration-300 ease-out")}
         style={{
-          width: side,
-          height: side,
+          width: base.width,
+          height: base.height,
           transform: `translate(calc(-50% + ${view.x}px), calc(-50% + ${view.y}px)) scale(${view.zoom})`,
         }}
       >
-        {/* biome-ignore lint/performance/noImgElement: карта 8000×8000 отдаётся как есть, оптимизация Next ей не нужна */}
-        <img
-          src={mapImageUrl}
-          alt="Карта штата Region"
-          className="pointer-events-none size-full object-contain"
-          draggable={false}
-          decoding="async"
-        />
+        {[backdrop, tiles.filter((tile) => tile.z !== TILE_MIN_Z + 1)].map((layer) =>
+          layer.map((tile) => (
+            // biome-ignore lint/performance/noImgElement: плитки карты отдаются как есть, оптимизация Next им не нужна
+            <img
+              key={`${tile.z}/${tile.x}x${tile.y}`}
+              src={`${TILE_URL}/${tile.z}/${tile.x}x${tile.y}.png`}
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              decoding="async"
+              className="pointer-events-none absolute"
+              style={{
+                left: `${(tile.x / tileCols(tile.z)) * 100}%`,
+                top: `${(tile.y / tileRows(tile.z)) * 100}%`,
+                width: `${100 / tileCols(tile.z)}%`,
+                height: `${100 / tileRows(tile.z)}%`,
+              }}
+              // Плиток без рисунка (пустой океан) в наборе нет — просто прячем
+              onError={(event) => {
+                event.currentTarget.style.display = "none";
+              }}
+            />
+          )),
+        )}
 
         {places.map((place) => {
           const { fx, fy } = worldToFraction(place.x, place.y);
