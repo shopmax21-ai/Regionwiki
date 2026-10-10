@@ -5,7 +5,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "cn";
 import { Maximize2, Minimize2, Minus, Plus } from "lucide-react";
 
-import { fractionToWorld, getCategory, type MapPlace, type PlaceCategoryId, worldToFraction } from "./map-data";
+import {
+  fractionToWorld,
+  getCategory,
+  isPlaceIconImage,
+  type MapPlace,
+  type PlaceCategoryId,
+  worldToFraction,
+} from "./map-data";
 import { MapTip } from "./map-tip";
 import { MarkerBadge } from "./place-icons";
 
@@ -60,21 +67,29 @@ interface Size {
   height: number;
 }
 
-const MIN_ZOOM = 1;
-const MAX_ZOOM = 8;
-const FOCUS_ZOOM = 3;
+/** Масштаб 1 — карта целиком вписана в окно. Меньше 1 — можно отдалить так, что вокруг карты остаётся пустое поле. */
+const MIN_ZOOM = 0.45;
+const MAX_ZOOM = 10;
+const FOCUS_ZOOM = 5;
+/** Насколько карту можно утащить за край окна (доля размера окна): так же, как на карте Majestic, она «пружинит» у границ. */
+const PAN_SLACK = 0.2;
+/** Длительность плавного масштабирования кнопками, двойным кликом и клавишами, мс */
+const ZOOM_ANIMATION_MS = 300;
 /** Сдвиг меньше этого порога считается кликом, а не перетаскиванием. */
 const CLICK_SLOP = 5;
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-/** Карта квадратная и всегда закрывает окно целиком, поэтому её базовая сторона равна большей стороне окна. */
-const baseSide = (size: Size) => Math.max(size.width, size.height);
+/** Карта квадратная и при масштабе 1 целиком помещается в окно, поэтому её базовая сторона равна меньшей стороне окна. */
+const baseSide = (size: Size) => Math.min(size.width, size.height);
+
+/** Предел сдвига по одной оси: пока карта больше окна — её края, плюс небольшой запас, чтобы край можно было отодвинуть. */
+const panLimit = (side: number, viewport: number) => Math.max(0, (side - viewport) / 2) + viewport * PAN_SLACK;
 
 function clampView(view: View, size: Size): View {
   const side = baseSide(size) * view.zoom;
-  const limitX = Math.max(0, (side - size.width) / 2);
-  const limitY = Math.max(0, (side - size.height) / 2);
+  const limitX = panLimit(side, size.width);
+  const limitY = panLimit(side, size.height);
   return { zoom: view.zoom, x: clamp(view.x, -limitX, limitX), y: clamp(view.y, -limitY, limitY) };
 }
 
@@ -151,9 +166,15 @@ export default function GameMap({
     return { x: clientX - rect.left - rect.width / 2, y: clientY - rect.top - rect.height / 2 };
   };
 
+  // Плавность нужна кнопкам, двойному клику и клавишам. Колесо и щипок идут без неё, иначе карта отставала бы от пальцев.
+  const smoothTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(smoothTimer.current), []);
+
   const zoomBy = useCallback(
-    (factor: number, anchor = CENTER) => {
-      setAnimating(false);
+    (factor: number, anchor = CENTER, smooth = false) => {
+      window.clearTimeout(smoothTimer.current);
+      setAnimating(smooth);
+      if (smooth) smoothTimer.current = window.setTimeout(() => setAnimating(false), ZOOM_ANIMATION_MS);
       const current = viewRef.current;
       setView(zoomView(current, sizeRef.current, current.zoom * factor, anchor));
     },
@@ -320,11 +341,14 @@ export default function GameMap({
         return pan(0, -step);
       case "+":
       case "=":
-        return zoomBy(1.5);
+        return zoomBy(1.5, CENTER, true);
       case "-":
       case "_":
-        return zoomBy(1 / 1.5);
+        return zoomBy(1 / 1.5, CENTER, true);
       case "0":
+        window.clearTimeout(smoothTimer.current);
+        setAnimating(true);
+        smoothTimer.current = window.setTimeout(() => setAnimating(false), ZOOM_ANIMATION_MS);
         return setView(INITIAL_VIEW);
       default:
     }
@@ -353,7 +377,7 @@ export default function GameMap({
       onPointerCancel={(event) => finishPointer(event, true)}
       onKeyDown={handleKeyDown}
       onDoubleClick={(event) => {
-        if (!pickMode) zoomBy(2, pointerToCenter(event.clientX, event.clientY));
+        if (!pickMode) zoomBy(2, pointerToCenter(event.clientX, event.clientY), true);
       }}
       role="application"
       aria-label="Интерактивная карта штата. Стрелки двигают карту, плюс и минус меняют масштаб."
@@ -378,7 +402,7 @@ export default function GameMap({
           <button
             type="button"
             className={cn(controlClass, "border-b border-border/60")}
-            onClick={() => zoomBy(1.5)}
+            onClick={() => zoomBy(1.5, CENTER, true)}
             disabled={view.zoom >= MAX_ZOOM}
             aria-label="Увеличить масштаб"
           >
@@ -389,7 +413,7 @@ export default function GameMap({
           <button
             type="button"
             className={cn(controlClass, !hideFullscreen && "border-b border-border/60")}
-            onClick={() => zoomBy(1 / 1.5)}
+            onClick={() => zoomBy(1 / 1.5, CENTER, true)}
             disabled={view.zoom <= MIN_ZOOM}
             aria-label="Уменьшить масштаб"
           >
@@ -436,6 +460,8 @@ export default function GameMap({
           const { fx, fy } = worldToFraction(place.x, place.y);
           const category = getCategory(place.category);
           const selected = selectedId === place.id;
+          // Своя картинка рисуется без обводки и подложки, размером 20×20
+          const bare = isPlaceIconImage(place.icon);
           return (
             <button
               key={place.id}
@@ -464,10 +490,20 @@ export default function GameMap({
                 category={place.category}
                 icon={place.icon}
                 size="sm"
+                bare={bare}
                 className={cn(
-                  "rounded-full ring-4 transition-transform group-hover:scale-110 group-focus-visible:ring-ring/60",
-                  category.ringClass,
-                  selected && "scale-125 ring-foreground/40",
+                  "transition-transform group-hover:scale-110",
+                  bare
+                    ? [
+                        // Обводки нет, поэтому выбранную метку выделяем тенью, а фокус с клавиатуры — тонким кольцом
+                        "rounded-sm group-focus-visible:ring-2 group-focus-visible:ring-ring/60",
+                        selected && "scale-125 drop-shadow-[0_0_3px_var(--foreground)]",
+                      ]
+                    : [
+                        "rounded-full ring-4 group-focus-visible:ring-ring/60",
+                        category.ringClass,
+                        selected && "scale-125 ring-foreground/40",
+                      ],
                 )}
               />
               <span
@@ -499,9 +535,12 @@ export default function GameMap({
               category={draft.category}
               icon={draft.icon}
               size="md"
+              bare={isPlaceIconImage(draft.icon)}
               className={cn(
-                "animate-pulse rounded-full ring-4 ring-offset-2 ring-offset-background",
-                draftCategory.ringClass,
+                "animate-pulse",
+                isPlaceIconImage(draft.icon)
+                  ? "rounded-sm"
+                  : ["rounded-full ring-4 ring-offset-2 ring-offset-background", draftCategory.ringClass],
               )}
             />
           </span>

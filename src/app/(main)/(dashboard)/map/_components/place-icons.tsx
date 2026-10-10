@@ -138,14 +138,26 @@ export function MarkerBadge({
   category,
   icon,
   size = "lg",
+  bare = false,
   className,
 }: {
   category: PlaceCategoryId;
   icon?: string;
   size?: MarkerBadgeSize;
+  /** Для своей картинки на карте: без круга, подложки и обрезки, ровно 20×20 */
+  bare?: boolean;
   className?: string;
 }) {
   const metrics = sizes[size];
+
+  if (isPlaceIconImage(icon) && bare) {
+    return (
+      <span className={cn("flex size-5 shrink-0 items-center justify-center", className)}>
+        {/* biome-ignore lint/performance/noImgElement: размеры своей иконки заранее неизвестны, next/image здесь не подходит */}
+        <img src={icon ?? ""} alt="" draggable={false} loading="lazy" className="size-full object-contain" />
+      </span>
+    );
+  }
 
   if (isPlaceIconImage(icon)) {
     return (
