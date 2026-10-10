@@ -22,6 +22,7 @@ import {
   placeCategories,
   placeIconIds,
 } from "./map-data";
+import { MapTip } from "./map-tip";
 import { MarkerBadge, placeIconPresets } from "./place-icons";
 
 /** Метка в работе. Координаты хранятся строками, чтобы в полях можно было набирать «-» и «12.» */
@@ -137,23 +138,23 @@ export function IconPicker({
           const { label, icon: Icon } = placeIconPresets[id];
           const active = isPlaceIconPreset(value) && value === id;
           return (
-            // biome-ignore lint/a11y/useSemanticElements: кнопки-иконки с role="radio" внутри radiogroup
-            <button
-              key={id}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              aria-label={label}
-              title={label}
-              disabled={disabled}
-              onClick={() => onChange(id)}
-              className={cn(
-                "flex size-9 items-center justify-center rounded-md outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50",
-                active && "bg-primary text-primary-foreground hover:bg-primary",
-              )}
-            >
-              <Icon aria-hidden="true" className="size-4" />
-            </button>
+            <MapTip key={id} label={label} side="top">
+              {/* biome-ignore lint/a11y/useSemanticElements: кнопки-иконки с role="radio" внутри radiogroup */}
+              <button
+                type="button"
+                role="radio"
+                aria-checked={active}
+                aria-label={label}
+                disabled={disabled}
+                onClick={() => onChange(id)}
+                className={cn(
+                  "flex size-9 items-center justify-center rounded-md outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50",
+                  active && "bg-primary text-primary-foreground hover:bg-primary",
+                )}
+              >
+                <Icon aria-hidden="true" className="size-4" />
+              </button>
+            </MapTip>
           );
         })}
       </div>
@@ -181,7 +182,7 @@ export function PlaceEditor({ draft, onChange, onSave, onCancel, pending, error 
   return (
     <Card
       size="sm"
-      className="absolute inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-10 max-h-[70%] overflow-y-auto shadow-lg md:inset-x-auto md:right-4 md:bottom-4 md:max-h-[calc(100%-2rem)] md:w-80"
+      className="absolute inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-10 max-h-[70%] overflow-y-auto shadow-lg md:static md:max-h-none md:min-h-0 md:w-full md:shrink"
     >
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">

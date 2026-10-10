@@ -32,11 +32,15 @@ function TooltipTrigger({
 function TooltipContent({
   className,
   sideOffset = 0,
+  container,
   children,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+}: React.ComponentProps<typeof TooltipPrimitive.Content> & {
+  /** Куда выводить подсказку. По умолчанию в body; нужен, когда виден только часть страницы (например, в полноэкранном режиме). */
+  container?: HTMLElement | null
+}) {
   return (
-    <TooltipPrimitive.Portal>
+    <TooltipPrimitive.Portal container={container}>
       <TooltipPrimitive.Content
         data-slot="tooltip-content"
         sideOffset={sideOffset}

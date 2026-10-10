@@ -70,7 +70,7 @@ export function PlaceCard({ place, onClose, canEdit = false, onEdit, onDeleted }
   return (
     <Card
       size="sm"
-      className="absolute inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-10 max-h-[70%] overflow-y-auto shadow-lg md:inset-x-auto md:right-4 md:bottom-4 md:w-80"
+      className="absolute inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-10 max-h-[70%] overflow-y-auto shadow-lg md:static md:max-h-none md:min-h-0 md:w-full md:shrink"
     >
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-start gap-3">

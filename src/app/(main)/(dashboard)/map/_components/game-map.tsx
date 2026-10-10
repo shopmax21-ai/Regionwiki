@@ -6,6 +6,7 @@ import { cn } from "cn";
 import { Maximize2, Minimize2, Minus, Plus } from "lucide-react";
 
 import { fractionToWorld, getCategory, type MapPlace, type PlaceCategoryId, worldToFraction } from "./map-data";
+import { MapTip } from "./map-tip";
 import { MarkerBadge } from "./place-icons";
 
 const mapImageUrl = "/map.png";
@@ -373,41 +374,44 @@ export default function GameMap({
         onPointerDown={stopPropagation}
         onDoubleClick={stopPropagation}
       >
-        <button
-          type="button"
-          className={cn(controlClass, "border-b border-border/60")}
-          onClick={() => zoomBy(1.5)}
-          disabled={view.zoom >= MAX_ZOOM}
-          aria-label="Увеличить масштаб"
-          title="Увеличить масштаб"
-        >
-          <Plus aria-hidden="true" className="size-4" />
-        </button>
-        <button
-          type="button"
-          className={cn(controlClass, !hideFullscreen && "border-b border-border/60")}
-          onClick={() => zoomBy(1 / 1.5)}
-          disabled={view.zoom <= MIN_ZOOM}
-          aria-label="Уменьшить масштаб"
-          title="Уменьшить масштаб"
-        >
-          <Minus aria-hidden="true" className="size-4" />
-        </button>
-        {!hideFullscreen && (
+        <MapTip label="Увеличить масштаб" side="left">
           <button
             type="button"
-            className={controlClass}
-            onClick={onToggleFullscreen}
-            aria-pressed={isFullscreen}
-            aria-label={isFullscreen ? "Выйти из полноэкранного режима" : "Развернуть карту на весь экран"}
-            title={isFullscreen ? "Выйти из полноэкранного режима" : "На весь экран"}
+            className={cn(controlClass, "border-b border-border/60")}
+            onClick={() => zoomBy(1.5)}
+            disabled={view.zoom >= MAX_ZOOM}
+            aria-label="Увеличить масштаб"
           >
-            {isFullscreen ? (
-              <Minimize2 aria-hidden="true" className="size-4" />
-            ) : (
-              <Maximize2 aria-hidden="true" className="size-4" />
-            )}
+            <Plus aria-hidden="true" className="size-4" />
           </button>
+        </MapTip>
+        <MapTip label="Уменьшить масштаб" side="left">
+          <button
+            type="button"
+            className={cn(controlClass, !hideFullscreen && "border-b border-border/60")}
+            onClick={() => zoomBy(1 / 1.5)}
+            disabled={view.zoom <= MIN_ZOOM}
+            aria-label="Уменьшить масштаб"
+          >
+            <Minus aria-hidden="true" className="size-4" />
+          </button>
+        </MapTip>
+        {!hideFullscreen && (
+          <MapTip label={isFullscreen ? "Выйти из полноэкранного режима" : "На весь экран"} side="left">
+            <button
+              type="button"
+              className={controlClass}
+              onClick={onToggleFullscreen}
+              aria-pressed={isFullscreen}
+              aria-label={isFullscreen ? "Выйти из полноэкранного режима" : "Развернуть карту на весь экран"}
+            >
+              {isFullscreen ? (
+                <Minimize2 aria-hidden="true" className="size-4" />
+              ) : (
+                <Maximize2 aria-hidden="true" className="size-4" />
+              )}
+            </button>
+          </MapTip>
         )}
       </div>
 
@@ -441,7 +445,10 @@ export default function GameMap({
               className={cn(
                 "group absolute flex size-10 items-center justify-center rounded-full outline-none",
                 animating && "transition-transform duration-300 ease-out",
+                // У каждой метки свой transform, а значит свой слой: подпись не может выйти за него.
+                // Поэтому при наведении и фокусе поднимаем всю метку выше соседних (и выше выбранной).
                 selected && "z-10",
+                "hover:z-30 focus-visible:z-30",
               )}
               // Метка обратна масштабу карты, поэтому на любом приближении остаётся одного размера
               style={{

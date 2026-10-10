@@ -105,7 +105,7 @@ export function PlaceImport({ places, onClose, onImported }: PlaceImportProps) {
   return (
     <Card
       size="sm"
-      className="absolute inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-10 max-h-[80%] overflow-y-auto shadow-lg md:inset-x-auto md:right-4 md:bottom-4 md:max-h-[calc(100%-2rem)] md:w-96"
+      className="absolute inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-10 max-h-[80%] overflow-y-auto shadow-lg md:static md:max-h-none md:min-h-0 md:w-full md:shrink"
     >
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
