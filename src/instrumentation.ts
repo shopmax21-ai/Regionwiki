@@ -20,6 +20,12 @@ export async function register() {
     startCalendarReminders();
   }
 
+  // Оповещения о начале трансляций отслеживаемых каналов («Медиа»): нужны база, ключи Twitch и бот
+  if (process.env.DATABASE_URL && process.env.MEDIA_WATCH !== "off") {
+    const { startMediaWatcher } = await import("@/lib/media/watch");
+    startMediaWatcher();
+  }
+
   const { getAuthConfig } = await import("@/lib/auth/config");
   const { checkDatabase, databaseHost } = await import("@/lib/auth/db");
   const { logAuthError } = await import("@/lib/auth/errors");

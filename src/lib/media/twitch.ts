@@ -1,5 +1,6 @@
+import { listChannels } from "./channels";
 import { createNameMatcher, DEFAULT_KEYWORDS } from "./name-match";
-import type { MediaResponse, MediaStream } from "./types";
+import type { MediaResponse, MediaStream, TrackedChannel } from "./types";
 
 /**
  * Поиск трансляций проекта на Twitch. Работает только на сервере: ключи приложения в браузер не попадают.
@@ -8,7 +9,9 @@ import type { MediaResponse, MediaStream } from "./types";
  *  1. просматриваем живые трансляции нужных категорий (по умолчанию GTA V) и оставляем те, где название проекта
  *     встречается в заголовке, имени канала или тегах;
  *  2. отдельно ищем каналы по каждому варианту названия, чтобы поймать стримеров из других категорий;
- *  3. объединяем, убираем исключённых и подтягиваем аватарки.
+ *  3. добавляем каналы из списка отслеживаемых (таблица media_channels): они показываются, когда в эфире,
+ *     независимо от названия и категории;
+ *  4. объединяем, убираем исключённых и подтягиваем аватарки.
  * Результат живёт в памяти процесса минуту, поэтому нагрузка на Twitch не зависит от числа посетителей.
  */
 
@@ -66,7 +69,7 @@ type HelixChannel = {
   tags?: string[] | null;
 };
 
-type HelixUser = { id: string; profile_image_url: string };
+type HelixUser = { id: string; login?: string; display_name?: string; profile_image_url: string };
 
 type HelixPage<T> = { data: T[]; pagination?: { cursor?: string } };
 
@@ -174,6 +177,29 @@ async function loadStreamsByUserId(userIds: string[]): Promise<HelixStream[]> {
   return pages.flatMap((page) => page.data).filter((stream) => stream.type === "live");
 }
 
+/** Трансляции указанных каналов, которые сейчас в эфире. Работает и для тех, у кого в заголовке нет названия проекта. */
+export async function fetchStreamsByLogins(logins: string[]): Promise<HelixStream[]> {
+  if (logins.length === 0) return [];
+  const pages = await Promise.all(
+    chunk(logins, 100).map((items) => {
+      const params = new URLSearchParams({ first: "100", type: "live" });
+      for (const login of items) params.append("user_login", login);
+      return helix<HelixStream>("streams", params);
+    }),
+  );
+  return pages.flatMap((page) => page.data).filter((stream) => stream.type === "live");
+}
+
+export type TwitchChannelInfo = { id: string; login: string; name: string };
+
+/** Проверяет, что канал существует. null, если такого логина на Twitch нет. */
+export async function lookupTwitchChannel(login: string): Promise<TwitchChannelInfo | null> {
+  const data = await helix<HelixUser>("users", new URLSearchParams({ login }));
+  const user = data.data[0];
+  if (!user?.login) return null;
+  return { id: user.id, login: user.login.toLowerCase(), name: user.display_name || user.login };
+}
+
 // --- Аватарки: меняются редко, поэтому хранятся дольше самих трансляций ---
 
 const avatars = new Map<string, { url: string; expiresAt: number }>();
@@ -206,14 +232,29 @@ async function loadAvatars(userIds: string[]): Promise<Map<string, string>> {
   return result;
 }
 
-async function loadStreams(): Promise<MediaStream[]> {
-  const [categoryResults, searchResults] = await Promise.all([
-    Promise.all(GAME_IDS.map((gameId) => scanCategory(gameId))),
+/** Список отслеживаемых каналов. Если база недоступна, раздел работает без него. */
+async function safeChannels(): Promise<TrackedChannel[]> {
+  if (!process.env.DATABASE_URL) return [];
+  try {
+    return await listChannels();
+  } catch (error) {
+    console.error("[media] не удалось прочитать список каналов:", error instanceof Error ? error.message : error);
+    return [];
+  }
+}
+
+async function loadStreams(channels: TrackedChannel[]): Promise<MediaStream[]> {
+  const trackedLogins = new Set(channels.map((channel) => channel.login));
+  const [categoryResults, searchResults, trackedStreams] = await Promise.all([
+    Promise.all(GAME_IDS.map((gameId) => scanCategory(gameId).catch(() => [] as HelixStream[]))),
     Promise.allSettled(KEYWORDS.map((keyword) => searchChannels(keyword))),
+    fetchStreamsByLogins(channels.map((channel) => channel.login)),
   ]);
 
   const found = new Map<string, HelixStream>();
   for (const stream of categoryResults.flat()) found.set(stream.user_id, stream);
+
+  for (const stream of trackedStreams) found.set(stream.user_id, stream);
 
   // Каналы из поиска, которых не было в категориях: у них нет числа зрителей, поэтому запрашиваем трансляции отдельно.
   const extraIds = new Set<string>();
@@ -225,7 +266,10 @@ async function loadStreams(): Promise<MediaStream[]> {
     for (const stream of await loadStreamsByUserId([...extraIds])) found.set(stream.user_id, stream);
   }
 
-  const visible = [...found.values()].filter((stream) => !EXCLUDED_LOGINS.has(stream.user_login.toLowerCase()));
+  const visible = [...found.values()].filter(
+    (stream) =>
+      trackedLogins.has(stream.user_login.toLowerCase()) || !EXCLUDED_LOGINS.has(stream.user_login.toLowerCase()),
+  );
   const avatarByUser = await loadAvatars(visible.map((stream) => stream.user_id));
 
   return visible
@@ -241,9 +285,10 @@ async function loadStreams(): Promise<MediaStream[]> {
         startedAt: stream.started_at,
         avatar: avatarByUser.get(stream.user_id) ?? null,
         url: `https://www.twitch.tv/${stream.user_login}`,
+        tracked: trackedLogins.has(stream.user_login.toLowerCase()),
       }),
     )
-    .sort((a, b) => b.viewers - a.viewers || a.name.localeCompare(b.name));
+    .sort((a, b) => Number(b.tracked) - Number(a.tracked) || b.viewers - a.viewers || a.name.localeCompare(b.name));
 }
 
 // --- Кэш в памяти: один запрос к Twitch в минуту независимо от числа посетителей ---
@@ -252,21 +297,29 @@ let cache: { at: number; value: MediaResponse } | null = null;
 let inflight: Promise<MediaResponse> | null = null;
 let retryAfter = 0;
 
+/** Сбросить кэш: после правки списка каналов страница должна показать изменения сразу. */
+export function invalidateMediaCache(): void {
+  cache = null;
+  retryAfter = 0;
+}
+
 async function refresh(): Promise<MediaResponse> {
-  const streams = await loadStreams();
-  const value: MediaResponse = { status: "ok", streams, updatedAt: new Date().toISOString() };
+  const channels = await safeChannels();
+  const streams = await loadStreams(channels);
+  const value: MediaResponse = { status: "ok", streams, channels, updatedAt: new Date().toISOString() };
   cache = { at: Date.now(), value };
   retryAfter = 0;
   return value;
 }
 
 export async function getMediaStreams(): Promise<MediaResponse> {
-  if (!isTwitchConfigured()) return { status: "unconfigured", streams: [], updatedAt: null };
+  if (!isTwitchConfigured())
+    return { status: "unconfigured", streams: [], channels: await safeChannels(), updatedAt: null };
   if (cache && Date.now() - cache.at < RESULT_TTL_MS) return cache.value;
 
   // После сбоя несколько секунд не долбим Twitch повторно: отдаём прошлый результат или ошибку.
   if (Date.now() < retryAfter) {
-    return cache ? { ...cache.value, stale: true } : { status: "error", streams: [], updatedAt: null };
+    return cache ? { ...cache.value, stale: true } : { status: "error", streams: [], channels: [], updatedAt: null };
   }
 
   inflight ??= refresh().finally(() => {
@@ -277,6 +330,6 @@ export async function getMediaStreams(): Promise<MediaResponse> {
   } catch (error) {
     console.error("[media] не удалось загрузить трансляции Twitch:", error instanceof Error ? error.message : error);
     retryAfter = Date.now() + ERROR_RETRY_MS;
-    return cache ? { ...cache.value, stale: true } : { status: "error", streams: [], updatedAt: null };
+    return cache ? { ...cache.value, stale: true } : { status: "error", streams: [], channels: [], updatedAt: null };
   }
 }

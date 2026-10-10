@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { MediaSection } from "@/app/(main)/(dashboard)/media/_components/media-section";
 import { getAdminContext } from "@/lib/auth/admin";
+import { getUser } from "@/lib/auth/db";
 
 export const metadata: Metadata = {
   title: "Медиа | Region WIKI",
@@ -14,5 +15,12 @@ export const dynamic = "force-dynamic";
 
 export default async function Page() {
   const admin = await getAdminContext();
-  return <MediaSection isAdmin={admin !== null} />;
+  const canManage = admin?.permissions.includes("media.manage") ?? false;
+  // Личная настройка оповещений: если база не ответила, показываем «выключено», раздел остаётся рабочим
+  const notifyEnabled = admin
+    ? await getUser(admin.id)
+        .then((user) => user?.notifyMedia ?? false)
+        .catch(() => false)
+    : false;
+  return <MediaSection isAdmin={admin !== null} canManage={canManage} notifyEnabled={notifyEnabled} />;
 }

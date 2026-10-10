@@ -86,6 +86,7 @@ function ensureSchema(): Promise<void> {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_group text`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS notify_requests boolean NOT NULL DEFAULT true`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS notify_calendar boolean NOT NULL DEFAULT false`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS notify_media boolean NOT NULL DEFAULT false`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS sessions_valid_after timestamptz`;
     // Игровой профиль администратора: Никнейм и Static ID. Показываются на сайте вместо имени из Telegram.
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS nickname text`;
@@ -138,6 +139,8 @@ export type DbUser = {
   notifyRequests: boolean;
   /** Следить ли за календарём: сообщения в Telegram о мероприятиях и напоминания за час до начала */
   notifyCalendar: boolean;
+  /** Присылать в Telegram сообщения о начале трансляций отслеживаемых каналов */
+  notifyMedia: boolean;
   /** Игровой никнейм администратора (не указан: null) */
   nickname: string | null;
   /** Static ID администратора (не указан: null) */
@@ -161,6 +164,7 @@ type UserRow = {
   admin_group: string | null;
   notify_requests: boolean;
   notify_calendar: boolean;
+  notify_media: boolean;
   nickname: string | null;
   static_id: string | null;
   requested_group: string | null;
@@ -186,6 +190,7 @@ const toUser = (row: UserRow): DbUser => ({
   adminGroup: isAdminGroup(row.admin_group) ? row.admin_group : row.role === "admin" ? "chief" : null,
   notifyRequests: row.notify_requests !== false,
   notifyCalendar: row.notify_calendar === true,
+  notifyMedia: row.notify_media === true,
   nickname: row.nickname ?? null,
   staticId: row.static_id ?? null,
   requestedGroup: isAdminGroup(row.requested_group) ? row.requested_group : null,
@@ -389,6 +394,18 @@ export async function setNotifyCalendar(telegramId: string, enabled: boolean): P
 export async function listCalendarSubscribers(): Promise<DbUser[]> {
   await ensureSchema();
   const rows = await sql`SELECT * FROM users WHERE role = 'admin' AND status = 'approved' AND notify_calendar = true`;
+  return (rows as UserRow[]).map(toUser);
+}
+
+export async function setNotifyMedia(telegramId: string, enabled: boolean): Promise<void> {
+  await ensureSchema();
+  await sql`UPDATE users SET notify_media = ${enabled} WHERE telegram_id = ${telegramId}`;
+}
+
+/** Одобренные администраторы, включившие оповещения о трансляциях. */
+export async function listMediaSubscribers(): Promise<DbUser[]> {
+  await ensureSchema();
+  const rows = await sql`SELECT * FROM users WHERE role = 'admin' AND status = 'approved' AND notify_media = true`;
   return (rows as UserRow[]).map(toUser);
 }
 

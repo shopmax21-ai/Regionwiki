@@ -59,6 +59,7 @@ export const AUDIT_ENTITIES = {
   business: { noun: "бизнес", fem: false, category: "content" },
   realty: { noun: "объект недвижимости", fem: false, category: "content" },
   place: { noun: "метка на карте", fem: true, category: "content" },
+  media_channel: { noun: "канал в разделе «Медиа»", fem: false, category: "content" },
   job: { noun: "работа", fem: true, category: "content" },
   reply: { noun: "быстрый ответ", fem: false, category: "content" },
   command: { noun: "команда сервера", fem: true, category: "content" },

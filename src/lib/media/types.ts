@@ -16,12 +16,25 @@ export type MediaStream = {
   avatar: string | null;
   /** Адрес канала на Twitch */
   url: string;
+  /** Канал добавлен администрацией в список отслеживаемых */
+  tracked: boolean;
+};
+
+/** Канал из списка, за которым следит администрация */
+export type TrackedChannel = {
+  login: string;
+  name: string;
+  /** Присылать администраторам сообщение в Telegram, когда канал начинает трансляцию */
+  notify: boolean;
+  url: string;
 };
 
 export type MediaResponse = {
   /** ok — данные есть (возможно, пустой список), unconfigured — не заданы ключи Twitch, error — Twitch недоступен */
   status: "ok" | "unconfigured" | "error";
   streams: MediaStream[];
+  /** Все отслеживаемые каналы, в том числе те, что сейчас не в эфире */
+  channels: TrackedChannel[];
   /** ISO-время последней успешной проверки Twitch */
   updatedAt: string | null;
   /** Показаны данные из кэша, потому что свежие получить не удалось */

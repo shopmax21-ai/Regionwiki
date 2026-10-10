@@ -10,7 +10,9 @@ import { Card } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { ChannelsManager } from "./channels-manager";
 import { formatViewers } from "./format";
+import { NotifySwitch } from "./notify-switch";
 import { StreamCard } from "./stream-card";
 import { useMediaStreams } from "./use-media-streams";
 
@@ -29,8 +31,7 @@ const pluralStreams = (n: number) => {
   return "трансляций";
 };
 
-const formatTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+const formatTime = (iso: string) => new Date(iso).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 
 function StreamsSkeleton() {
   return (
@@ -80,7 +81,15 @@ function Notice({
   );
 }
 
-export function MediaSection({ isAdmin }: { isAdmin: boolean }) {
+type MediaSectionProps = {
+  isAdmin: boolean;
+  /** Есть право «Управление каналами «Медиа»» */
+  canManage: boolean;
+  /** Личная настройка: оповещения в Telegram о начале трансляций */
+  notifyEnabled: boolean;
+};
+
+export function MediaSection({ isAdmin, canManage, notifyEnabled }: MediaSectionProps) {
   const { data, failed, refreshing, reload } = useMediaStreams();
   const hostname = useSyncExternalStore(subscribeNothing, getHostname, getServerHostname);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -88,23 +97,35 @@ export function MediaSection({ isAdmin }: { isAdmin: boolean }) {
   const streams = data?.streams ?? [];
   const totalViewers = streams.reduce((sum, stream) => sum + stream.viewers, 0);
   const showStreams = data?.status === "ok" && streams.length > 0;
+  const channels = data?.channels ?? [];
+  const liveLogins = new Set(streams.map((stream) => stream.login.toLowerCase()));
+  const offlineChannels = channels.filter((channel) => !liveLogins.has(channel.login));
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-10">
       <header className="flex flex-col items-center gap-3 py-4 text-center md:py-6">
         <h1 className="font-semibold text-3xl tracking-tight md:text-5xl">Медиа</h1>
         <p className="max-w-xl text-muted-foreground text-sm">
-          Трансляции игроков REGION на Twitch. Список обновляется сам: стримы находятся по названию проекта в заголовке,
-          имени канала и тегах.
+          Трансляции игроков REGION на Twitch. Список обновляется сам: показываются каналы, которые добавила
+          администрация, и стримы с названием проекта в заголовке, имени канала или тегах.
         </p>
       </header>
+
+      {isAdmin && (
+        <section className="flex flex-wrap items-center justify-end gap-2" aria-label="Настройки раздела">
+          <NotifySwitch initialEnabled={notifyEnabled} />
+          {canManage && data && (
+            <ChannelsManager channels={channels} streams={streams} onChanged={() => void reload()} />
+          )}
+        </section>
+      )}
 
       {data?.status === "ok" && (
         <section className="flex flex-wrap items-center justify-between gap-3" aria-label="Сводка по трансляциям">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="h-7 gap-1.5 px-2.5 text-sm">
-              <span className="size-2 rounded-full bg-destructive" aria-hidden="true" />
-              В эфире: {streams.length} {pluralStreams(streams.length)}
+              <span className="size-2 rounded-full bg-destructive" aria-hidden="true" />В эфире: {streams.length}{" "}
+              {pluralStreams(streams.length)}
             </Badge>
             {streams.length > 0 && (
               <Badge variant="outline" className="h-7 px-2.5 text-sm">
@@ -173,7 +194,7 @@ export function MediaSection({ isAdmin }: { isAdmin: boolean }) {
         <Notice
           icon={Tv}
           title="Сейчас никто не стримит"
-          description="Как только игрок начнёт трансляцию с названием проекта, она появится здесь сама."
+          description="Как только отслеживаемый канал или игрок с названием проекта в заголовке начнёт трансляцию, она появится здесь сама."
         />
       )}
 
@@ -192,6 +213,23 @@ export function MediaSection({ isAdmin }: { isAdmin: boolean }) {
             </div>
           )}
         </>
+      )}
+
+      {offlineChannels.length > 0 && data?.status !== "error" && (
+        <section className="flex flex-col gap-3" aria-label="Каналы не в эфире">
+          <h2 className="font-medium text-muted-foreground text-sm">Отслеживаемые каналы, сейчас не в эфире</h2>
+          <ul className="flex flex-wrap gap-2">
+            {offlineChannels.map((channel) => (
+              <li key={channel.login}>
+                <Button asChild variant="outline" size="sm">
+                  <a href={channel.url} target="_blank" rel="noopener noreferrer">
+                    {channel.name}
+                  </a>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </main>
   );

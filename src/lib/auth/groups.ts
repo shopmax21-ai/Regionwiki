@@ -49,6 +49,7 @@ export type Permission =
   | "business.edit"
   | "realty.edit"
   | "map.edit"
+  | "media.manage"
   | "punishments.request"
   | "punishments.review"
   | "punishments.all"
@@ -116,6 +117,13 @@ export const permissionDefs: readonly PermissionDef[] = [
     key: "map.edit",
     label: "Редактирование карты",
     description: "Добавлять, изменять и удалять метки на карте штата, загружать метки списком.",
+    category: "Контент",
+  },
+  {
+    key: "media.manage",
+    label: "Управление каналами «Медиа»",
+    description:
+      "Добавлять и удалять каналы, за которыми следит раздел «Медиа», и включать для них оповещение о начале трансляции в Telegram.",
     category: "Контент",
   },
   {
@@ -244,6 +252,7 @@ export const defaultPermissions: Record<EditableGroup, readonly Permission[]> = 
     "groups.assign",
     "transport.edit",
     "map.edit",
+    "media.manage",
     "items.edit",
     "replies.view",
     "replies.edit",

@@ -16,13 +16,17 @@ export function useMediaStreams() {
   const [refreshing, setRefreshing] = useState(false);
   const controllerRef = useRef<AbortController | null>(null);
 
-  const load = useCallback(async () => {
+  // fresh: обойти кэш браузера и CDN, например после правки списка каналов
+  const load = useCallback(async (fresh = false) => {
     controllerRef.current?.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
     setRefreshing(true);
     try {
-      const response = await fetch("/api/media/streams", { signal: controller.signal, cache: "no-store" });
+      const response = await fetch(fresh ? `/api/media/streams?t=${Date.now()}` : "/api/media/streams", {
+        signal: controller.signal,
+        cache: "no-store",
+      });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       setData((await response.json()) as MediaResponse);
       setFailed(false);
@@ -47,5 +51,7 @@ export function useMediaStreams() {
     };
   }, [load]);
 
-  return { data, failed, refreshing, reload: load };
+  const reload = useCallback(() => load(true), [load]);
+
+  return { data, failed, refreshing, reload };
 }
