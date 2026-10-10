@@ -319,10 +319,21 @@ async function loadStreams(channels: TrackedChannel[]): Promise<MediaStream[]> {
 
 // --- Кэш в памяти: один запрос к Twitch в минуту независимо от числа посетителей ---
 
-let cache: { at: number; value: MediaResponse } | null = null;
-let inflight: Promise<MediaResponse> | null = null;
+/**
+ * Кэш хранит только ответ Twitch. Список каналов читается из базы при каждом запросе (это быстро), поэтому правки
+ * списка видны сразу. Если набор каналов изменился, кэш считается устаревшим: так не нужно сбрасывать его
+ * из серверных действий (у них может быть своя копия модуля).
+ */
+let cache: { at: number; signature: string; value: MediaResponse } | null = null;
+let inflight: { signature: string; promise: Promise<MediaResponse> } | null = null;
 let retryAfter = 0;
 let lastProblem: string | undefined;
+
+const signatureOf = (channels: TrackedChannel[]) =>
+  channels
+    .map((channel) => channel.login)
+    .sort()
+    .join(",");
 
 /** Сбросить кэш: после правки списка каналов страница должна показать изменения сразу. */
 export function invalidateMediaCache(): void {
@@ -330,39 +341,47 @@ export function invalidateMediaCache(): void {
   retryAfter = 0;
 }
 
-async function refresh(): Promise<MediaResponse> {
-  const channels = await safeChannels();
+async function refresh(channels: TrackedChannel[]): Promise<MediaResponse> {
   const streams = await loadStreams(channels);
   const value: MediaResponse = { status: "ok", streams, channels, updatedAt: new Date().toISOString() };
-  cache = { at: Date.now(), value };
+  cache = { at: Date.now(), signature: signatureOf(channels), value };
   retryAfter = 0;
   lastProblem = undefined;
   return value;
 }
 
 export async function getMediaStreams(): Promise<MediaResponse> {
-  if (!isTwitchConfigured())
-    return { status: "unconfigured", streams: [], channels: await safeChannels(), updatedAt: null };
-  if (cache && Date.now() - cache.at < RESULT_TTL_MS) return cache.value;
+  const channels = await safeChannels();
+  if (!isTwitchConfigured()) return { status: "unconfigured", streams: [], channels, updatedAt: null };
 
-  // После сбоя несколько секунд не долбим Twitch повторно: отдаём прошлый результат или ошибку.
-  if (Date.now() < retryAfter) {
-    return cache
-      ? { ...cache.value, stale: true }
-      : { status: "error", streams: [], channels: await safeChannels(), updatedAt: null, problem: lastProblem };
+  const signature = signatureOf(channels);
+  if (cache && cache.signature === signature && Date.now() - cache.at < RESULT_TTL_MS) {
+    return { ...cache.value, channels };
   }
 
-  inflight ??= refresh().finally(() => {
-    inflight = null;
-  });
+  // После сбоя несколько секунд не долбим Twitch повторно: отдаём прошлый результат или ошибку.
+  // Правка списка каналов (другой набор) это ожидание отменяет.
+  const sameSet = cache?.signature === signature;
+  if (Date.now() < retryAfter && (sameSet || !cache)) {
+    return cache
+      ? { ...cache.value, channels, stale: true }
+      : { status: "error", streams: [], channels, updatedAt: null, problem: lastProblem };
+  }
+
+  if (inflight?.signature !== signature) {
+    const promise = refresh(channels).finally(() => {
+      if (inflight?.promise === promise) inflight = null;
+    });
+    inflight = { signature, promise };
+  }
   try {
-    return await inflight;
+    return await inflight.promise;
   } catch (error) {
     console.error("[media] не удалось загрузить трансляции Twitch:", error instanceof Error ? error.message : error);
     lastProblem = describeTwitchError(error);
     retryAfter = Date.now() + ERROR_RETRY_MS;
     return cache
-      ? { ...cache.value, stale: true }
-      : { status: "error", streams: [], channels: await safeChannels(), updatedAt: null, problem: lastProblem };
+      ? { ...cache.value, channels, stale: true }
+      : { status: "error", streams: [], channels, updatedAt: null, problem: lastProblem };
   }
 }
