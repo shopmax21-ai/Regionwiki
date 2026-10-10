@@ -6,17 +6,17 @@ import { actorOf, recordContentChange } from "@/lib/audit/store";
 import { getAdmin, getAdminContext } from "@/lib/auth/admin";
 import { setNotifyMedia } from "@/lib/auth/db";
 import { addChannel, parseTwitchLogin, removeChannel, setChannelNotify } from "@/lib/media/channels";
-import { invalidateMediaCache, isTwitchConfigured, lookupTwitchChannel } from "@/lib/media/twitch";
+import { describeTwitchError, invalidateMediaCache, isTwitchConfigured, lookupTwitchChannel } from "@/lib/media/twitch";
 
-export type MediaActionResult = { ok: true } | { ok: false; error: string };
+export type MediaActionResult = { ok: true; warning?: string } | { ok: false; error: string };
 
 const DENIED = { ok: false, error: "Недостаточно прав для управления каналами" } as const;
 const DATABASE = { ok: false, error: "База данных недоступна, попробуйте позже" } as const;
 
-function done(): MediaActionResult {
+function done(warning?: string): MediaActionResult {
   invalidateMediaCache();
   revalidatePath("/media");
-  return { ok: true };
+  return { ok: true, warning };
 }
 
 /** Добавить канал в список отслеживаемых. Нужно право «Управление каналами «Медиа»». */
@@ -32,6 +32,7 @@ export async function addChannelAction(input: unknown): Promise<MediaActionResul
   // Если ключи Twitch заданы, проверяем, что канал существует, и берём его настоящее имя
   let name = login;
   let canonical = login;
+  let warning: string | undefined;
   if (isTwitchConfigured()) {
     try {
       const info = await lookupTwitchChannel(login);
@@ -39,8 +40,9 @@ export async function addChannelAction(input: unknown): Promise<MediaActionResul
       name = info.name;
       canonical = info.login;
     } catch (error) {
+      // Сбой Twitch не мешает добавить канал: проверка нужна только ради настоящего имени, оно подтянется из эфира
       console.error("[media] Не удалось проверить канал на Twitch", error instanceof Error ? error.message : error);
-      return { ok: false, error: "Twitch сейчас не отвечает, попробуйте позже" };
+      warning = `Канал добавлен без проверки. ${describeTwitchError(error)}`;
     }
   }
 
@@ -52,7 +54,7 @@ export async function addChannelAction(input: unknown): Promise<MediaActionResul
     console.error("[media] Не удалось добавить канал", error);
     return DATABASE;
   }
-  return done();
+  return done(warning);
 }
 
 export async function removeChannelAction(login: unknown): Promise<MediaActionResult> {

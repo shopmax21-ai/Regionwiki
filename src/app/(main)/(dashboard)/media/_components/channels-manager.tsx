@@ -49,7 +49,8 @@ export function ChannelsManager({ channels, streams, onChanged }: Props) {
         return;
       }
       setError(null);
-      if (success) toast.success(success);
+      if (result.warning) toast.warning(result.warning, { duration: 10_000 });
+      else if (success) toast.success(success);
       onDone?.();
       onChanged();
     });

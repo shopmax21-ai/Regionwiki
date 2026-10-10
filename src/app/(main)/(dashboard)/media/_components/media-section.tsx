@@ -181,7 +181,11 @@ export function MediaSection({ isAdmin, canManage, notifyEnabled }: MediaSection
         <Notice
           icon={TriangleAlert}
           title="Twitch сейчас не отвечает"
-          description="Список трансляций временно недоступен, попробуйте обновить страницу через минуту."
+          description={
+            isAdmin && data.problem
+              ? `${data.problem} Подробности в логах сервера.`
+              : "Список трансляций временно недоступен, попробуйте обновить страницу через минуту."
+          }
           action={
             <Button variant="outline" onClick={() => void reload()} disabled={refreshing}>
               Повторить

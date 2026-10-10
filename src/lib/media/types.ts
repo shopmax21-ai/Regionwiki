@@ -37,6 +37,8 @@ export type MediaResponse = {
   channels: TrackedChannel[];
   /** ISO-время последней успешной проверки Twitch */
   updatedAt: string | null;
+  /** Почему Twitch недоступен (для администрации): неверные ключи, нет сети и т. п. */
+  problem?: string;
   /** Показаны данные из кэша, потому что свежие получить не удалось */
   stale?: boolean;
 };

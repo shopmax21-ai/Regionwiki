@@ -73,7 +73,25 @@ type HelixUser = { id: string; login?: string; display_name?: string; profile_im
 
 type HelixPage<T> = { data: T[]; pagination?: { cursor?: string } };
 
-class TwitchError extends Error {}
+/** auth — Twitch не принял ключи приложения; network — сервер не достучался до Twitch; http — Twitch ответил ошибкой */
+export class TwitchError extends Error {
+  constructor(
+    message: string,
+    readonly kind: "auth" | "network" | "http" = "http",
+  ) {
+    super(message);
+  }
+}
+
+/** Понятная причина сбоя для администрации. Секреты в текст не попадают. */
+export function describeTwitchError(error: unknown): string {
+  if (error instanceof TwitchError) return error.message;
+  if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+    return "Twitch не ответил за 8 секунд. Сервер не может подключиться к api.twitch.tv.";
+  }
+  if (error instanceof TypeError) return "Сервер не может подключиться к Twitch (нет сети или адрес заблокирован).";
+  return "Неизвестная ошибка при обращении к Twitch.";
+}
 
 // --- Токен приложения (client credentials): живёт около двух месяцев, обновляем заранее ---
 
@@ -92,9 +110,17 @@ async function requestToken(): Promise<string> {
     cache: "no-store",
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
-  if (!response.ok) throw new TwitchError(`Не удалось получить токен Twitch (${response.status})`);
+  if (!response.ok) {
+    const auth = response.status === 400 || response.status === 401 || response.status === 403;
+    throw new TwitchError(
+      auth
+        ? `Twitch не принял ключи приложения (код ${response.status}). Проверьте TWITCH_CLIENT_ID и TWITCH_CLIENT_SECRET: ключи должны быть из одного приложения на dev.twitch.tv/console.`
+        : `Не удалось получить токен Twitch (код ${response.status}).`,
+      auth ? "auth" : "http",
+    );
+  }
   const data = (await response.json()) as { access_token?: string; expires_in?: number };
-  if (!data.access_token) throw new TwitchError("Twitch не вернул токен");
+  if (!data.access_token) throw new TwitchError("Twitch не вернул токен.");
   token = { value: data.access_token, expiresAt: Date.now() + Math.max((data.expires_in ?? 3600) - 300, 60) * 1000 };
   return data.access_token;
 }
@@ -116,10 +142,10 @@ async function helix<T>(path: string, params: URLSearchParams): Promise<HelixPag
     });
     // Токен мог быть отозван раньше срока: один раз берём новый и повторяем запрос.
     if (response.status === 401 && attempt === 0) continue;
-    if (!response.ok) throw new TwitchError(`Twitch ответил ${response.status} на /${path}`);
+    if (!response.ok) throw new TwitchError(`Twitch ответил кодом ${response.status} на запрос /${path}.`);
     return (await response.json()) as HelixPage<T>;
   }
-  throw new TwitchError("Twitch отклонил токен");
+  throw new TwitchError("Twitch отклонил токен приложения.", "auth");
 }
 
 /** Все страницы ответа с курсором, но не больше maxPages. */
@@ -296,6 +322,7 @@ async function loadStreams(channels: TrackedChannel[]): Promise<MediaStream[]> {
 let cache: { at: number; value: MediaResponse } | null = null;
 let inflight: Promise<MediaResponse> | null = null;
 let retryAfter = 0;
+let lastProblem: string | undefined;
 
 /** Сбросить кэш: после правки списка каналов страница должна показать изменения сразу. */
 export function invalidateMediaCache(): void {
@@ -309,6 +336,7 @@ async function refresh(): Promise<MediaResponse> {
   const value: MediaResponse = { status: "ok", streams, channels, updatedAt: new Date().toISOString() };
   cache = { at: Date.now(), value };
   retryAfter = 0;
+  lastProblem = undefined;
   return value;
 }
 
@@ -319,7 +347,9 @@ export async function getMediaStreams(): Promise<MediaResponse> {
 
   // После сбоя несколько секунд не долбим Twitch повторно: отдаём прошлый результат или ошибку.
   if (Date.now() < retryAfter) {
-    return cache ? { ...cache.value, stale: true } : { status: "error", streams: [], channels: [], updatedAt: null };
+    return cache
+      ? { ...cache.value, stale: true }
+      : { status: "error", streams: [], channels: await safeChannels(), updatedAt: null, problem: lastProblem };
   }
 
   inflight ??= refresh().finally(() => {
@@ -329,7 +359,10 @@ export async function getMediaStreams(): Promise<MediaResponse> {
     return await inflight;
   } catch (error) {
     console.error("[media] не удалось загрузить трансляции Twitch:", error instanceof Error ? error.message : error);
+    lastProblem = describeTwitchError(error);
     retryAfter = Date.now() + ERROR_RETRY_MS;
-    return cache ? { ...cache.value, stale: true } : { status: "error", streams: [], channels: [], updatedAt: null };
+    return cache
+      ? { ...cache.value, stale: true }
+      : { status: "error", streams: [], channels: await safeChannels(), updatedAt: null, problem: lastProblem };
   }
 }
