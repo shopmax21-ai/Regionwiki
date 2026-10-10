@@ -7,12 +7,14 @@ import { cn } from "cn";
 import { AppSidebar } from "@/app/(main)/(dashboard)/_components/sidebar/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { accessKey } from "@/lib/auth/access-key";
 import { getViewerAccess } from "@/lib/auth/admin";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getPeopleSafe } from "@/lib/auth/db";
 import { listJobs } from "@/lib/jobs/store";
 import { getPreference } from "@/server/server-actions";
 
+import { AccessSync } from "./_components/access-sync";
 import { BugReportButton } from "./_components/header/bug-report-button";
 import { SearchDialog } from "./_components/header/search-dialog";
 import { ThemeSwitcher } from "./_components/header/theme-switcher";
@@ -45,6 +47,11 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
       }
     : null;
 
+  // Отпечаток доступа: клиент сверяет его с сервером и сам перерисовывает страницу при изменении роли или прав
+  const currentAccessKey = session
+    ? accessKey({ status: session.status, role: session.role, group: me?.group ?? null, permissions })
+    : null;
+
   return (
     <SidebarProvider
       defaultOpen={defaultOpen}
@@ -54,6 +61,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         } as React.CSSProperties
       }
     >
+      {currentAccessKey !== null && <AccessSync accessKey={currentAccessKey} />}
       <AppSidebar
         variant={variant}
         collapsible={collapsible}

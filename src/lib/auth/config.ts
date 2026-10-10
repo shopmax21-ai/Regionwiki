@@ -1,8 +1,8 @@
 export const SESSION_COOKIE = "region_session";
 export const ATTEMPT_COOKIE = "region_login_attempt";
 export const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 дней
-/** Раз в сколько секунд сессия сверяется с базой (одобрение, блокировка). */
-export const SESSION_RECHECK_SECONDS = 5 * 60;
+/** Раз в сколько секунд защита разделов сверяется с базой (одобрение, блокировка, смена роли). */
+export const SESSION_RECHECK_SECONDS = 30;
 
 export const LOGIN_PATH = "/auth/v2/login";
 
