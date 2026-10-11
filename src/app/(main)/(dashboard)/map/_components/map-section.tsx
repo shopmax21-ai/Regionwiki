@@ -124,7 +124,7 @@ function MapSwitcher({
         <div
           role="menu"
           aria-label="Карта"
-          className="absolute top-full left-0 z-20 mt-1 w-max min-w-full rounded-xl bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
+          className="absolute top-full left-0 z-20 mt-1 w-max min-w-full rounded-xl bg-popover p-1 text-popover-foreground shadow-md border border-border"
         >
           {MAP_MODES.map((item) => (
             <button
@@ -461,7 +461,7 @@ export function MapSection({ places: allPlaces, zones: allZones, editor, problem
   }, [listOpen, importOpen, draft, zoneDraft, saving, fullscreen, cancelDraft, cancelZoneDraft]);
 
   // Общий вид плашек панели: тёмная полупрозрачная подложка, как у остальных элементов карты
-  const plate = "rounded-xl bg-card/95 shadow-sm ring-1 ring-foreground/10 backdrop-blur";
+  const plate = "rounded-xl bg-card/95 shadow-sm border border-border backdrop-blur";
   const searchTip = mode === "world" ? "Поиск по меткам" : "Поиск по зонам";
   const listCount = mode === "world" ? visiblePlaces.length : visibleZones.length;
 
@@ -519,7 +519,7 @@ export function MapSection({ places: allPlaces, zones: allZones, editor, problem
         {linkedPlace && !draft && (
           <div
             role="status"
-            className="absolute top-4 left-1/2 z-10 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-2 rounded-full bg-card/95 py-1 pr-1 pl-4 text-sm shadow-sm ring-1 ring-foreground/10 backdrop-blur"
+            className="absolute top-4 left-1/2 z-10 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-2 rounded-full bg-card/95 py-1 pr-1 pl-4 text-sm shadow-sm border border-border backdrop-blur"
           >
             <span className="truncate font-medium">{linkedPlace.name}</span>
             <Button

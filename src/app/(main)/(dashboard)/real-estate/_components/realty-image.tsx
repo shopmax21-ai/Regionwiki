@@ -50,7 +50,7 @@ export function RealtyImage({ realty }: { realty: Realty }) {
       )}
 
       {views.length > 1 && (
-        <fieldset className="absolute bottom-3 left-3 m-0 flex gap-1 rounded-lg border-0 bg-background/70 p-1 ring-1 ring-foreground/10 backdrop-blur">
+        <fieldset className="absolute bottom-3 left-3 m-0 flex gap-1 rounded-lg border-0 bg-background/70 p-1 border border-border backdrop-blur">
           <legend className="sr-only">Вид объекта</legend>
           {views.map((item) => (
             <Button

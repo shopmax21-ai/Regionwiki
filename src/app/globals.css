@@ -2,11 +2,6 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Theme preset styles: these override CSS variables based on the selected data-theme-preset */
-@import "../styles/presets/brutalist.css";
-@import "../styles/presets/soft-pop.css";
-@import "../styles/presets/tangerine.css";
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -77,8 +72,7 @@
   --shadow-2xl: 0 0 #0000;
 }
 
-/* Default theme styles (used when no data-theme-preset is set or when 'default' is selected).
-These serve as the fallback; there is no separate default.css file. */
+/* Цвета светлой темы */
 :root {
   --radius: 0.5rem;
   --background: #f8f8ff;
@@ -112,7 +106,6 @@ These serve as the fallback; there is no separate default.css file. */
   --sidebar-accent-foreground: #cf3030;
   --sidebar-border: #dfdfea;
   --sidebar-ring: #cf3030;
-
 }
 
 .dark {
@@ -188,104 +181,12 @@ These serve as the fallback; there is no separate default.css file. */
   }
 }
 
-@layer utilities {
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-2xs {
-    box-shadow: var(--shadow-2xs);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-xs {
-    box-shadow: var(--shadow-xs);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-sm {
-    box-shadow: var(--shadow-sm);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow {
-    box-shadow: var(--shadow);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-md {
-    box-shadow: var(--shadow-md);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-lg {
-    box-shadow: var(--shadow-lg);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-xl {
-    box-shadow: var(--shadow-xl);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-2xl {
-    box-shadow: var(--shadow-2xl);
-  }
-}
-
 html {
   overscroll-behavior: none;
 }
 
-html:has([data-landing-page]) {
-  view-transition-name: none;
-}
-
-[data-landing-dashboard-preview] {
-  view-transition-name: landing-dashboard-preview;
-}
-
-::view-transition-group(landing-dashboard-preview) {
-  animation-duration: 360ms;
-  animation-timing-function: ease-out;
-}
-
 .disable-transitions * {
   transition: none !important;
-}
-
-[data-print-root] {
-  display: none;
-}
-
-@media print {
-  @page {
-    size: Letter;
-    margin: 0;
-  }
-
-  html,
-  body {
-    width: 8.5in !important;
-    height: 11in !important;
-    margin: 0 !important;
-    overflow: hidden !important;
-  }
-
-  body > *:not([data-print-root]) {
-    display: none !important;
-  }
-
-  [data-print-root] {
-    display: block !important;
-    width: 8.5in !important;
-    height: 11in !important;
-    margin: 0 !important;
-    overflow: hidden !important;
-    background: white !important;
-  }
-
-  [data-print-root] [data-print-paper] {
-    width: 8.5in !important;
-    height: 11in !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-  }
-
-  [data-print-root] [data-print-paper],
-  [data-print-root] [data-print-paper] * {
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
 }
 
 /* Страницы авторизации: всегда тёмные, с красным акцентом Region */
@@ -331,7 +232,6 @@ html:has([data-landing-page]) {
       linear-gradient(var(--c), var(--c)) bottom left / 1px 10px no-repeat,
       linear-gradient(var(--c), var(--c)) bottom right / 10px 1px no-repeat,
       linear-gradient(var(--c), var(--c)) bottom right / 1px 10px no-repeat;
-    transition: --c 0.2s;
   }
 
   &:hover::before {

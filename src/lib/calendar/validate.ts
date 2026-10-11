@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { DEFAULT_EVENT_COLOR, isEventColor, EVENT_LIMITS as L } from "./types";
+import { DEFAULT_EVENT_COLOR, EVENT_CATEGORIES, isEventColor, EVENT_LIMITS as L } from "./types";
 
 const instant = z
   .string()
@@ -19,6 +19,7 @@ const eventSchema = z
       .refine(isEventColor, "Выберите цвет мероприятия")
       .transform((value) => value.toLowerCase())
       .default(DEFAULT_EVENT_COLOR),
+    category: z.enum(EVENT_CATEGORIES).default("general"),
     notify: z.boolean().default(true),
     /** Сохранить, несмотря на пересечение с другими мероприятиями */
     force: z.boolean().default(false),
@@ -40,6 +41,7 @@ export type EventInput = {
   startsAt: Date;
   endsAt: Date;
   color: string;
+  category: (typeof EVENT_CATEGORIES)[number];
   notify: boolean;
   force: boolean;
 };

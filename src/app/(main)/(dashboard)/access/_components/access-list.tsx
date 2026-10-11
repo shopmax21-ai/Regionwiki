@@ -99,7 +99,7 @@ function PendingCard({ user, now }: { user: DbUser; now: number }) {
               </dt>
               <dd className="truncate font-medium">
                 {user.nickname}
-                {user.staticId ? ` · ${user.staticId}` : ""}
+                {user.staticId ? <span className="font-mono tabular-nums">{` · ${user.staticId}`}</span> : null}
               </dd>
             </div>
           )}

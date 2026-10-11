@@ -1,8 +1,9 @@
 "use client";
 
-import { CalendarClock, MapPin, Pencil, Trash2, UserRound } from "lucide-react";
+import { CalendarClock, MapPin, Pencil, Radio, Trash2, UserRound } from "lucide-react";
 
 import { PersonName } from "@/components/person-name";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatRange, relativeTo } from "@/lib/calendar/format";
@@ -49,6 +50,12 @@ export function EventDetails({
           <DialogHeader>
             <div className="flex items-center gap-2 pr-6">
               <StatusBadge status={status} />
+              {event.category === "media" && (
+                <Badge variant="outline" className="text-primary">
+                  <Radio data-icon="inline-start" />
+                  Медиа
+                </Badge>
+              )}
               <span className="text-muted-foreground text-xs">{timing}</span>
             </div>
             <DialogTitle className="flex items-start gap-2 text-lg leading-snug">

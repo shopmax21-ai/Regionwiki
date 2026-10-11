@@ -98,7 +98,7 @@ export function NavUser({
 
               <div className="relative z-10 grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.nickname}</span>
-                <span className="truncate text-muted-foreground text-xs">
+                <span className={`truncate text-muted-foreground text-xs ${user.staticId ? "font-mono tabular-nums" : ""}`}>
                   {user.staticId ? `#${user.staticId}` : "Static ID не указан"}
                 </span>
               </div>

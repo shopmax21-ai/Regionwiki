@@ -41,6 +41,12 @@ const NO_ACCESS = { ok: false, error: "Календарь доступен то�
 const FORBIDDEN = { ok: false, error: "Чужое мероприятие может менять только Гл.Администратор" } as const;
 const UNKNOWN = { ok: false, error: "Неизвестное мероприятие" } as const;
 
+/** Медиа-мероприятия (стримы, съёмки) ведут те, у кого есть доступ к разделам «Медиа». */
+export const canUseMedia = (admin: AdminContext) =>
+  admin.permissions.some((key) => key === "media.manage" || key === "mediapr.view" || key === "calendar.manage");
+
+const NO_MEDIA = { ok: false, error: "Медиа-мероприятия могут вести только сотрудники медиа" } as const;
+
 function refresh() {
   revalidatePath("/calendar");
 }
@@ -68,9 +74,11 @@ export async function createEventAction(input: unknown): Promise<EventActionResu
 
   const result = validateEvent(input);
   if (!result.ok) return result;
+  if (result.event.category === "media" && !canUseMedia(admin)) return NO_MEDIA;
 
   try {
-    if (!result.event.force) {
+    // Стримы разных каналов идут параллельно, поэтому пересечения проверяются только у обычных мероприятий
+    if (!result.event.force && result.event.category === "general") {
       const conflicts = await findConflicts(result.event.startsAt, result.event.endsAt);
       if (conflicts.length > 0) {
         return { ok: false, error: "Это время пересекается с другими мероприятиями", conflicts };
@@ -95,13 +103,14 @@ export async function updateEventAction(id: string, input: unknown): Promise<Eve
 
   const result = validateEvent(input);
   if (!result.ok) return result;
+  if (result.event.category === "media" && !canUseMedia(admin)) return NO_MEDIA;
 
   try {
     const existing = await getEvent(id);
     if (!existing) return { ok: false, error: "Мероприятие не найдено, возможно, его уже удалили" };
     if (!canChange(admin, existing.ownerId)) return FORBIDDEN;
 
-    if (!result.event.force) {
+    if (!result.event.force && result.event.category === "general") {
       const conflicts = await findConflicts(result.event.startsAt, result.event.endsAt, id);
       if (conflicts.length > 0) {
         return { ok: false, error: "Это время пересекается с другими мероприятиями", conflicts };

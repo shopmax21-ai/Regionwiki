@@ -597,7 +597,7 @@ export default function GameMap({
               aria-label={zone.name}
               // Пока ставят точки, подписи не должны перехватывать клики
               className={cn(
-                "absolute flex items-center gap-1.5 whitespace-nowrap rounded-md bg-background/85 px-2 py-1 font-medium text-foreground text-xs shadow-sm outline-none ring-1 ring-foreground/10 backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-ring",
+                "absolute flex items-center gap-1.5 whitespace-nowrap rounded-md bg-background/85 px-2 py-1 font-medium text-foreground text-xs shadow-sm outline-none border border-border backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-ring",
                 active && "ring-2 ring-foreground/40",
                 pickMode && "pointer-events-none",
               )}

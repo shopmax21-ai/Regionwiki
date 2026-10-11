@@ -30,6 +30,21 @@ export const EVENT_COLORS = [
 
 export const DEFAULT_EVENT_COLOR: string = EVENT_COLORS[0].value;
 
+/** Тип мероприятия: обычное или медиа (стрим, съёмка, выход ролика). Медиа видны на вкладке «Медиа» календаря. */
+export const EVENT_CATEGORIES = ["general", "media"] as const;
+export type EventCategory = (typeof EVENT_CATEGORIES)[number];
+
+export const CATEGORY_LABELS: Record<EventCategory, string> = {
+  general: "Обычное",
+  media: "Медиа",
+};
+
+export const isEventCategory = (value: unknown): value is EventCategory =>
+  typeof value === "string" && (EVENT_CATEGORIES as readonly string[]).includes(value);
+
+/** Цвет медиа-мероприятий по умолчанию */
+export const MEDIA_EVENT_COLOR = "#ef4444";
+
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 
 export const isEventColor = (value: unknown): value is string => typeof value === "string" && HEX_COLOR.test(value);
@@ -74,6 +89,8 @@ export type CalendarEvent = {
   owner: Person;
   /** Цвет мероприятия в календаре (#RRGGBB) */
   color: string;
+  /** Обычное мероприятие или медиа (стрим и т. п.) */
+  category: EventCategory;
   /** Напоминание в Telegram за час до начала (получает ownerId) */
   notify: boolean;
   /** Напоминание уже отправлено */

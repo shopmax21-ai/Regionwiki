@@ -1,6 +1,7 @@
-import { Bell, BellOff, MapPin } from "lucide-react";
+import { Bell, BellOff, MapPin, Radio } from "lucide-react";
 
 import { PersonName } from "@/components/person-name";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatRange, relativeTo } from "@/lib/calendar/format";
 import { type CalendarEvent, type EventStatus, STATUS_LABELS, statusOf } from "@/lib/calendar/types";
@@ -67,6 +68,12 @@ export function EventList({ events, now, meId, onOpen, onNotifyChanged }: EventL
                           aria-label="Цвет мероприятия"
                         />
                         <span className="truncate font-medium text-sm">{event.title}</span>
+                        {event.category === "media" && (
+                          <Badge variant="outline" className="text-primary">
+                            <Radio data-icon="inline-start" />
+                            Медиа
+                          </Badge>
+                        )}
                         <StatusBadge status={group.status} />
                       </span>
                       <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-muted-foreground text-xs">
