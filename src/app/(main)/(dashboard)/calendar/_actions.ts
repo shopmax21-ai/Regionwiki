@@ -42,7 +42,7 @@ const FORBIDDEN = { ok: false, error: "Чужое мероприятие мож�
 const UNKNOWN = { ok: false, error: "Неизвестное мероприятие" } as const;
 
 /** Медиа-мероприятия (стримы, съёмки) ведут те, у кого есть доступ к разделам «Медиа». */
-const canUseMedia = (admin: AdminContext) =>
+export const canUseMedia = (admin: AdminContext) =>
   admin.permissions.some((key) => key === "media.manage" || key === "mediapr.view" || key === "calendar.manage");
 
 const NO_MEDIA = { ok: false, error: "Медиа-мероприятия могут вести только сотрудники медиа" } as const;

@@ -39,7 +39,7 @@ export function BusinessCard({ business, image, actions }: BusinessCardProps) {
             ID
           </span>
           <span className="sr-only">ID:</span>
-          <span className="font-mono tabular-nums">{business.id}</span>
+          {business.id}
         </span>
         {mapHref && (
           <Link

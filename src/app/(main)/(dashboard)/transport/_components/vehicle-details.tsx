@@ -56,7 +56,7 @@ function Section({
 
 function SpecTile({ label, value, icon: Icon }: { label: string; value: ReactNode; icon: LucideIcon }) {
   return (
-    <div className="relative flex flex-col-reverse justify-end gap-1 overflow-hidden rounded-xl bg-card p-4 border border-border">
+    <div className="relative flex flex-col-reverse justify-end gap-1 overflow-hidden rounded-xl bg-card p-4 ring-1 ring-foreground/10">
       <Icon
         className="pointer-events-none absolute right-2.5 bottom-2.5 size-12 stroke-[1.25] text-foreground/10"
         aria-hidden="true"

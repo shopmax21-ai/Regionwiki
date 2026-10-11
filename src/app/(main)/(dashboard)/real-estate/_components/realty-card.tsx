@@ -35,7 +35,7 @@ export function RealtyCard({ realty, image, actions }: RealtyCardProps) {
             ID
           </span>
           <span className="sr-only">ID:</span>
-          <span className="font-mono tabular-nums">{realty.id}</span>
+          {realty.id}
         </span>
         <span className="flex items-center gap-1.5">
           <Users className="size-4" aria-hidden="true" />

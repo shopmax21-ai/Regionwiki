@@ -1,32 +1,22 @@
-import { JetBrains_Mono, Onest, Unbounded } from "next/font/google";
+import { Roboto, Roboto_Mono } from "next/font/google";
 
-// Сайт на русском, поэтому везде подключаем кириллицу: без неё русский текст рисуется системным шрифтом.
-
-// Основной текст: нейтральный гротеск Onest.
-const onest = Onest({
+// Сайт на русском, поэтому подключаем кириллицу: без неё русский текст рисуется системным шрифтом.
+const roboto = Roboto({
   subsets: ["latin", "cyrillic"],
-  variable: "--font-onest",
-  display: "swap",
+  weight: ["400", "500", "700"],
+  variable: "--font-roboto",
 });
 
-// Заголовки: характерный широкий шрифт Unbounded.
-const unbounded = Unbounded({
+// Моноширинный вариант для кодов, команд и ID (класс font-mono).
+const robotoMono = Roboto_Mono({
   subsets: ["latin", "cyrillic"],
-  variable: "--font-unbounded",
-  display: "swap",
-});
-
-// Моноширинный: ID, Static ID, команды и цифры в таблицах (классы font-mono и tabular-nums).
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin", "cyrillic"],
-  variable: "--font-jetbrains-mono",
-  display: "swap",
+  variable: "--font-roboto-mono",
 });
 
 export const fontRegistry = {
-  onest: {
-    label: "Onest",
-    font: onest,
+  roboto: {
+    label: "Roboto",
+    font: roboto,
   },
 } as const;
 
@@ -36,4 +26,4 @@ export const fontKeys = Object.keys(fontRegistry) as FontKey[];
 
 export const fontOptions = fontKeys.map((key) => ({ key, label: fontRegistry[key].label }));
 
-export const fontVars = [onest.variable, unbounded.variable, jetbrainsMono.variable].join(" ");
+export const fontVars = [roboto.variable, robotoMono.variable].join(" ");

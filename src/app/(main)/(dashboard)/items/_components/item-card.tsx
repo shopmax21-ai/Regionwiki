@@ -102,7 +102,7 @@ export function ItemId({ id, className }: { id: number; className?: string }) {
         ID
       </span>
       <span className="sr-only">ID:</span>
-      <span className="font-mono tabular-nums">{id}</span>
+      {id}
     </span>
   );
 }

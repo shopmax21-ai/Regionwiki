@@ -176,7 +176,7 @@ export function MapLegend({ open, onOpenChange, className, ...list }: MapLegendP
     <section
       aria-label="Условные обозначения"
       className={cn(
-        "hidden shrink-0 flex-col overflow-hidden rounded-xl bg-card/95 shadow-sm border border-border backdrop-blur md:flex",
+        "hidden shrink-0 flex-col overflow-hidden rounded-xl bg-card/95 shadow-sm ring-1 ring-foreground/10 backdrop-blur md:flex",
         className,
       )}
     >
