@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { PersonName } from "@/components/person-name";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import {
   Dialog,
   DialogContent,
@@ -21,10 +22,13 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { formatRange, fromInputValue, nextFullHour, toInputValue } from "@/lib/calendar/format";
 import {
+  CATEGORY_LABELS,
   type CalendarEvent,
   type ConflictInfo,
   DEFAULT_EVENT_COLOR,
+  type EventCategory,
   EVENT_LIMITS as L,
+  MEDIA_EVENT_COLOR,
   overlaps,
   REMINDER_LEAD_MINUTES,
 } from "@/lib/calendar/types";
@@ -33,7 +37,9 @@ import { createEventAction, updateEventAction } from "../_actions";
 import { ColorPicker } from "./color-picker";
 
 /** Что открыть в редакторе: новое мероприятие (можно с заранее выбранным началом) или правка существующего */
-export type EditorTarget = { mode: "create"; startsAt?: string } | { mode: "edit"; event: CalendarEvent };
+export type EditorTarget =
+  | { mode: "create"; startsAt?: string; category?: EventCategory }
+  | { mode: "edit"; event: CalendarEvent };
 
 type FormState = {
   title: string;
@@ -42,6 +48,7 @@ type FormState = {
   start: string;
   end: string;
   color: string;
+  category: EventCategory;
   notify: boolean;
 };
 
@@ -55,17 +62,20 @@ function initialForm(target: EditorTarget, now: number): FormState {
       start: toInputValue(event.startsAt),
       end: toInputValue(event.endsAt),
       color: event.color,
+      category: event.category,
       notify: event.notify,
     };
   }
   const start = target.startsAt ?? nextFullHour(now);
+  const category = target.category ?? "general";
   return {
     title: "",
     description: "",
     location: "",
     start: toInputValue(start),
     end: toInputValue(new Date(new Date(start).getTime() + 3_600_000).toISOString()),
-    color: DEFAULT_EVENT_COLOR,
+    color: category === "media" ? MEDIA_EVENT_COLOR : DEFAULT_EVENT_COLOR,
+    category,
     notify: true,
   };
 }
@@ -75,6 +85,8 @@ type EventEditorProps = {
   /** Все известные мероприятия: по ним сразу, пока заполняется форма, видно пересечения */
   events: CalendarEvent[];
   now: number;
+  /** Можно ли выбирать тип «Медиа» (сотрудники медиа) */
+  canMedia: boolean;
   onClose: () => void;
   onSaved: () => void;
 };
@@ -83,14 +95,24 @@ type EventEditorProps = {
  * Окно регистрации и правки мероприятия. Пересечения с другими мероприятиями видны сразу при выборе времени:
  * администратор решает, сдвинуть ли время или всё равно записать (например, мероприятия идут параллельно).
  */
-export function EventEditor({ target, events, now, onClose, onSaved }: EventEditorProps) {
+export function EventEditor({ target, events, now, canMedia, onClose, onSaved }: EventEditorProps) {
   // Форма пересоздаётся при каждом открытии, поэтому ключ зависит от цели
   let key = "closed";
   if (target?.mode === "edit") key = `edit-${target.event.id}`;
-  else if (target) key = `create-${target.startsAt ?? "now"}`;
+  else if (target) key = `create-${target.startsAt ?? "now"}-${target.category ?? "general"}`;
   return (
     <Dialog open={target !== null} onOpenChange={(open) => !open && onClose()}>
-      {target && <EditorBody key={key} target={target} events={events} now={now} onClose={onClose} onSaved={onSaved} />}
+      {target && (
+        <EditorBody
+          key={key}
+          target={target}
+          events={events}
+          now={now}
+          canMedia={canMedia}
+          onClose={onClose}
+          onSaved={onSaved}
+        />
+      )}
     </Dialog>
   );
 }
@@ -99,6 +121,7 @@ function EditorBody({
   target,
   events,
   now,
+  canMedia,
   onClose,
   onSaved,
 }: { target: EditorTarget } & Omit<EventEditorProps, "target">) {
@@ -122,9 +145,12 @@ function EditorBody({
 
   const editingId = editing ? target.event.id : null;
   const localConflicts = useMemo<ConflictInfo[]>(() => {
-    if (!rangeValid || startsAt === null || endsAt === null) return [];
-    return events.filter((event) => event.id !== editingId && overlaps(event, { startsAt, endsAt }));
-  }, [events, editingId, rangeValid, startsAt, endsAt]);
+    // Стримы идут параллельно: пересечения проверяются только у обычных мероприятий
+    if (form.category === "media" || !rangeValid || startsAt === null || endsAt === null) return [];
+    return events.filter(
+      (event) => event.category === "general" && event.id !== editingId && overlaps(event, { startsAt, endsAt }),
+    );
+  }, [events, editingId, rangeValid, startsAt, endsAt, form.category]);
 
   const conflicts = serverConflicts ?? localConflicts;
   const startsSoon =
@@ -145,6 +171,7 @@ function EditorBody({
         startsAt,
         endsAt,
         color: form.color,
+        category: form.category,
         notify: form.notify,
         // Администратор уже видел пересечения на экране и подтвердил кнопкой «Всё равно сохранить»
         force: conflicts.length > 0,
@@ -159,7 +186,9 @@ function EditorBody({
           );
           return;
         }
-        toast.success(editing ? "Мероприятие сохранено" : "Мероприятие зарегистрировано");
+        toast.success(
+          editing ? "Сохранено" : form.category === "media" ? "Стрим запланирован" : "Мероприятие зарегистрировано",
+        );
         onSaved();
       } catch {
         setError("Нет связи с сервером, попробуйте ещё раз");
@@ -174,13 +203,51 @@ function EditorBody({
   return (
     <DialogContent className="max-h-[90dvh] gap-5 overflow-y-auto sm:max-w-xl">
       <DialogHeader>
-        <DialogTitle>{editing ? "Изменить мероприятие" : "Новое мероприятие"}</DialogTitle>
+        <DialogTitle>
+          {form.category === "media"
+            ? editing
+              ? "Изменить медиа-событие"
+              : "Новое медиа-событие"
+            : editing
+              ? "Изменить мероприятие"
+              : "Новое мероприятие"}
+        </DialogTitle>
         <DialogDescription>
           Время указывается по Москве. Мероприятие увидят все администраторы, чтобы не назначать другое на это время.
         </DialogDescription>
       </DialogHeader>
 
       <div className="grid gap-4 sm:grid-cols-2">
+        {canMedia && (
+          <div className="flex flex-col gap-2 sm:col-span-2">
+            <span className="hud-label text-muted-foreground">Тип</span>
+            <ButtonGroup>
+              {(["general", "media"] as const).map((category) => (
+                <Button
+                  key={category}
+                  type="button"
+                  variant={form.category === category ? "default" : "outline"}
+                  aria-pressed={form.category === category}
+                  onClick={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      category,
+                      // Цвет по умолчанию следует за типом, выбранный вручную не трогаем
+                      color:
+                        prev.color === DEFAULT_EVENT_COLOR || prev.color === MEDIA_EVENT_COLOR
+                          ? category === "media"
+                            ? MEDIA_EVENT_COLOR
+                            : DEFAULT_EVENT_COLOR
+                          : prev.color,
+                    }))
+                  }
+                >
+                  {category === "media" ? "Медиа (стрим, съёмка)" : CATEGORY_LABELS[category]}
+                </Button>
+              ))}
+            </ButtonGroup>
+          </div>
+        )}
         <div className="flex flex-col gap-2 sm:col-span-2">
           <Label htmlFor={id("title")}>Название</Label>
           <Input
@@ -188,7 +255,9 @@ function EditorBody({
             value={form.title}
             maxLength={L.title}
             onChange={(event) => set("title", event.target.value)}
-            placeholder="Например, «Собеседование на хелпера»"
+            placeholder={
+              form.category === "media" ? "Например, «Стрим: разбор правил»" : "Например, «Собеседование на хелпера»"
+            }
           />
         </div>
         <div className="flex flex-col gap-2">
@@ -226,13 +295,17 @@ function EditorBody({
           />
         </div>
         <div className="flex flex-col gap-2 sm:col-span-2">
-          <Label htmlFor={id("location")}>Место (необязательно)</Label>
+          <Label htmlFor={id("location")}>
+            {form.category === "media" ? "Канал или ссылка на трансляцию (необязательно)" : "Место (необязательно)"}
+          </Label>
           <Input
             id={id("location")}
             value={form.location}
             maxLength={L.location}
             onChange={(event) => set("location", event.target.value)}
-            placeholder="Голосовой канал, точка на карте, сервер..."
+            placeholder={
+              form.category === "media" ? "twitch.tv/канал, YouTube..." : "Голосовой канал, точка на карте, сервер..."
+            }
           />
         </div>
         <div className="flex flex-col gap-2 sm:col-span-2">

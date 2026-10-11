@@ -4,6 +4,8 @@ import { requireAdmin } from "@/lib/auth/admin";
 import { getUser } from "@/lib/auth/db";
 import { listEvents } from "@/lib/calendar/store";
 import type { CalendarEvent } from "@/lib/calendar/types";
+import { listMediaPrEntries } from "@/lib/mediapr/store";
+import type { MediaPrEntry } from "@/lib/mediapr/types";
 
 import { Calendar } from "./_components/calendar";
 
@@ -31,11 +33,29 @@ export default async function Page() {
     .then((user) => user?.notifyCalendar ?? false)
     .catch(() => false);
 
+  // Вкладка «Медиа» нужна сотрудникам медиа: у остальных её нет
+  const canMedia = admin.permissions.some(
+    (key) => key === "media.manage" || key === "mediapr.view" || key === "calendar.manage",
+  );
+  let mediaEntries: MediaPrEntry[] | null = null;
+  let mediaProblem: string | null = null;
+  if (canMedia && admin.permissions.some((key) => key === "mediapr.view" || key === "calendar.manage")) {
+    try {
+      mediaEntries = await listMediaPrEntries();
+    } catch (error) {
+      console.error("[calendar] Не удалось загрузить таблицу медиа", error);
+      mediaEntries = [];
+      mediaProblem = "база данных недоступна";
+    }
+  }
+
   return (
     <Calendar
       events={events}
       serverNow={Date.now()}
-      me={{ id: admin.id, canManageAll: admin.permissions.includes("calendar.manage") }}
+      me={{ id: admin.id, canManageAll: admin.permissions.includes("calendar.manage"), canMedia }}
+      mediaEntries={mediaEntries}
+      mediaProblem={mediaProblem}
       tracking={tracking}
       problem={problem}
     />

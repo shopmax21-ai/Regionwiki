@@ -22,13 +22,6 @@
       opacity: 0;
     }
   }
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -60,14 +53,34 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --font-heading: var(--font-roboto);
-  --font-sans: var(--font-roboto);
+  --font-heading: var(--font-unbounded), var(--font-onest), system-ui, sans-serif;
+  --font-sans: var(--font-onest), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+
+  /* Два радиуса на весь интерфейс: 4px для элементов управления и 8px для поверхностей. */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.5rem;
+  --radius-3xl: 0.5rem;
+  --radius-4xl: 0.5rem;
+
+  /* Без теней: глубину задают тонкие рамки. */
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow: 0 0 #0000;
+  --shadow-md: 0 0 #0000;
+  --shadow-lg: 0 0 #0000;
+  --shadow-xl: 0 0 #0000;
+  --shadow-2xl: 0 0 #0000;
 }
 
 /* Default theme styles (used when no data-theme-preset is set or when 'default' is selected).
 These serve as the fallback; there is no separate default.css file. */
 :root {
-  --radius: 0.625rem;
+  --radius: 0.5rem;
   --background: #f8f8ff;
   --foreground: #16161d;
   --card: #ffffff;
@@ -100,42 +113,39 @@ These serve as the fallback; there is no separate default.css file. */
   --sidebar-border: #dfdfea;
   --sidebar-ring: #cf3030;
 
-  /* fonts */
-  --font-sans: var(--font-roboto);
-  --font-mono: var(--font-roboto-mono);
 }
 
 .dark {
-  --background: #16161d;
+  --background: #1b1b1b;
   --foreground: #f8f8ff;
-  --card: #1e1e27;
+  --card: #232323;
   --card-foreground: #f8f8ff;
-  --popover: #1e1e27;
+  --popover: #232323;
   --popover-foreground: #f8f8ff;
   --primary: #cf3030;
   --primary-foreground: #ffffff;
-  --secondary: #2a2a35;
+  --secondary: #2c2c2c;
   --secondary-foreground: #f8f8ff;
-  --muted: #2a2a35;
-  --muted-foreground: #a0a0b0;
+  --muted: #2c2c2c;
+  --muted-foreground: #a3a3a3;
   --accent: #3a2328;
   --accent-foreground: #ff7a7a;
   --destructive: #e64545;
-  --border: #2f2f3b;
-  --input: #3a3a47;
+  --border: #333333;
+  --input: #3d3d3d;
   --ring: #cf3030;
   --chart-1: #cf3030;
-  --chart-2: #a0a0b0;
-  --chart-3: #5f5f6d;
-  --chart-4: #3a3a47;
+  --chart-2: #a3a3a3;
+  --chart-3: #6b6b6b;
+  --chart-4: #3d3d3d;
   --chart-5: #f8f8ff;
-  --sidebar: #1e1e27;
+  --sidebar: #232323;
   --sidebar-foreground: #f8f8ff;
   --sidebar-primary: #cf3030;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #3a2328;
   --sidebar-accent-foreground: #ff7a7a;
-  --sidebar-border: #2f2f3b;
+  --sidebar-border: #333333;
   --sidebar-ring: #cf3030;
 }
 
@@ -146,10 +156,35 @@ These serve as the fallback; there is no separate default.css file. */
 
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-roboto), system-ui, sans-serif;
+    font-family: var(--font-sans);
   }
   html {
-    font-family: var(--font-roboto), system-ui, sans-serif;
+    font-family: var(--font-sans);
+  }
+
+  /* Заголовки: характерный шрифт. Unbounded широкий, поэтому вес и разрядка подобраны мельче обычных. */
+  h1,
+  h2,
+  h3,
+  h4,
+  [data-slot="card-title"],
+  [data-slot="dialog-title"],
+  [data-slot="alert-dialog-title"],
+  [data-slot="sheet-title"] {
+    font-family: var(--font-heading);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  /* Цифры: ID, Static ID, номера и значения в таблицах рисуются моноширинными. */
+  .tabular-nums,
+  input[inputmode="numeric"],
+  input[inputmode="decimal"],
+  code,
+  kbd,
+  samp {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -263,4 +298,43 @@ html:has([data-landing-page]) {
   --ring: oklch(0.585 0.235 27);
   --border: oklch(1 0 0 / 9%);
   --input: oklch(1 0 0 / 12%);
+}
+
+/* Язык игрового интерфейса: подписи капсом с разрядкой, уголки-рамки, тонкие линии. */
+
+/* Мелкая подпись: ЗАГОЛОВКИ ГРУПП, ШАПКИ ТАБЛИЦ, ЯРЛЫКИ. */
+@utility hud-label {
+  font-size: 0.625rem;
+  line-height: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* Уголки по четырём углам блока. Цвет задаёт --hud-corner, при наведении уголки становятся акцентными. */
+@utility hud-corners {
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    --c: var(--hud-corner, color-mix(in oklch, var(--foreground) 40%, transparent));
+    background:
+      linear-gradient(var(--c), var(--c)) top left / 10px 1px no-repeat,
+      linear-gradient(var(--c), var(--c)) top left / 1px 10px no-repeat,
+      linear-gradient(var(--c), var(--c)) top right / 10px 1px no-repeat,
+      linear-gradient(var(--c), var(--c)) top right / 1px 10px no-repeat,
+      linear-gradient(var(--c), var(--c)) bottom left / 10px 1px no-repeat,
+      linear-gradient(var(--c), var(--c)) bottom left / 1px 10px no-repeat,
+      linear-gradient(var(--c), var(--c)) bottom right / 10px 1px no-repeat,
+      linear-gradient(var(--c), var(--c)) bottom right / 1px 10px no-repeat;
+    transition: --c 0.2s;
+  }
+
+  &:hover::before {
+    --c: var(--primary);
+  }
 }

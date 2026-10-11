@@ -457,7 +457,7 @@ export function MediaPrSection({
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 pb-10 md:gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="font-semibold text-xl">Медиа-PR</h1>
+        <h1 className="font-semibold text-xl">Медиа PR</h1>
         <p className="text-muted-foreground text-sm">Справка и таблица медиа, с которыми работает проект.</p>
       </div>
 

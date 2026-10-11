@@ -29,7 +29,7 @@ export const groupInfo: Record<AdminGroup, { label: string; level: number; descr
   media: {
     label: "Медиа-администратор",
     level: 2,
-    description: "Ведёт раздел «Медиа-PR»: таблицу медиа и отслеживание трансляций на Twitch и YouTube.",
+    description: "Ведёт раздел «Медиа PR»: таблицу медиа и отслеживание трансляций на Twitch и YouTube.",
   },
   admin: {
     label: "Администратор",
@@ -135,14 +135,14 @@ export const permissionDefs: readonly PermissionDef[] = [
   },
   {
     key: "mediapr.view",
-    label: "Раздел «Медиа-PR»",
-    description: "Открывает раздел «Медиа-PR»: справку и таблицу медиа.",
+    label: "Раздел «Медиа PR»",
+    description: "Открывает раздел «Медиа PR»: справку и таблицу медиа.",
     category: "Контент",
   },
   {
     key: "mediapr.edit",
-    label: "Редактирование «Медиа-PR»",
-    description: "Добавлять, изменять и удалять записи в таблице медиа и менять справку раздела «Медиа-PR».",
+    label: "Редактирование «Медиа PR»",
+    description: "Добавлять, изменять и удалять записи в таблице медиа и менять справку раздела «Медиа PR».",
     category: "Контент",
   },
   {

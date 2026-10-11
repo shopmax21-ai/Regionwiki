@@ -10,7 +10,7 @@ import {
 import { randomUUID } from "node:crypto";
 
 /**
- * Раздел «Медиа-PR»: таблица медиа (media_pr_entries) и справка раздела (media_pr_info).
+ * Раздел «Медиа PR»: таблица медиа (media_pr_entries) и справка раздела (media_pr_info).
  * Таблицы создаются при первом обращении.
  */
 

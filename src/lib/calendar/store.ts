@@ -6,6 +6,7 @@ import {
   type CalendarEvent,
   type ConflictInfo,
   DEFAULT_EVENT_COLOR,
+  isEventCategory,
   isEventColor,
   REMINDER_LEAD_MINUTES,
 } from "./types";
@@ -58,6 +59,8 @@ async function init(): Promise<void> {
     await client.query(
       `ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS color text NOT NULL DEFAULT '${DEFAULT_EVENT_COLOR}'`,
     );
+    // Тип мероприятия: обычное или медиа. Старые мероприятия обычные.
+    await client.query("ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS category text NOT NULL DEFAULT 'general'");
     // Напоминания тем, кто следит за календарём: отдельно по каждому получателю, чтобы никто не получил дубль
     await client.query(`CREATE TABLE IF NOT EXISTS calendar_tracking_sent (
       event_id    text NOT NULL,
@@ -103,12 +106,13 @@ type EventRow = {
   owner_id: string;
   owner_name: string;
   color: string;
+  category: string;
   notify: boolean;
   reminder_sent_at: string | Date | null;
 };
 
 const COLUMNS =
-  "id, title, description, location, starts_at, ends_at, owner_id, owner_name, color, notify, reminder_sent_at";
+  "id, title, description, location, starts_at, ends_at, owner_id, owner_name, color, category, notify, reminder_sent_at";
 
 const toEvent = (row: EventRow): CalendarEvent => ({
   id: row.id,
@@ -121,6 +125,7 @@ const toEvent = (row: EventRow): CalendarEvent => ({
   ownerName: row.owner_name,
   owner: personFromName(row.owner_name, row.owner_id),
   color: isEventColor(row.color) ? row.color : DEFAULT_EVENT_COLOR,
+  category: isEventCategory(row.category) ? row.category : "general",
   notify: row.notify,
   reminded: row.reminder_sent_at !== null,
 });
@@ -155,7 +160,7 @@ export const findConflicts = (startsAt: Date, endsAt: Date, excludeId?: string) 
   run(async (): Promise<ConflictInfo[]> => {
     const { rows } = await getPool().query<EventRow>(
       `SELECT ${COLUMNS} FROM calendar_events
-       WHERE starts_at < $2 AND ends_at > $1 AND ($3::text IS NULL OR id <> $3)
+       WHERE category = 'general' AND starts_at < $2 AND ends_at > $1 AND ($3::text IS NULL OR id <> $3)
        ORDER BY starts_at ASC LIMIT 10`,
       [startsAt, endsAt, excludeId ?? null],
     );
@@ -174,8 +179,8 @@ export const createEvent = (input: EventInput, owner: { id: string; name: string
   run(async () => {
     const id = randomUUID();
     await getPool().query(
-      `INSERT INTO calendar_events (id, title, description, location, starts_at, ends_at, owner_id, owner_name, color, notify)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      `INSERT INTO calendar_events (id, title, description, location, starts_at, ends_at, owner_id, owner_name, color, category, notify)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [
         id,
         input.title,
@@ -186,6 +191,7 @@ export const createEvent = (input: EventInput, owner: { id: string; name: string
         owner.id,
         owner.name,
         input.color,
+        input.category,
         input.notify,
       ],
     );
@@ -204,12 +210,22 @@ export const updateEvent = (id: string, input: EventInput) =>
       [id],
     );
     const result = await pool.query(
-      `UPDATE calendar_events SET title = $2, description = $3, location = $4, starts_at = $5, ends_at = $6, notify = $7, color = $8,
+      `UPDATE calendar_events SET title = $2, description = $3, location = $4, starts_at = $5, ends_at = $6, notify = $7, color = $8, category = $9,
          reminder_sent_at = CASE WHEN starts_at IS DISTINCT FROM $5 OR notify IS DISTINCT FROM $7 THEN NULL ELSE reminder_sent_at END,
          reminder_attempts = CASE WHEN starts_at IS DISTINCT FROM $5 OR notify IS DISTINCT FROM $7 THEN 0 ELSE reminder_attempts END,
          updated_at = now()
        WHERE id = $1`,
-      [id, input.title, input.description, input.location, input.startsAt, input.endsAt, input.notify, input.color],
+      [
+        id,
+        input.title,
+        input.description,
+        input.location,
+        input.startsAt,
+        input.endsAt,
+        input.notify,
+        input.color,
+        input.category,
+      ],
     );
     if (result.rowCount === 0) throw new CalendarStoreError("not_found");
     // Время начала сдвинулось: тем, кто следит за календарём, напоминание нужно отправить заново

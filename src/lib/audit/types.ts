@@ -61,7 +61,7 @@ export const AUDIT_ENTITIES = {
   place: { noun: "метка на карте", fem: true, category: "content" },
   zone: { noun: "игровая зона", fem: true, category: "content" },
   media_channel: { noun: "канал в разделе «Медиа»", fem: false, category: "content" },
-  media_pr: { noun: "запись в таблице «Медиа-PR»", fem: true, category: "content" },
+  media_pr: { noun: "запись в таблице «Медиа PR»", fem: true, category: "content" },
   job: { noun: "работа", fem: true, category: "content" },
   reply: { noun: "быстрый ответ", fem: false, category: "content" },
   command: { noun: "команда сервера", fem: true, category: "content" },

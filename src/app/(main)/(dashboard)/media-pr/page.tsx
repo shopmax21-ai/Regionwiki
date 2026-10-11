@@ -9,13 +9,13 @@ import { getMediaPrInfo, listMediaPrEntries } from "@/lib/mediapr/store";
 import { MediaPrSection } from "./_components/media-pr-section";
 
 export const metadata: Metadata = {
-  title: "Медиа-PR | Region WIKI",
+  title: "Медиа PR | Region WIKI",
   robots: { index: false, follow: false },
 };
 
 export const dynamic = "force-dynamic";
 
-/** Раздел только для администрации с правом «Раздел «Медиа-PR»». Остальным контакты и заметки недоступны. */
+/** Раздел только для администрации с правом «Раздел «Медиа PR»». Остальным контакты и заметки недоступны. */
 export default async function Page() {
   if (!getAuthConfig()) redirect("/");
 
@@ -29,7 +29,7 @@ export default async function Page() {
     console.error("[media-pr] Не удалось загрузить раздел", error);
     return (
       <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
-        База данных недоступна. Раздел «Медиа-PR» появится, когда подключение восстановится.
+        База данных недоступна. Раздел «Медиа PR» появится, когда подключение восстановится.
       </div>
     );
   }

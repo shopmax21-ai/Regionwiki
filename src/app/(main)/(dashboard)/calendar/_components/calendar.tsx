@@ -13,7 +13,7 @@ import multiMonthPlugin from "@fullcalendar/react/multimonth";
 import timeGridPlugin from "@fullcalendar/react/timegrid";
 import { differenceInCalendarDays, endOfMonth, format, startOfMonth } from "date-fns";
 import { ru } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Filter, Plus, XIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Filter, Plus, Radio, XIcon } from "lucide-react";
 
 import { EventCalendarViews } from "@/components/calendar/event-calendar-views";
 import { Button } from "@/components/ui/button";
@@ -28,11 +28,13 @@ import {
   STATUS_LABELS,
   statusOf,
 } from "@/lib/calendar/types";
+import type { MediaPrEntry } from "@/lib/mediapr/types";
 
 import { EventDeleteDialog } from "./event-delete-dialog";
 import { EventDetails } from "./event-details";
 import { type EditorTarget, EventEditor } from "./event-editor";
 import { EventList } from "./event-list";
+import { MediaPanel } from "./media-panel";
 import { TrackingSwitch } from "./tracking-switch";
 
 const views = [
@@ -51,7 +53,10 @@ type CalendarProps = {
   events: CalendarEvent[];
   /** Момент загрузки страницы на сервере: от него считаются статусы до первого тика, чтобы разметка совпала */
   serverNow: number;
-  me: { id: string; canManageAll: boolean };
+  me: { id: string; canManageAll: boolean; canMedia: boolean };
+  /** Таблица «Медиа PR» для вкладки «Медиа» (null, если доступа нет) */
+  mediaEntries: MediaPrEntry[] | null;
+  mediaProblem: string | null;
   /** Включено ли у этого администратора слежение за календарём в Telegram */
   tracking: boolean;
   /** Почему мероприятия не загрузились (null, если всё в порядке) */
@@ -69,7 +74,15 @@ function useNow(initial: number, intervalMs = 30_000) {
   return now;
 }
 
-export function Calendar({ events: initialEvents, serverNow, me, tracking, problem }: CalendarProps) {
+export function Calendar({
+  events: initialEvents,
+  serverNow,
+  me,
+  tracking,
+  problem,
+  mediaEntries,
+  mediaProblem,
+}: CalendarProps) {
   const router = useRouter();
   const controller = useCalendarController();
   const now = useNow(serverNow);
@@ -86,6 +99,9 @@ export function Calendar({ events: initialEvents, serverNow, me, tracking, probl
 
   const [ownerFilter, setOwnerFilter] = React.useState<OwnerFilter>("all");
   const [statusFilter, setStatusFilter] = React.useState<StatusFilter>("all");
+  // Общий календарь (без медиа) или календарь медиа: переключается кнопкой, доступно сотрудникам медиа
+  const [mode, setMode] = React.useState<"general" | "media">("general");
+  const activeMode = me.canMedia ? mode : "general";
   const [openId, setOpenId] = React.useState<string | null>(null);
   const [editor, setEditor] = React.useState<EditorTarget | null>(null);
   const [deleting, setDeleting] = React.useState<CalendarEvent | null>(null);
@@ -103,10 +119,11 @@ export function Calendar({ events: initialEvents, serverNow, me, tracking, probl
     () =>
       events.filter(
         (event) =>
+          event.category === activeMode &&
           (ownerFilter === "all" || event.ownerId === me.id) &&
           (statusFilter === "all" || statusOf(event, now) === statusFilter),
       ),
-    [events, ownerFilter, statusFilter, me.id, now],
+    [events, activeMode, ownerFilter, statusFilter, me.id, now],
   );
 
   const calendarEvents = React.useMemo(
@@ -129,6 +146,7 @@ export function Calendar({ events: initialEvents, serverNow, me, tracking, probl
     return start >= range.start && start < range.end;
   }).length;
 
+  const mediaEvents = React.useMemo(() => events.filter((event) => event.category === "media"), [events]);
   const opened = events.find((event) => event.id === openId) ?? null;
   const filtered = ownerFilter !== "all" || statusFilter !== "all";
 
@@ -148,6 +166,26 @@ export function Calendar({ events: initialEvents, serverNow, me, tracking, probl
       )}
 
       <TrackingSwitch initialEnabled={tracking} />
+
+      {me.canMedia && (
+        <ButtonGroup aria-label="Какой календарь показывать">
+          <Button
+            variant={activeMode === "general" ? "default" : "outline"}
+            aria-pressed={activeMode === "general"}
+            onClick={() => setMode("general")}
+          >
+            Общий
+          </Button>
+          <Button
+            variant={activeMode === "media" ? "default" : "outline"}
+            aria-pressed={activeMode === "media"}
+            onClick={() => setMode("media")}
+          >
+            <Radio data-icon="inline-start" />
+            Медиа
+          </Button>
+        </ButtonGroup>
+      )}
 
       <div className="flex flex-col overflow-hidden rounded-md border">
         <div className="flex flex-col gap-4 border-b bg-sidebar p-4 text-sidebar-foreground lg:flex-row lg:items-center lg:justify-between">
@@ -218,9 +256,9 @@ export function Calendar({ events: initialEvents, serverNow, me, tracking, probl
                 </SelectGroup>
               </SelectContent>
             </Select>
-            <Button onClick={() => setEditor({ mode: "create" })}>
+            <Button onClick={() => setEditor({ mode: "create", category: activeMode })}>
               <Plus />
-              Зарегистрировать
+              {activeMode === "media" ? "Запланировать" : "Зарегистрировать"}
             </Button>
           </div>
         </div>
@@ -238,7 +276,7 @@ export function Calendar({ events: initialEvents, serverNow, me, tracking, probl
           dateClick={(info) => {
             // Клик по дню: регистрация с подставленной датой. Для всего дня берём 12:00 по Москве.
             const iso = info.allDay ? `${info.dateStr.slice(0, 10)}T12:00:00+03:00` : info.date.toISOString();
-            setEditor({ mode: "create", startsAt: new Date(iso).toISOString() });
+            setEditor({ mode: "create", startsAt: new Date(iso).toISOString(), category: activeMode });
           }}
           datesSet={(info) => {
             setRange({
@@ -251,13 +289,24 @@ export function Calendar({ events: initialEvents, serverNow, me, tracking, probl
         />
       </div>
 
-      <EventList
-        events={visible}
-        now={now}
-        meId={me.id}
-        onOpen={(event) => setOpenId(event.id)}
-        onNotifyChanged={onNotifyChanged}
-      />
+      {activeMode === "media" ? (
+        <MediaPanel
+          events={mediaEvents}
+          now={now}
+          entries={mediaEntries}
+          entriesProblem={mediaProblem}
+          onOpen={(event) => setOpenId(event.id)}
+          onCreate={() => setEditor({ mode: "create", category: "media" })}
+        />
+      ) : (
+        <EventList
+          events={visible}
+          now={now}
+          meId={me.id}
+          onOpen={(event) => setOpenId(event.id)}
+          onNotifyChanged={onNotifyChanged}
+        />
+      )}
 
       <EventDetails
         event={opened}
@@ -280,6 +329,7 @@ export function Calendar({ events: initialEvents, serverNow, me, tracking, probl
         target={editor}
         events={events}
         now={now}
+        canMedia={me.canMedia}
         onClose={() => setEditor(null)}
         onSaved={() => {
           setEditor(null);
