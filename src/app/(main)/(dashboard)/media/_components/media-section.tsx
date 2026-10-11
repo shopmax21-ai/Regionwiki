@@ -107,8 +107,9 @@ export function MediaSection({ isAdmin, canManage, notifyEnabled }: MediaSection
       <header className="flex flex-col items-center gap-3 py-4 text-center md:py-6">
         <h1 className="font-semibold text-3xl tracking-tight md:text-5xl">Медиа</h1>
         <p className="max-w-xl text-muted-foreground text-sm">
-          Трансляции игроков REGION на Twitch и YouTube. Список обновляется сам: показываются каналы, которые добавила
-          администрация, и стримы на Twitch с названием проекта в заголовке, имени канала или тегах.
+          Трансляции игроков REGION на Twitch и YouTube. Список обновляется сам. На Twitch показываются только стримы
+          категории Grand Theft Auto V: каналы, которые добавила администрация, и стримы с названием проекта в
+          заголовке, имени канала или тегах.
         </p>
       </header>
 
@@ -213,7 +214,7 @@ export function MediaSection({ isAdmin, canManage, notifyEnabled }: MediaSection
         <Notice
           icon={Tv}
           title="Сейчас никто не стримит"
-          description="Как только отслеживаемый канал или игрок с названием проекта в заголовке начнёт трансляцию, она появится здесь сама."
+          description="Как только отслеживаемый канал или игрок с названием проекта в заголовке начнёт трансляцию GTA V, она появится здесь сама."
         />
       )}
 
@@ -241,7 +242,7 @@ export function MediaSection({ isAdmin, canManage, notifyEnabled }: MediaSection
 
       {offlineChannels.length > 0 && data?.status !== "error" && (
         <section className="flex flex-col gap-3" aria-label="Каналы не в эфире">
-          <h2 className="font-medium text-muted-foreground text-sm">Отслеживаемые каналы, сейчас не в эфире</h2>
+          <h2 className="font-medium text-muted-foreground text-sm">Отслеживаемые каналы без трансляции GTA V</h2>
           <ul className="flex flex-wrap gap-2">
             {offlineChannels.map((channel) => (
               <li key={channelKey(channel)}>

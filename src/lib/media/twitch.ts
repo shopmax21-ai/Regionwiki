@@ -37,7 +37,11 @@ const list = (value: string | undefined): string[] =>
     .filter(Boolean);
 
 const KEYWORDS = [...new Set([...DEFAULT_KEYWORDS, ...list(process.env.MEDIA_TWITCH_KEYWORDS)])];
-const GAME_IDS = list(process.env.MEDIA_TWITCH_GAME_IDS ?? GTA_V_GAME_ID);
+// Пустое значение (например, скопированная из .env.example строка «MEDIA_TWITCH_GAME_IDS=») означает категорию по умолчанию
+const configuredGames = list(process.env.MEDIA_TWITCH_GAME_IDS);
+const GAME_IDS = configuredGames.length > 0 ? configuredGames : [GTA_V_GAME_ID];
+/** MEDIA_TWITCH_ANY_CATEGORY=1 возвращает прежнее поведение: показывать эфиры любых категорий */
+const ANY_CATEGORY = ["1", "true", "yes"].includes((process.env.MEDIA_TWITCH_ANY_CATEGORY ?? "").trim().toLowerCase());
 // Пустое значение отключает фильтр по языку: тогда просматриваются трансляции на всех языках.
 const LANGUAGES = list(process.env.MEDIA_TWITCH_LANGUAGES ?? "ru");
 const EXCLUDED_LOGINS = new Set(list(process.env.MEDIA_TWITCH_EXCLUDE).map((login) => login.toLowerCase()));
@@ -46,9 +50,18 @@ const matchesName = createNameMatcher(KEYWORDS);
 
 export const isTwitchConfigured = () => Boolean(CLIENT_ID && CLIENT_SECRET);
 
+/**
+ * В разделе «Медиа» и в оповещениях показываются только трансляции из просматриваемых категорий (по умолчанию GTA V).
+ * Это касается и каналов из списка отслеживаемых: если такой канал стримит другую игру, его эфира в списке нет.
+ * Ограничение снимается переменной MEDIA_TWITCH_ANY_CATEGORY=1.
+ */
+export const isAllowedTwitchGame = (stream: { game_id?: string }) =>
+  ANY_CATEGORY || (stream.game_id !== undefined && GAME_IDS.includes(stream.game_id));
+
 type HelixStream = {
   id: string;
   user_id: string;
+  game_id?: string;
   user_login: string;
   user_name: string;
   game_name: string;
@@ -294,7 +307,8 @@ async function loadStreams(channels: TrackedChannel[]): Promise<MediaStream[]> {
 
   const visible = [...found.values()].filter(
     (stream) =>
-      trackedLogins.has(stream.user_login.toLowerCase()) || !EXCLUDED_LOGINS.has(stream.user_login.toLowerCase()),
+      isAllowedTwitchGame(stream) &&
+      (trackedLogins.has(stream.user_login.toLowerCase()) || !EXCLUDED_LOGINS.has(stream.user_login.toLowerCase())),
   );
   const avatarByUser = await loadAvatars(visible.map((stream) => stream.user_id));
 

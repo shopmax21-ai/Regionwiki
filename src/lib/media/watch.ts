@@ -3,7 +3,7 @@ import { listMediaSubscribers } from "@/lib/auth/db";
 import { sendMessage } from "@/lib/auth/telegram";
 
 import { claimStreamNotification, listNotifyChannels, releaseStreamNotification } from "./channels";
-import { fetchStreamsByLogins, isTwitchConfigured } from "./twitch";
+import { fetchStreamsByLogins, isAllowedTwitchGame, isTwitchConfigured } from "./twitch";
 import { fetchYoutubeLive, isYoutubeConfigured } from "./youtube";
 
 /**
@@ -36,7 +36,7 @@ async function twitchCandidates(): Promise<Candidate[]> {
   const channels = await listNotifyChannels("twitch");
   if (channels.length === 0) return [];
   const live = await fetchStreamsByLogins(channels.map((channel) => channel.login));
-  return live.map((stream) => ({
+  return live.filter(isAllowedTwitchGame).map((stream) => ({
     login: stream.user_login.toLowerCase(),
     streamId: stream.id,
     startedAt: stream.started_at,
