@@ -1,6 +1,7 @@
 import { cn } from "cn";
-import { Clapperboard, Crown, HandHelping, type LucideIcon, Shield, ShieldCheck, User } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
+import { AdminRoleIcon, ChiefRoleIcon, HelperRoleIcon, JuniorRoleIcon, MediaRoleIcon, UserIcon } from "@/components/icons/region-icons";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { type AdminGroup, groupInfo } from "@/lib/auth/groups";
@@ -10,27 +11,27 @@ type IconComponent = LucideIcon;
 /** Иконка и цвет бейджа для каждой роли. Классы записаны целиком, чтобы Tailwind их увидел. */
 const GROUP_BADGES: Record<AdminGroup, { icon: IconComponent; text: string; badge: string }> = {
   helper: {
-    icon: HandHelping,
+    icon: HelperRoleIcon,
     text: "text-emerald-600 dark:text-emerald-400",
     badge: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
   },
   junior: {
-    icon: Shield,
+    icon: JuniorRoleIcon,
     text: "text-sky-600 dark:text-sky-400",
     badge: "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300",
   },
   media: {
-    icon: Clapperboard,
+    icon: MediaRoleIcon,
     text: "text-rose-600 dark:text-rose-400",
     badge: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300",
   },
   admin: {
-    icon: ShieldCheck,
+    icon: AdminRoleIcon,
     text: "text-violet-600 dark:text-violet-400",
     badge: "border-violet-500/40 bg-violet-500/10 text-violet-700 dark:text-violet-300",
   },
   chief: {
-    icon: Crown,
+    icon: ChiefRoleIcon,
     text: "text-amber-500 dark:text-amber-400",
     badge: "border-amber-500/50 bg-amber-500/15 text-amber-700 dark:text-amber-300",
   },
@@ -40,7 +41,7 @@ const GROUP_BADGES: Record<AdminGroup, { icon: IconComponent; text: string; badg
 export const groupIconComponent = (group: AdminGroup): IconComponent => GROUP_BADGES[group].icon;
 
 const MEMBER_BADGE = {
-  icon: User,
+  icon: UserIcon,
   text: "text-muted-foreground",
   badge: "text-muted-foreground",
 } as const;

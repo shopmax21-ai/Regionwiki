@@ -197,22 +197,16 @@ function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
           icon: CommandsIcon,
         },
         {
+          id: "media-pr",
+          title: "Медиа-PR",
+          url: "/media-pr",
+          icon: MegaphoneIcon,
+        },
+        {
           id: "bugs",
           title: "Баг-репорты",
           url: "/bugs",
           icon: BugIcon,
-        },
-      ],
-    },
-    {
-      id: 8,
-      label: "Медиа",
-      items: [
-        {
-          id: "media-pr",
-          title: "Медиа PR",
-          url: "/media-pr",
-          icon: MegaphoneIcon,
         },
       ],
     },
