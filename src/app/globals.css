@@ -2,11 +2,6 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Theme preset styles: these override CSS variables based on the selected data-theme-preset */
-@import "../styles/presets/brutalist.css";
-@import "../styles/presets/soft-pop.css";
-@import "../styles/presets/tangerine.css";
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -64,8 +59,7 @@
   --font-sans: var(--font-roboto);
 }
 
-/* Default theme styles (used when no data-theme-preset is set or when 'default' is selected).
-These serve as the fallback; there is no separate default.css file. */
+/* Theme styles. */
 :root {
   --radius: 0.625rem;
   --card: oklch(1 0 0);
@@ -101,7 +95,7 @@ These serve as the fallback; there is no separate default.css file. */
   /* fonts */
   --font-sans: var(--font-roboto);
   --font-mono: var(--font-roboto-mono);
-  --background: oklch(1 0 0);
+  --background: rgb(248, 248, 255);
   --foreground: oklch(0.145 0 0);
 }
 
@@ -150,40 +144,6 @@ These serve as the fallback; there is no separate default.css file. */
   }
   html {
     font-family: var(--font-roboto), system-ui, sans-serif;
-  }
-}
-
-@layer utilities {
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-2xs {
-    box-shadow: var(--shadow-2xs);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-xs {
-    box-shadow: var(--shadow-xs);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-sm {
-    box-shadow: var(--shadow-sm);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow {
-    box-shadow: var(--shadow);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-md {
-    box-shadow: var(--shadow-md);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-lg {
-    box-shadow: var(--shadow-lg);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-xl {
-    box-shadow: var(--shadow-xl);
-  }
-
-  [data-theme-preset]:not([data-theme-preset="default"]) .shadow-2xl {
-    box-shadow: var(--shadow-2xl);
   }
 }
 
@@ -253,14 +213,16 @@ html:has([data-landing-page]) {
   }
 }
 
-/* Страницы авторизации: всегда тёмные, с красным акцентом Region */
-.region-auth.dark {
-  --background: oklch(0.155 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.19 0 0);
+/* Страницы авторизации: следуют выбранной теме, красный акцент Region */
+.region-auth {
   --primary: oklch(0.585 0.235 27);
   --primary-foreground: oklch(0.985 0 0);
   --ring: oklch(0.585 0.235 27);
+}
+
+.region-auth:where(.dark, .dark *) {
+  --background: oklch(0.155 0 0);
+  --card: oklch(0.19 0 0);
   --border: oklch(1 0 0 / 9%);
   --input: oklch(1 0 0 / 12%);
 }

@@ -18,7 +18,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## shadcn skill
 
-Use the shadcn skill for all work involving shadcn/ui components, styling, composition, registries, presets, or `components.json`.
+Use the shadcn skill for all work involving shadcn/ui components, styling, composition, registries, or `components.json`.
 
 If the skill is not available, install it with:
 
@@ -47,7 +47,6 @@ npm run lint
 npm run format
 npm run check
 npm run check:fix
-npm run generate:presets
 ```
 
 There is currently no automated test command. Run build, lint, check, or other validation commands only when the user explicitly requests that validation.
@@ -62,7 +61,6 @@ Keep feature code close to the route that owns it.
 - Shared application components: `src/components/`
 - Local shadcn components: `src/components/ui/`
 - Shared hooks and utilities: `src/hooks/` and `src/lib/`
-- Theme presets: `src/styles/presets/`
 
 Keep a component inside its route until it is reused by another feature. Do not move screen-specific code into a shared directory preemptively.
 
@@ -78,7 +76,7 @@ Keep a component inside its route until it is reused by another feature. Do not 
 8. Keep the established visual rhythm where it fits: compact spacing, clear typography hierarchy, responsive action rows, and grids that collapse cleanly on smaller screens.
 9. Widget selection is not a fixed formula. Try different arrangements of cards, resource rows, meters, charts, tabs, empty states, and actions, then keep the version that communicates the content clearly and feels consistent with the project.
 10. Match nearby screens in card density, borders, radius, spacing, content width, and responsive behavior.
-11. Use semantic theme tokens so new screens work with light mode, dark mode, and the existing theme presets.
+11. Use semantic theme tokens so new screens work with light mode and dark mode.
 12. Handle relevant loading, empty, error, disabled, and overflow states.
 13. Keep screens accessible with semantic HTML, keyboard support, visible focus states, labels, and appropriate ARIA attributes.
 

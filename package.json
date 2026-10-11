@@ -12,7 +12,6 @@
     "check:fix": "biome check --write",
     "prepare": "husky",
     "rules:sync": "node scripts/rules-sync-cron.mjs",
-    "generate:presets": "ts-node -P tsconfig.scripts.json src/scripts/generate-theme-presets.ts",
     "migrate:webp": "ts-node -P tsconfig.scripts.json src/scripts/convert-images-to-webp.ts"
   },
   "lint-staged": {

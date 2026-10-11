@@ -53,7 +53,6 @@ npm run dev
 | `npm run lint` | Проверка кода Biome |
 | `npm run format` | Форматирование |
 | `npm run check` / `check:fix` | Полная проверка (линтер, форматирование, импорты) |
-| `npm run generate:presets` | Пересборка цветовых пресетов темы |
 
 Автоматических тестов в проекте нет.
 
@@ -77,8 +76,7 @@ src
 │   └── api/rules/sync           # Запуск фоновой проверки правил (для cron)
 ├── components/ui                # Компоненты shadcn (не редактируются)
 ├── navigation/sidebar           # Меню сайдбара
-├── config/app-config.ts         # Название сайта и копирайт
-└── styles/presets               # Цветовые пресеты темы
+└── config/app-config.ts         # Название сайта и копирайт
 public/images                    # Картинки: jobs, transport, real-estate
 public/map.png                   # Изображение карты штата
 ```
