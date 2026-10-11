@@ -262,7 +262,7 @@ async function loadAvatars(userIds: string[]): Promise<Map<string, string>> {
 async function safeChannels(): Promise<TrackedChannel[]> {
   if (!process.env.DATABASE_URL) return [];
   try {
-    return await listChannels();
+    return await listChannels("twitch");
   } catch (error) {
     console.error("[media] не удалось прочитать список каналов:", error instanceof Error ? error.message : error);
     return [];
@@ -301,6 +301,7 @@ async function loadStreams(channels: TrackedChannel[]): Promise<MediaStream[]> {
   return visible
     .map(
       (stream): MediaStream => ({
+        platform: "twitch",
         id: stream.id,
         login: stream.user_login,
         name: stream.user_name || stream.user_login,

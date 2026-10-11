@@ -5,10 +5,20 @@ import { revalidatePath } from "next/cache";
 import { actorOf, recordContentChange } from "@/lib/audit/store";
 import { getAdmin, getAdminContext } from "@/lib/auth/admin";
 import { setNotifyMedia } from "@/lib/auth/db";
-import { addChannel, parseTwitchLogin, removeChannel, setChannelNotify } from "@/lib/media/channels";
-import { describeTwitchError, invalidateMediaCache, isTwitchConfigured, lookupTwitchChannel } from "@/lib/media/twitch";
+import { addChannel, parseChannelId, parseTwitchLogin, removeChannel, setChannelNotify } from "@/lib/media/channels";
+import { invalidateMediaCache } from "@/lib/media/feed";
+import { describeTwitchError, isTwitchConfigured, lookupTwitchChannel } from "@/lib/media/twitch";
+import type { MediaPlatform } from "@/lib/media/types";
+import {
+  describeYoutubeError,
+  isYoutubeConfigured,
+  lookupYoutubeChannel,
+  parseYoutubeChannel,
+} from "@/lib/media/youtube";
 
 export type MediaActionResult = { ok: true; warning?: string } | { ok: false; error: string };
+
+type ResolvedChannel = { platform: MediaPlatform; login: string; name: string; warning?: string };
 
 const DENIED = { ok: false, error: "Недостаточно прав для управления каналами" } as const;
 const DATABASE = { ok: false, error: "База данных недоступна, попробуйте позже" } as const;
@@ -19,24 +29,18 @@ function done(warning?: string): MediaActionResult {
   return { ok: true, warning };
 }
 
-/** Добавить канал в список отслеживаемых. Нужно право «Управление каналами «Медиа»». */
-export async function addChannelAction(input: unknown): Promise<MediaActionResult> {
-  const admin = await getAdmin("media.manage");
-  if (!admin) return DENIED;
+/** Twitch: проверяем канал и берём его настоящее имя. Если Twitch не отвечает, канал всё равно можно добавить. */
+async function resolveTwitch(input: unknown): Promise<ResolvedChannel | { error: string }> {
+  const login = parseTwitchLogin(input);
+  if (!login) return { error: "Укажите логин канала на Twitch или ссылку вида twitch.tv/логин" };
 
-  const fields = (typeof input === "object" && input !== null ? input : {}) as { channel?: unknown; notify?: unknown };
-  const login = parseTwitchLogin(fields.channel);
-  if (!login) return { ok: false, error: "Укажите логин канала на Twitch или ссылку вида twitch.tv/логин" };
-  const notify = fields.notify !== false;
-
-  // Если ключи Twitch заданы, проверяем, что канал существует, и берём его настоящее имя
   let name = login;
   let canonical = login;
   let warning: string | undefined;
   if (isTwitchConfigured()) {
     try {
       const info = await lookupTwitchChannel(login);
-      if (!info) return { ok: false, error: "Канал с таким логином на Twitch не найден" };
+      if (!info) return { error: "Канал с таким логином на Twitch не найден" };
       name = info.name;
       canonical = info.login;
     } catch (error) {
@@ -45,22 +49,76 @@ export async function addChannelAction(input: unknown): Promise<MediaActionResul
       warning = `Канал добавлен без проверки. ${describeTwitchError(error)}`;
     }
   }
+  return { platform: "twitch", login: canonical, name, warning };
+}
+
+/** YouTube: нужен ID канала (UC...). По @имени и ссылкам его находит YouTube Data API. */
+async function resolveYoutube(input: unknown): Promise<ResolvedChannel | { error: string }> {
+  const query = parseYoutubeChannel(input);
+  if (!query) {
+    return {
+      error: "Укажите ссылку на канал YouTube (youtube.com/@имя или youtube.com/channel/UC...), @имя или ID канала",
+    };
+  }
+
+  if (!isYoutubeConfigured()) {
+    // Без ключа канал можно добавить только по ID: имени и проверки не будет, они подтянутся после настройки ключа
+    if (query.kind !== "id")
+      return {
+        error:
+          "Чтобы найти канал по @имени, задайте YOUTUBE_API_KEY. Или укажите ссылку вида youtube.com/channel/UC...",
+      };
+    return {
+      platform: "youtube",
+      login: query.value,
+      name: query.value,
+      warning: "Канал добавлен без проверки: не задан YOUTUBE_API_KEY, эфиры YouTube пока не отслеживаются.",
+    };
+  }
 
   try {
-    const added = await addChannel({ login: canonical, name, notify }, admin.id);
+    const info = await lookupYoutubeChannel(query);
+    if (!info) return { error: "Такой канал на YouTube не найден" };
+    return { platform: "youtube", login: info.id, name: info.name };
+  } catch (error) {
+    console.error("[media] Не удалось проверить канал на YouTube", error instanceof Error ? error.message : error);
+    return { error: describeYoutubeError(error) };
+  }
+}
+
+/** Добавить канал в список отслеживаемых. Нужно право «Управление каналами «Медиа»». */
+export async function addChannelAction(input: unknown): Promise<MediaActionResult> {
+  const admin = await getAdmin("media.manage");
+  if (!admin) return DENIED;
+
+  const fields = (typeof input === "object" && input !== null ? input : {}) as {
+    channel?: unknown;
+    notify?: unknown;
+    platform?: unknown;
+  };
+  const notify = fields.notify !== false;
+  const resolved =
+    fields.platform === "youtube" ? await resolveYoutube(fields.channel) : await resolveTwitch(fields.channel);
+  if ("error" in resolved) return { ok: false, error: resolved.error };
+
+  try {
+    const added = await addChannel(
+      { platform: resolved.platform, login: resolved.login, name: resolved.name, notify },
+      admin.id,
+    );
     if (!added) return { ok: false, error: "Этот канал уже в списке" };
-    await recordContentChange(actorOf(admin), "media_channel", "created", { id: canonical, label: name });
+    await recordContentChange(actorOf(admin), "media_channel", "created", { id: resolved.login, label: resolved.name });
   } catch (error) {
     console.error("[media] Не удалось добавить канал", error);
     return DATABASE;
   }
-  return done(warning);
+  return done(resolved.warning);
 }
 
 export async function removeChannelAction(login: unknown): Promise<MediaActionResult> {
   const admin = await getAdmin("media.manage");
   if (!admin) return DENIED;
-  const parsed = parseTwitchLogin(login);
+  const parsed = parseChannelId(login);
   if (!parsed) return { ok: false, error: "Неизвестный канал" };
 
   try {
@@ -78,7 +136,7 @@ export async function removeChannelAction(login: unknown): Promise<MediaActionRe
 export async function setChannelNotifyAction(login: unknown, notify: unknown): Promise<MediaActionResult> {
   const admin = await getAdmin("media.manage");
   if (!admin) return DENIED;
-  const parsed = parseTwitchLogin(login);
+  const parsed = parseChannelId(login);
   if (!parsed || typeof notify !== "boolean") return { ok: false, error: "Неизвестное значение" };
 
   try {

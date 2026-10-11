@@ -18,7 +18,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import type { MediaStream, TrackedChannel } from "@/lib/media/types";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  channelKey,
+  type MediaPlatform,
+  type MediaStream,
+  platformLabels,
+  type TrackedChannel,
+} from "@/lib/media/types";
 
 import { addChannelAction, type MediaActionResult, removeChannelAction, setChannelNotifyAction } from "../_actions";
 
@@ -36,9 +43,10 @@ export function ChannelsManager({ channels, streams, onChanged }: Props) {
   const [open, setOpen] = useState(false);
   const [channel, setChannel] = useState("");
   const [notify, setNotify] = useState(true);
+  const [platform, setPlatform] = useState<MediaPlatform>("twitch");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const liveLogins = new Set(streams.map((stream) => stream.login.toLowerCase()));
+  const liveKeys = new Set(streams.map((stream) => channelKey(stream)));
 
   const run = (action: () => Promise<MediaActionResult>, success?: string, onDone?: () => void) => {
     startTransition(async () => {
@@ -59,7 +67,7 @@ export function ChannelsManager({ channels, streams, onChanged }: Props) {
   const submit = (event: FormEvent) => {
     event.preventDefault();
     run(
-      () => addChannelAction({ channel, notify }),
+      () => addChannelAction({ channel, notify, platform }),
       "Канал добавлен",
       () => setChannel(""),
     );
@@ -77,12 +85,31 @@ export function ChannelsManager({ channels, streams, onChanged }: Props) {
         <DialogHeader>
           <DialogTitle>Отслеживаемые каналы</DialogTitle>
           <DialogDescription>
-            Трансляции этих каналов показываются в разделе, даже если в заголовке нет названия проекта. Для канала можно
-            включить оповещение: бот напишет в Telegram, когда он начнёт эфир.
+            Трансляции этих каналов на Twitch и YouTube показываются в разделе, даже если в заголовке нет названия
+            проекта. Для канала можно включить оповещение: бот напишет в Telegram, когда он начнёт эфир.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={submit} className="flex flex-col gap-3">
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            spacing={0}
+            value={platform}
+            onValueChange={(value) => {
+              // Повторное нажатие на выбранную площадку не должно снимать выбор
+              if (value === "twitch" || value === "youtube") {
+                setPlatform(value);
+                setError(null);
+              }
+            }}
+            aria-label="Площадка канала"
+            className="self-start"
+          >
+            <ToggleGroupItem value="twitch">Twitch</ToggleGroupItem>
+            <ToggleGroupItem value="youtube">YouTube</ToggleGroupItem>
+          </ToggleGroup>
           <div className="flex gap-2">
             <Input
               value={channel}
@@ -90,10 +117,12 @@ export function ChannelsManager({ channels, streams, onChanged }: Props) {
                 setChannel(event.target.value);
                 setError(null);
               }}
-              placeholder="Логин или ссылка: twitch.tv/логин"
-              aria-label="Канал на Twitch"
+              placeholder={
+                platform === "twitch" ? "Логин или ссылка: twitch.tv/логин" : "Ссылка youtube.com/@имя или @имя"
+              }
+              aria-label={`Канал на ${platformLabels[platform]}`}
               aria-invalid={error ? true : undefined}
-              maxLength={120}
+              maxLength={160}
               autoComplete="off"
               spellCheck={false}
             />
@@ -118,7 +147,7 @@ export function ChannelsManager({ channels, streams, onChanged }: Props) {
             <li className="px-3 py-6 text-center text-muted-foreground text-sm">Каналов пока нет</li>
           )}
           {channels.map((item) => (
-            <li key={item.login} className="flex items-center gap-3 px-3 py-2">
+            <li key={channelKey(item)} className="flex items-center gap-3 px-3 py-2">
               <div className="min-w-0 flex-1">
                 <a
                   href={item.url}
@@ -129,8 +158,9 @@ export function ChannelsManager({ channels, streams, onChanged }: Props) {
                   {item.name}
                 </a>
                 <div className="flex items-center gap-2 text-muted-foreground text-xs">
-                  <span className="truncate">{item.login}</span>
-                  {liveLogins.has(item.login) && (
+                  <span className="shrink-0">{platformLabels[item.platform]}</span>
+                  {item.platform === "twitch" && <span className="truncate">{item.login}</span>}
+                  {liveKeys.has(channelKey(item)) && (
                     <Badge variant="secondary" className="h-5 gap-1 px-1.5 text-xs">
                       <span className="size-1.5 rounded-full bg-destructive" aria-hidden="true" />в эфире
                     </Badge>

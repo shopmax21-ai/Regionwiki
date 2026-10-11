@@ -4,6 +4,7 @@ import { sendMessage } from "@/lib/auth/telegram";
 
 import { claimStreamNotification, listNotifyChannels, releaseStreamNotification } from "./channels";
 import { fetchStreamsByLogins, isTwitchConfigured } from "./twitch";
+import { fetchYoutubeLive, isYoutubeConfigured } from "./youtube";
 
 /**
  * Оповещения о начале трансляций. Раз в минуту проверяем каналы из списка с включённым оповещением и, когда
@@ -18,51 +19,87 @@ const FRESH_MS = 15 * 60_000;
 
 const escapeHtml = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-export function streamStartedText(stream: {
-  name: string;
-  login: string;
-  title: string;
-  game: string;
-  viewers: number;
-}): string {
+export function streamStartedText(stream: { name: string; url: string; title: string; game: string }): string {
   const lines = [`🔴 <b>${escapeHtml(stream.name)}</b> начал трансляцию`];
   if (stream.title.trim()) lines.push("", escapeHtml(stream.title.trim()));
   if (stream.game) lines.push(`🎮 ${escapeHtml(stream.game)}`);
-  lines.push(`🔗 https://www.twitch.tv/${encodeURIComponent(stream.login)}`);
+  lines.push(`🔗 ${stream.url}`);
   lines.push("", "Отключить оповещения можно в разделе «Медиа» на сайте.");
   return lines.join("\n");
+}
+
+type Candidate = { login: string; streamId: string; startedAt: string; text: string };
+
+/** Эфиры Twitch у каналов с включённым оповещением. */
+async function twitchCandidates(): Promise<Candidate[]> {
+  if (!isTwitchConfigured()) return [];
+  const channels = await listNotifyChannels("twitch");
+  if (channels.length === 0) return [];
+  const live = await fetchStreamsByLogins(channels.map((channel) => channel.login));
+  return live.map((stream) => ({
+    login: stream.user_login.toLowerCase(),
+    streamId: stream.id,
+    startedAt: stream.started_at,
+    text: streamStartedText({
+      name: stream.user_name || stream.user_login,
+      url: `https://www.twitch.tv/${encodeURIComponent(stream.user_login)}`,
+      title: stream.title,
+      game: stream.game_name,
+    }),
+  }));
+}
+
+/** Эфиры YouTube у каналов с включённым оповещением. */
+async function youtubeCandidates(): Promise<Candidate[]> {
+  if (!isYoutubeConfigured()) return [];
+  const channels = await listNotifyChannels("youtube");
+  if (channels.length === 0) return [];
+  const names = new Map(channels.map((channel) => [channel.login, channel.name]));
+  const live = await fetchYoutubeLive(channels.map((channel) => channel.login));
+  return live.map((stream) => ({
+    login: stream.channelId,
+    streamId: stream.videoId,
+    startedAt: stream.startedAt,
+    text: streamStartedText({
+      name: names.get(stream.channelId) || stream.channelName,
+      url: `https://www.youtube.com/watch?v=${encodeURIComponent(stream.videoId)}`,
+      title: stream.title,
+      game: "",
+    }),
+  }));
 }
 
 /** Одна проверка. Возвращает, сколько сообщений ушло. */
 export async function checkStreamStarts(): Promise<number> {
   const config = getAuthConfig();
-  if (!config || !isTwitchConfigured()) return 0;
-
-  const channels = await listNotifyChannels();
-  if (channels.length === 0) return 0;
+  if (!config) return 0;
 
   const subscribers = await listMediaSubscribers();
   if (subscribers.length === 0) return 0;
 
+  // Площадки проверяются независимо: сбой одной не должен лишить оповещений вторую
+  const results = await Promise.allSettled([twitchCandidates(), youtubeCandidates()]);
+  const candidates: Candidate[] = [];
+  for (const result of results) {
+    if (result.status === "fulfilled") candidates.push(...result.value);
+    else
+      console.error(
+        "[media] Сбой проверки площадки",
+        result.reason instanceof Error ? result.reason.message : result.reason,
+      );
+  }
+
   const now = Date.now();
-  const live = await fetchStreamsByLogins(channels.map((channel) => channel.login));
   let sent = 0;
+  for (const candidate of candidates) {
+    if (now - Date.parse(candidate.startedAt) > FRESH_MS) continue;
+    if (!(await claimStreamNotification(candidate.login, candidate.streamId))) continue;
 
-  for (const stream of live) {
-    if (now - Date.parse(stream.started_at) > FRESH_MS) continue;
-    const login = stream.user_login.toLowerCase();
-    if (!(await claimStreamNotification(login, stream.id))) continue;
-
-    const text = streamStartedText({
-      name: stream.user_name || stream.user_login,
-      login: stream.user_login,
-      title: stream.title,
-      game: stream.game_name,
-      viewers: stream.viewer_count,
-    });
-    const results = await Promise.allSettled(subscribers.map((user) => sendMessage(config, user.telegramId, text)));
-    const delivered = results.filter((result) => result.status === "fulfilled" && result.value).length;
-    if (delivered === 0) await releaseStreamNotification(login, stream.id).catch(() => undefined);
+    const deliveries = await Promise.allSettled(
+      subscribers.map((user) => sendMessage(config, user.telegramId, candidate.text)),
+    );
+    const delivered = deliveries.filter((delivery) => delivery.status === "fulfilled" && delivery.value).length;
+    if (delivered === 0) await releaseStreamNotification(candidate.login, candidate.streamId).catch(() => undefined);
     sent += delivered;
   }
   return sent;

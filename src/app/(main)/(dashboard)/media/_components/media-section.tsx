@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
+import { channelKey } from "@/lib/media/types";
 
 import { ChannelsManager } from "./channels-manager";
 import { formatViewers } from "./format";
@@ -98,16 +99,16 @@ export function MediaSection({ isAdmin, canManage, notifyEnabled }: MediaSection
   const totalViewers = streams.reduce((sum, stream) => sum + stream.viewers, 0);
   const showStreams = data?.status === "ok" && streams.length > 0;
   const channels = data?.channels ?? [];
-  const liveLogins = new Set(streams.map((stream) => stream.login.toLowerCase()));
-  const offlineChannels = channels.filter((channel) => !liveLogins.has(channel.login));
+  const liveKeys = new Set(streams.map((stream) => channelKey(stream)));
+  const offlineChannels = channels.filter((channel) => !liveKeys.has(channelKey(channel)));
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-10">
       <header className="flex flex-col items-center gap-3 py-4 text-center md:py-6">
         <h1 className="font-semibold text-3xl tracking-tight md:text-5xl">Медиа</h1>
         <p className="max-w-xl text-muted-foreground text-sm">
-          Трансляции игроков REGION на Twitch. Список обновляется сам: показываются каналы, которые добавила
-          администрация, и стримы с названием проекта в заголовке, имени канала или тегах.
+          Трансляции игроков REGION на Twitch и YouTube. Список обновляется сам: показываются каналы, которые добавила
+          администрация, и стримы на Twitch с названием проекта в заголовке, имени канала или тегах.
         </p>
       </header>
 
@@ -134,7 +135,7 @@ export function MediaSection({ isAdmin, canManage, notifyEnabled }: MediaSection
             )}
           </div>
           <div className="flex items-center gap-2 text-muted-foreground text-xs">
-            {data.stale && <span>Twitch не отвечает, показаны прошлые данные</span>}
+            {data.stale && <span>Площадка не отвечает, показаны прошлые данные</span>}
             {data.updatedAt && <span>Обновлено в {formatTime(data.updatedAt)}</span>}
             <Button
               variant="outline"
@@ -148,6 +149,20 @@ export function MediaSection({ isAdmin, canManage, notifyEnabled }: MediaSection
             </Button>
           </div>
         </section>
+      )}
+
+      {isAdmin && data?.status === "ok" && data.warnings && data.warnings.length > 0 && (
+        <div
+          role="status"
+          className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-800 text-sm dark:text-amber-200"
+        >
+          <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <ul className="flex flex-col gap-1">
+            {data.warnings.map((warning) => (
+              <li key={warning}>{warning}</li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {!data && !failed && <StreamsSkeleton />}
@@ -171,7 +186,7 @@ export function MediaSection({ isAdmin, canManage, notifyEnabled }: MediaSection
           title="Трансляции пока недоступны"
           description={
             isAdmin
-              ? "Задайте TWITCH_CLIENT_ID и TWITCH_CLIENT_SECRET в переменных окружения сервера (приложение создаётся на dev.twitch.tv/console)."
+              ? "Задайте в переменных окружения сервера TWITCH_CLIENT_ID и TWITCH_CLIENT_SECRET (приложение создаётся на dev.twitch.tv/console) и/или YOUTUBE_API_KEY (ключ YouTube Data API v3 из Google Cloud Console)."
               : "Раздел ещё настраивается. Загляните позже."
           }
         />
@@ -180,7 +195,7 @@ export function MediaSection({ isAdmin, canManage, notifyEnabled }: MediaSection
       {data?.status === "error" && (
         <Notice
           icon={TriangleAlert}
-          title="Twitch сейчас не отвечает"
+          title="Площадки сейчас не отвечают"
           description={
             isAdmin && data.problem
               ? `${data.problem} Подробности в логах сервера.`
@@ -206,7 +221,12 @@ export function MediaSection({ isAdmin, canManage, notifyEnabled }: MediaSection
         <>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {streams.slice(0, visibleCount).map((stream) => (
-              <StreamCard key={stream.id} stream={stream} hostname={hostname} checkedAt={data.updatedAt} />
+              <StreamCard
+                key={`${stream.platform}:${stream.id}`}
+                stream={stream}
+                hostname={hostname}
+                checkedAt={data.updatedAt}
+              />
             ))}
           </div>
           {streams.length > visibleCount && (
@@ -224,7 +244,7 @@ export function MediaSection({ isAdmin, canManage, notifyEnabled }: MediaSection
           <h2 className="font-medium text-muted-foreground text-sm">Отслеживаемые каналы, сейчас не в эфире</h2>
           <ul className="flex flex-wrap gap-2">
             {offlineChannels.map((channel) => (
-              <li key={channel.login}>
+              <li key={channelKey(channel)}>
                 <Button asChild variant="outline" size="sm">
                   <a href={channel.url} target="_blank" rel="noopener noreferrer">
                     {channel.name}

@@ -3,10 +3,10 @@
  * Гл.Администратор всегда имеет все права. Права остальных групп настраиваются в разделе «Роли и права».
  */
 
-export const adminGroups = ["helper", "junior", "admin", "chief"] as const;
+export const adminGroups = ["helper", "junior", "media", "admin", "chief"] as const;
 export type AdminGroup = (typeof adminGroups)[number];
 
-export const editableGroups = ["helper", "junior", "admin"] as const;
+export const editableGroups = ["helper", "junior", "media", "admin"] as const;
 export type EditableGroup = (typeof editableGroups)[number];
 
 export const isAdminGroup = (value: unknown): value is AdminGroup =>
@@ -25,6 +25,11 @@ export const groupInfo: Record<AdminGroup, { label: string; level: number; descr
     label: "Мл.администратор",
     level: 2,
     description: "Принимает решения по заявкам и помогает администраторам.",
+  },
+  media: {
+    label: "Медиа-администратор",
+    level: 2,
+    description: "Ведёт раздел «Медиа-PR»: таблицу медиа и отслеживание трансляций на Twitch и YouTube.",
   },
   admin: {
     label: "Администратор",
@@ -50,6 +55,8 @@ export type Permission =
   | "realty.edit"
   | "map.edit"
   | "media.manage"
+  | "mediapr.view"
+  | "mediapr.edit"
   | "punishments.request"
   | "punishments.review"
   | "punishments.all"
@@ -124,6 +131,18 @@ export const permissionDefs: readonly PermissionDef[] = [
     label: "Управление каналами «Медиа»",
     description:
       "Добавлять и удалять каналы, за которыми следит раздел «Медиа», и включать для них оповещение о начале трансляции в Telegram.",
+    category: "Контент",
+  },
+  {
+    key: "mediapr.view",
+    label: "Раздел «Медиа-PR»",
+    description: "Открывает раздел «Медиа-PR»: справку и таблицу медиа.",
+    category: "Контент",
+  },
+  {
+    key: "mediapr.edit",
+    label: "Редактирование «Медиа-PR»",
+    description: "Добавлять, изменять и удалять записи в таблице медиа и менять справку раздела «Медиа-PR».",
     category: "Контент",
   },
   {
@@ -246,6 +265,15 @@ export const isToggleablePermission = (value: unknown): value is Permission =>
 export const defaultPermissions: Record<EditableGroup, readonly Permission[]> = {
   helper: ["users.view", "replies.view", "punishments.request", "permissions.view"],
   junior: ["users.view", "access.decide", "replies.view", "punishments.request", "permissions.view"],
+  media: [
+    "users.view",
+    "replies.view",
+    "media.manage",
+    "mediapr.view",
+    "mediapr.edit",
+    "punishments.request",
+    "permissions.view",
+  ],
   admin: [
     "users.view",
     "access.decide",
@@ -253,6 +281,8 @@ export const defaultPermissions: Record<EditableGroup, readonly Permission[]> = 
     "transport.edit",
     "map.edit",
     "media.manage",
+    "mediapr.view",
+    "mediapr.edit",
     "items.edit",
     "replies.view",
     "replies.edit",

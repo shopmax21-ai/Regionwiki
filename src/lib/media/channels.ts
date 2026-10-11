@@ -1,6 +1,6 @@
 import { getPool } from "@/lib/db/pool";
 
-import type { TrackedChannel } from "./types";
+import type { MediaPlatform, TrackedChannel } from "./types";
 
 /**
  * Каналы, за которыми следит раздел «Медиа» (таблица media_channels). Их трансляции показываются на странице
@@ -25,6 +25,8 @@ async function init(): Promise<void> {
       added_by text,
       created_at timestamptz NOT NULL DEFAULT now()
     )`);
+    // Платформа канала: раньше отслеживался только Twitch, поэтому у старых записей он и остаётся
+    await client.query("ALTER TABLE media_channels ADD COLUMN IF NOT EXISTS platform text NOT NULL DEFAULT 'twitch'");
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK").catch(() => undefined);
@@ -51,37 +53,58 @@ export function parseTwitchLogin(input: unknown): string | null {
   return /^[a-z0-9_]{3,25}$/.test(login) ? login : null;
 }
 
-type ChannelRow = { login: string; name: string; notify: boolean };
+/** ID канала YouTube: «UC» и 22 символа. Регистр важен. */
+const YOUTUBE_CHANNEL_ID = /^UC[\w-]{22}$/;
 
-const toChannel = (row: ChannelRow): TrackedChannel => ({
-  login: row.login,
-  name: row.name,
-  notify: row.notify,
-  url: `https://www.twitch.tv/${row.login}`,
-});
+export const isYoutubeChannelId = (value: string) => YOUTUBE_CHANNEL_ID.test(value);
 
-export async function listChannels(): Promise<TrackedChannel[]> {
+/**
+ * Идентификатор канала из таблицы: логин Twitch (в нижнем регистре) или ID канала YouTube.
+ * Используется там, где платформа заранее неизвестна (удаление, оповещения).
+ */
+export function parseChannelId(input: unknown): string | null {
+  if (typeof input !== "string") return null;
+  const text = input.trim();
+  if (isYoutubeChannelId(text)) return text;
+  return parseTwitchLogin(text);
+}
+
+type ChannelRow = { login: string; name: string; notify: boolean; platform: string };
+
+const toChannel = (row: ChannelRow): TrackedChannel => {
+  const platform: MediaPlatform = row.platform === "youtube" ? "youtube" : "twitch";
+  return {
+    platform,
+    login: row.login,
+    name: row.name,
+    notify: row.notify,
+    url: platform === "youtube" ? `https://www.youtube.com/channel/${row.login}` : `https://www.twitch.tv/${row.login}`,
+  };
+};
+
+export async function listChannels(platform?: MediaPlatform): Promise<TrackedChannel[]> {
   await ensureReady();
   const result = await getPool().query<ChannelRow>(
-    "SELECT login, name, notify FROM media_channels ORDER BY created_at",
+    "SELECT login, name, notify, platform FROM media_channels ORDER BY created_at",
   );
-  return result.rows.map(toChannel);
+  const all = result.rows.map(toChannel);
+  return platform ? all.filter((channel) => channel.platform === platform) : all;
 }
 
 /** Каналы, для которых включено оповещение о начале трансляции */
-export async function listNotifyChannels(): Promise<TrackedChannel[]> {
-  return (await listChannels()).filter((channel) => channel.notify);
+export async function listNotifyChannels(platform?: MediaPlatform): Promise<TrackedChannel[]> {
+  return (await listChannels(platform)).filter((channel) => channel.notify);
 }
 
 /** false, если канал уже есть в списке */
 export async function addChannel(
-  channel: { login: string; name: string; notify: boolean },
+  channel: { platform: MediaPlatform; login: string; name: string; notify: boolean },
   addedBy: string,
 ): Promise<boolean> {
   await ensureReady();
   const result = await getPool().query(
-    "INSERT INTO media_channels (login, name, notify, added_by) VALUES ($1, $2, $3, $4) ON CONFLICT (login) DO NOTHING",
-    [channel.login, channel.name, channel.notify, addedBy],
+    "INSERT INTO media_channels (login, name, notify, platform, added_by) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (login) DO NOTHING",
+    [channel.login, channel.name, channel.notify, channel.platform, addedBy],
   );
   return (result.rowCount ?? 0) > 0;
 }

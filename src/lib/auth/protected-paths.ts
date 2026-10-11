@@ -17,6 +17,7 @@ export const PROTECTED_PATHS: readonly string[] = [
   "/audit",
   "/replies",
   "/bugs",
+  "/media-pr",
   "/punishments",
   ...ADMIN_ONLY_PATHS,
 ];
@@ -35,6 +36,7 @@ export const PATH_PERMISSIONS: Readonly<Record<string, string>> = {
   "/audit": "audit.view",
   "/replies": "replies.view",
   "/bugs": "bugs.view",
+  "/media-pr": "mediapr.view",
   "/academy/results": "academy.results",
   // Вложенные страницы раньше корневой: проверка идёт по порядку и берёт первое совпадение
   "/punishments/all": "punishments.all",

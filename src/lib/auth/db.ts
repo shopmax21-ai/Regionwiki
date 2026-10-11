@@ -363,7 +363,13 @@ export async function setUserGroup(
 export async function getGroupPermissions(): Promise<Record<AdminGroup, Permission[]>> {
   await ensureSchema();
   const rows = await sql`SELECT grp, permission FROM group_permissions WHERE enabled`;
-  const result: Record<AdminGroup, Permission[]> = { helper: [], junior: [], admin: [], chief: [...allPermissions] };
+  const result: Record<AdminGroup, Permission[]> = {
+    helper: [],
+    junior: [],
+    media: [],
+    admin: [],
+    chief: [...allPermissions],
+  };
   for (const row of rows as { grp: string; permission: string }[]) {
     if (isEditableGroup(row.grp) && isToggleablePermission(row.permission)) result[row.grp].push(row.permission);
   }

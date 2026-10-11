@@ -6,7 +6,8 @@ import { getUser } from "@/lib/auth/db";
 
 export const metadata: Metadata = {
   title: "Медиа | Region WIKI",
-  description: "Трансляции игроков REGION на Twitch: кто в эфире прямо сейчас, сколько зрителей и ссылка на стрим.",
+  description:
+    "Трансляции игроков REGION на Twitch и YouTube: кто в эфире прямо сейчас, сколько зрителей и ссылка на стрим.",
   alternates: { canonical: "/media" },
 };
 

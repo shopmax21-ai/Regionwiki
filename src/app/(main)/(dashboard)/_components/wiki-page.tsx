@@ -138,7 +138,7 @@ function buildSections(stats: WikiStats, rulesStatus?: RulesStatusLabel): Sectio
     },
     {
       title: "Медиа",
-      description: "Трансляции игроков REGION на Twitch: кто в эфире прямо сейчас",
+      description: "Трансляции игроков REGION на Twitch и YouTube: кто в эфире прямо сейчас",
       icon: MonitorPlay,
       href: "/media",
     },

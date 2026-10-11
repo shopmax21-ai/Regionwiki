@@ -1,5 +1,5 @@
 import { cn } from "cn";
-import { Crown, HandHelping, type LucideIcon, Shield, ShieldCheck, User } from "lucide-react";
+import { Clapperboard, Crown, HandHelping, type LucideIcon, Shield, ShieldCheck, User } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -18,6 +18,11 @@ const GROUP_BADGES: Record<AdminGroup, { icon: IconComponent; text: string; badg
     icon: Shield,
     text: "text-sky-600 dark:text-sky-400",
     badge: "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+  },
+  media: {
+    icon: Clapperboard,
+    text: "text-rose-600 dark:text-rose-400",
+    badge: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300",
   },
   admin: {
     icon: ShieldCheck,

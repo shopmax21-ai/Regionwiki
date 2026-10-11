@@ -15,6 +15,7 @@ import {
   Bug,
   type LucideIcon,
   Map as MapIcon,
+  Megaphone,
   MessageSquareReply,
   MonitorPlay,
   Package,
@@ -192,6 +193,12 @@ function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
           title: "Команды сервера",
           url: "/commands",
           icon: Terminal,
+        },
+        {
+          id: "media-pr",
+          title: "Медиа-PR",
+          url: "/media-pr",
+          icon: Megaphone,
         },
         {
           id: "bugs",

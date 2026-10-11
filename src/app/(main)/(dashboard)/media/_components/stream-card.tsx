@@ -7,15 +7,15 @@ import { ExternalLink, Eye, LoaderCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { MediaStream } from "@/lib/media/types";
+import { type MediaStream, platformLabels } from "@/lib/media/types";
 
 import { formatUptime, formatViewers, initials } from "./format";
 
 type StreamCardProps = {
   stream: MediaStream;
-  /** Домен сайта: Twitch разрешает встраивать плеер только на указанный в parent. null, пока он неизвестен (до загрузки в браузере) */
+  /** Домен сайта: Twitch разрешает встраивать плеер только на указанный в parent. null, пока он неизвестен (до загрузки в браузере). YouTube домен не требует */
   hostname: string | null;
-  /** Время проверки Twitch: от него считается длительность эфира */
+  /** Время проверки: от него считается длительность эфира */
   checkedAt: string | null;
 };
 
@@ -49,10 +49,15 @@ export function StreamCard({ stream, hostname, checkedAt }: StreamCardProps) {
   const uptime = formatUptime(stream.startedAt, checkedAt);
 
   // autoplay выключен: иначе все плееры на странице запустились бы одновременно
-  const playerSrc =
-    near && hostname
-      ? `https://player.twitch.tv/?channel=${encodeURIComponent(stream.login)}&parent=${encodeURIComponent(hostname)}&muted=true&autoplay=false`
-      : null;
+  const platform = platformLabels[stream.platform];
+  // YouTube встраивается на любой домен, а плееру Twitch нужен parent с доменом сайта
+  const playerSrc = !near
+    ? null
+    : stream.platform === "youtube"
+      ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(stream.id)}?autoplay=0&mute=1&rel=0`
+      : hostname
+        ? `https://player.twitch.tv/?channel=${encodeURIComponent(stream.login)}&parent=${encodeURIComponent(hostname)}&muted=true&autoplay=false`
+        : null;
 
   return (
     <Card className="gap-0 overflow-hidden py-0">
@@ -65,7 +70,7 @@ export function StreamCard({ stream, hostname, checkedAt }: StreamCardProps) {
         <div className="min-w-0 flex-1">
           <h2 className="truncate font-semibold leading-tight tracking-tight">{stream.name}</h2>
           <p className="truncate text-muted-foreground text-xs">
-            {[stream.game, uptime && `в эфире ${uptime}`].filter(Boolean).join(" · ")}
+            {[platform, stream.game, uptime && `в эфире ${uptime}`].filter(Boolean).join(" · ")}
           </p>
         </div>
 
@@ -83,8 +88,8 @@ export function StreamCard({ stream, hostname, checkedAt }: StreamCardProps) {
               href={stream.url}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={`Открыть трансляцию ${stream.name} на Twitch`}
-              title="Открыть на Twitch"
+              aria-label={`Открыть трансляцию ${stream.name} на ${platform}`}
+              title={`Открыть на ${platform}`}
             >
               <ExternalLink aria-hidden="true" />
             </a>

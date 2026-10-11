@@ -4,13 +4,12 @@ import { useMemo, useState } from "react";
 
 import Link from "next/link";
 
-import { cn } from "cn";
-import { ChevronRight, Search, UserCheck, X } from "lucide-react";
+import { ArrowDownUp, ChevronRight, Funnel, Search, UserCheck, X } from "lucide-react";
 
+import { FilterDropdown } from "@/app/(main)/(dashboard)/_components/filter-dropdown";
 import { PersonAvatar } from "@/components/person-avatar";
 import { PersonName } from "@/components/person-name";
 import { ProfileBanner } from "@/components/profile-banner";
-import { RoleIcon } from "@/components/role-icon";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -26,43 +25,47 @@ export type StaffMember = {
 
 type SortMode = "senior" | "junior" | "alpha";
 
-const SORT_OPTIONS: { value: SortMode; label: string }[] = [
-  { value: "senior", label: "Старшие сверху" },
-  { value: "junior", label: "Младшие сверху" },
-  { value: "alpha", label: "По алфавиту" },
+const SORT_OPTIONS: { id: SortMode; label: string }[] = [
+  { id: "senior", label: "Старшие сверху" },
+  { id: "junior", label: "Младшие сверху" },
+  { id: "alpha", label: "По алфавиту" },
+];
+
+type RoleFilter = AdminGroup | "all";
+
+// Старшие группы сверху, как и в списке
+const ROLE_OPTIONS: { id: RoleFilter; label: string }[] = [
+  { id: "all", label: "Все роли" },
+  ...[...adminGroups].reverse().map((group) => ({ id: group, label: groupInfo[group].label })),
 ];
 
 const dateFormat = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" });
 
 const normalize = (value: string) => value.toLowerCase().replaceAll("ё", "е").trim();
 
-/** Список администрации: поиск, фильтр по ролям с иконками, сортировка и карточки с переходом в профиль. */
+/** Список администрации: поиск, фильтр по роли и сортировка кнопками с иконкой (как на других страницах) и карточки с переходом в профиль. */
 export function StaffList({ members, meId }: { members: StaffMember[]; meId: string }) {
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<readonly AdminGroup[]>([]);
+  const [role, setRole] = useState<RoleFilter>("all");
   const [sort, setSort] = useState<SortMode>("senior");
 
   const visible = useMemo(() => {
     const needle = normalize(query).replace(/^#/, "");
     const filtered = members.filter(({ person }) => {
-      if (selected.length > 0 && !(person.group && selected.includes(person.group))) return false;
+      if (role !== "all" && person.group !== role) return false;
       if (!needle) return true;
       const haystack = normalize(`${person.nickname ?? ""} ${person.name} ${person.staticId ?? ""}`);
       return haystack.includes(needle);
     });
-    const byName = (a: StaffMember, b: StaffMember) =>
-      personLabel(a.person).localeCompare(personLabel(b.person), "ru");
+    const byName = (a: StaffMember, b: StaffMember) => personLabel(a.person).localeCompare(personLabel(b.person), "ru");
     return filtered.sort((a, b) => {
       if (sort === "alpha") return byName(a, b);
       const diff = groupLevel(b.person.group) - groupLevel(a.person.group);
       return (sort === "senior" ? diff : -diff) || byName(a, b);
     });
-  }, [members, query, selected, sort]);
+  }, [members, query, role, sort]);
 
-  const toggle = (group: AdminGroup) =>
-    setSelected((current) => (current.includes(group) ? current.filter((item) => item !== group) : [...current, group]));
-
-  const filtering = query.trim() !== "" || selected.length > 0;
+  const filtering = query.trim() !== "" || role !== "all";
 
   return (
     <div className="flex w-full flex-col gap-4 md:gap-6">
@@ -84,7 +87,8 @@ export function StaffList({ members, meId }: { members: StaffMember[]; meId: str
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Поиск по нику, имени или Static ID"
-            aria-label="Поиск по администраторам" data-section-search
+            aria-label="Поиск по администраторам"
+            data-section-search
             className="pr-9 pl-9"
           />
           {query && (
@@ -99,53 +103,24 @@ export function StaffList({ members, meId }: { members: StaffMember[]; meId: str
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 lg:flex-1">
-          {[...adminGroups].reverse().map((group) => {
-            const active = selected.includes(group);
-            return (
-              <button
-                key={group}
-                type="button"
-                aria-pressed={active}
-                aria-label={groupInfo[group].label}
-                onClick={() => toggle(group)}
-                className={cn(
-                  "flex size-9 items-center justify-center rounded-lg border outline-none transition focus-visible:ring-2 focus-visible:ring-ring/50",
-                  active
-                    ? "border-ring bg-muted ring-1 ring-ring"
-                    : "bg-background hover:bg-muted/60",
-                  !active && selected.length > 0 && "opacity-50 hover:opacity-100",
-                )}
-              >
-                <RoleIcon group={group} className="size-5" />
-              </button>
-            );
-          })}
-          {selected.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setSelected([])}
-              className="text-muted-foreground text-xs underline-offset-2 hover:text-foreground hover:underline"
-            >
-              Сбросить роли
-            </button>
-          )}
-        </div>
-
-        <label className="flex items-center gap-2 text-muted-foreground text-sm">
-          <span className="shrink-0">Сортировка</span>
-          <select
+        <div className="flex flex-wrap items-center gap-2">
+          <FilterDropdown
+            icon={Funnel}
+            label="Роль"
+            value={role}
+            options={ROLE_OPTIONS}
+            onChange={setRole}
+            className="max-sm:flex-1"
+          />
+          <FilterDropdown
+            icon={ArrowDownUp}
+            label="Сортировка"
             value={sort}
-            onChange={(event) => setSort(event.target.value as SortMode)}
-            className="h-9 rounded-md border bg-background px-2 text-foreground text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-          >
-            {SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            options={SORT_OPTIONS}
+            onChange={setSort}
+            className="max-sm:flex-1"
+          />
+        </div>
       </div>
 
       {members.length === 0 ? (
@@ -154,7 +129,7 @@ export function StaffList({ members, meId }: { members: StaffMember[]; meId: str
         </div>
       ) : visible.length === 0 ? (
         <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
-          Никого не нашли{filtering ? ": попробуйте изменить поиск или выбранные роли." : "."}
+          Никого не нашли{filtering ? ": попробуйте изменить поиск или роль." : "."}
         </div>
       ) : (
         <>
