@@ -15,7 +15,7 @@ import {
 } from "./map-data";
 import { MapTip } from "./map-tip";
 import { MarkerBadge } from "./place-icons";
-import { getZoneKind, type MapZone, zoneCenter } from "./zone-data";
+import { getZoneColor, type MapZone, type ZoneColorId, type ZonePoint, zoneCenter } from "./zone-data";
 
 /** Карта нарезана на плитки 256 px: /images/map-tiles/{z}/{x}x{y}.webp, на уровне z сетка 2^z × 2^z. */
 const TILE_URL = "/images/map-tiles";
@@ -65,6 +65,13 @@ interface GameMapProps {
   /** Игровые зоны поверх карты (режим «Карта игровых зон») */
   zones?: readonly MapZone[];
   selectedZoneId?: string | null;
+  onSelectZone?: (id: string | null) => void;
+  /** Зона, которую администратор сейчас рисует. Точки добавляются кликом (pickMode + onPick), их можно двигать и удалять. */
+  zoneDraft?: { points: readonly ZonePoint[]; color: ZoneColorId } | null;
+  onZonePointMove?: (index: number, point: ZonePoint) => void;
+  onZonePointRemove?: (index: number) => void;
+  /** Подсказка над картой в режиме выбора точки. Если не задана, подсказка относится к метке. */
+  pickHint?: string;
 }
 
 interface View {
@@ -114,6 +121,14 @@ function zoomView(view: View, size: Size, nextZoom: number, anchor: { x: number;
   );
 }
 
+const toSvgPoints = (points: readonly ZonePoint[]) =>
+  points
+    .map((point) => {
+      const { fx, fy } = worldToFraction(point.x, point.y);
+      return `${fx},${fy}`;
+    })
+    .join(" ");
+
 const CENTER = { x: 0, y: 0 };
 const INITIAL_VIEW: View = { zoom: 1, x: 0, y: 0 };
 
@@ -132,6 +147,11 @@ export default function GameMap({
   fit,
   zones,
   selectedZoneId = null,
+  onSelectZone,
+  zoneDraft,
+  onZonePointMove,
+  onZonePointRemove,
+  pickHint,
 }: GameMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<Size>({ width: 0, height: 0 });
@@ -178,6 +198,19 @@ export default function GameMap({
     if (!rect) return CENTER;
     return { x: clientX - rect.left - rect.width / 2, y: clientY - rect.top - rect.height / 2 };
   };
+
+  /** Игровые координаты под курсором; за краем карты точка прижимается к границе. */
+  const pointerToWorld = (clientX: number, clientY: number) => {
+    const anchor = pointerToCenter(clientX, clientY);
+    const current = viewRef.current;
+    const side = baseSide(sizeRef.current) * current.zoom;
+    const fx = clamp((anchor.x - current.x) / side + 0.5, 0, 1);
+    const fy = clamp((anchor.y - current.y) / side + 0.5, 0, 1);
+    return fractionToWorld(fx, fy);
+  };
+
+  // Какую вершину черновика зоны сейчас тащат
+  const draggedVertex = useRef<number | null>(null);
 
   // Плавность нужна кнопкам, двойному клику и клавишам. Колесо и щипок идут без неё, иначе карта отставала бы от пальцев.
   const smoothTimer = useRef<number | undefined>(undefined);
@@ -426,15 +459,22 @@ export default function GameMap({
       aria-label="Интерактивная карта штата. Стрелки двигают карту, плюс и минус меняют масштаб."
     >
       {pickMode && (
-        <p className="pointer-events-none absolute inset-x-16 top-20 z-10 mx-auto w-fit max-w-full rounded-lg bg-foreground px-3 py-1.5 text-center text-background text-xs shadow-lg md:inset-x-auto md:top-4 md:left-1/2 md:-translate-x-1/2">
-          {draft ? "Нажмите на карту, чтобы переместить метку" : "Нажмите на карту, чтобы поставить метку"}
+        <p className="pointer-events-none absolute inset-x-16 top-[7.75rem] z-10 mx-auto w-fit max-w-full rounded-lg bg-foreground px-3 py-1.5 text-center text-background text-xs shadow-lg md:inset-x-auto md:top-4 md:left-1/2 md:-translate-x-1/2">
+          {pickHint ??
+            (draft ? "Нажмите на карту, чтобы переместить метку" : "Нажмите на карту, чтобы поставить метку")}
         </p>
       )}
 
       {/* Кнопки управления лежат внутри окна карты, поэтому работают и в полноэкранном режиме */}
       {/* biome-ignore lint/a11y/noStaticElementInteractions: обработчики только останавливают всплытие событий карты */}
       <div
-        className={cn("absolute z-10 flex gap-2.5", embedded ? "top-3 right-3" : "top-20 right-4 md:top-4")}
+        className={cn(
+          "absolute z-10 flex gap-2.5",
+          // На телефоне панель карты занимает верх экрана, поэтому кнопки масштаба стоят столбиком у правого края по центру
+          embedded
+            ? "top-3 right-3"
+            : "top-1/2 right-3 -translate-y-1/2 flex-col md:top-4 md:right-4 md:translate-y-0 md:flex-row",
+        )}
         onPointerDown={stopPropagation}
         onDoubleClick={stopPropagation}
       >
@@ -508,56 +548,120 @@ export default function GameMap({
           )),
         )}
 
-        {zones && zones.length > 0 && (
-          <>
-            {/* Контуры зон: система координат 0..1 совпадает с долями карты, поэтому масштаб подхватывается сам */}
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 1 1"
-              preserveAspectRatio="none"
-              className="pointer-events-none absolute inset-0 size-full"
-            >
-              {zones.map((zone) => {
-                const kind = getZoneKind(zone.kind);
-                const active = selectedZoneId === zone.id;
-                return (
-                  <polygon
-                    key={zone.id}
-                    points={zone.points
-                      .map((point) => {
-                        const { fx, fy } = worldToFraction(point.x, point.y);
-                        return `${fx},${fy}`;
-                      })
-                      .join(" ")}
-                    vectorEffect="non-scaling-stroke"
-                    strokeWidth={active ? 3 : 1.5}
-                    strokeLinejoin="round"
-                    className={cn(kind.fillClass, kind.strokeClass, active && "brightness-125")}
-                  />
-                );
-              })}
-            </svg>
-            {zones.map((zone) => {
-              const center = zoneCenter(zone);
-              const { fx, fy } = worldToFraction(center.x, center.y);
-              const kind = getZoneKind(zone.kind);
+        {((zones && zones.length > 0) || zoneDraft) && (
+          // Контуры зон: система координат 0..1 совпадает с долями карты, поэтому масштаб подхватывается сам
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 1 1"
+            preserveAspectRatio="none"
+            className="pointer-events-none absolute inset-0 size-full"
+          >
+            {zones?.map((zone) => {
+              const color = getZoneColor(zone.color);
+              const active = selectedZoneId === zone.id;
               return (
-                <span
+                <polygon
                   key={zone.id}
-                  className="pointer-events-none absolute flex items-center gap-1.5 whitespace-nowrap rounded-md bg-background/85 px-2 py-1 font-medium text-foreground text-xs shadow-sm ring-1 ring-foreground/10 backdrop-blur-sm"
-                  style={{
-                    left: `${fx * 100}%`,
-                    top: `${fy * 100}%`,
-                    transform: `translate(-50%, -50%) scale(${1 / view.zoom})`,
-                  }}
-                >
-                  <span aria-hidden="true" className={cn("size-2 rounded-full", kind.dotClass)} />
-                  {zone.name}
-                </span>
+                  points={toSvgPoints(zone.points)}
+                  vectorEffect="non-scaling-stroke"
+                  strokeWidth={active ? 3 : 1.5}
+                  strokeLinejoin="round"
+                  className={cn(color.fillClass, color.strokeClass, active && "brightness-125")}
+                />
               );
             })}
-          </>
+            {zoneDraft && zoneDraft.points.length >= 2 && (
+              <polygon
+                points={toSvgPoints(zoneDraft.points)}
+                vectorEffect="non-scaling-stroke"
+                strokeWidth={2}
+                strokeDasharray="6 4"
+                strokeLinejoin="round"
+                // С двумя точками многоугольник вырождается в отрезок: заливки у него нет
+                className={cn(getZoneColor(zoneDraft.color).fillClass, getZoneColor(zoneDraft.color).strokeClass)}
+              />
+            )}
+          </svg>
         )}
+
+        {zones?.map((zone) => {
+          const center = zoneCenter(zone.points);
+          const { fx, fy } = worldToFraction(center.x, center.y);
+          const color = getZoneColor(zone.color);
+          const active = selectedZoneId === zone.id;
+          return (
+            <button
+              key={zone.id}
+              type="button"
+              aria-pressed={active}
+              aria-label={zone.name}
+              // Пока ставят точки, подписи не должны перехватывать клики
+              className={cn(
+                "absolute flex items-center gap-1.5 whitespace-nowrap rounded-md bg-background/85 px-2 py-1 font-medium text-foreground text-xs shadow-sm outline-none ring-1 ring-foreground/10 backdrop-blur-sm focus-visible:ring-2 focus-visible:ring-ring",
+                active && "ring-2 ring-foreground/40",
+                pickMode && "pointer-events-none",
+              )}
+              style={{
+                left: `${fx * 100}%`,
+                top: `${fy * 100}%`,
+                transform: `translate(-50%, -50%) scale(${1 / view.zoom})`,
+              }}
+              onPointerDown={stopPropagation}
+              onDoubleClick={stopPropagation}
+              onClick={() => onSelectZone?.(active ? null : zone.id)}
+            >
+              <span aria-hidden="true" className={cn("size-2 rounded-full", color.dotClass)} />
+              {zone.name}
+            </button>
+          );
+        })}
+
+        {zoneDraft?.points.map((point, index) => {
+          const { fx, fy } = worldToFraction(point.x, point.y);
+          return (
+            <button
+              // biome-ignore lint/suspicious/noArrayIndexKey: у вершины нет ничего, кроме позиции в списке
+              key={index}
+              type="button"
+              aria-label={`Точка ${index + 1}. Перетащите, чтобы сдвинуть, двойной клик удалит`}
+              className="absolute z-20 flex size-6 cursor-move touch-none items-center justify-center rounded-full outline-none"
+              style={{
+                left: `${fx * 100}%`,
+                top: `${fy * 100}%`,
+                transform: `translate(-50%, -50%) scale(${1 / view.zoom})`,
+              }}
+              onPointerDown={(event) => {
+                event.stopPropagation();
+                event.currentTarget.setPointerCapture(event.pointerId);
+                draggedVertex.current = index;
+              }}
+              onPointerMove={(event) => {
+                if (draggedVertex.current !== index) return;
+                event.stopPropagation();
+                onZonePointMove?.(index, pointerToWorld(event.clientX, event.clientY));
+              }}
+              onPointerUp={(event) => {
+                event.stopPropagation();
+                draggedVertex.current = null;
+              }}
+              onPointerCancel={() => {
+                draggedVertex.current = null;
+              }}
+              onDoubleClick={(event) => {
+                event.stopPropagation();
+                onZonePointRemove?.(index);
+              }}
+            >
+              <span
+                className={cn(
+                  "size-3.5 rounded-full ring-2 ring-background",
+                  getZoneColor(zoneDraft.color).dotClass,
+                  index === 0 && "ring-4",
+                )}
+              />
+            </button>
+          );
+        })}
 
         {places.map((place) => {
           const { fx, fy } = worldToFraction(place.x, place.y);
@@ -573,6 +677,8 @@ export default function GameMap({
               aria-pressed={selected}
               className={cn(
                 "group absolute flex size-10 items-center justify-center rounded-full outline-none",
+                // Пока рисуют зону, метки остаются на карте как ориентиры, но клики пропускают
+                zoneDraft && "pointer-events-none",
                 animating && "transition-transform duration-300 ease-out",
                 // У каждой метки свой transform, а значит свой слой: подпись не может выйти за него.
                 // Поэтому при наведении и фокусе поднимаем всю метку выше соседних (и выше выбранной).

@@ -67,6 +67,7 @@ export function CatalogPage({ config, view }: CatalogPageProps) {
               spacing={0}
               value={view}
               aria-label={config.viewLabel}
+              className="max-sm:hidden"
             >
               <ToggleGroupItem value="grid" asChild>
                 <Link href="?view=grid" prefetch={false} replace scroll={false}>

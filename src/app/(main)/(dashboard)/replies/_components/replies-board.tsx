@@ -409,7 +409,8 @@ export function RepliesBoard({
             type="button"
             variant="outline"
             size="icon"
-            className="size-12 shrink-0 rounded-xl"
+            // До md колонка всё равно одна, поэтому на телефоне переключатель ничего не меняет
+            className="size-12 shrink-0 rounded-xl max-md:hidden"
             onClick={toggleLayout}
             aria-label={toggle.label}
             title={toggle.label}

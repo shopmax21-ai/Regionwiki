@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { isInsideWorld } from "@/app/(main)/(dashboard)/map/_components/map-data";
 import { type LinkedPlace, MapSection } from "@/app/(main)/(dashboard)/map/_components/map-section";
 import { getAdminContext } from "@/lib/auth/admin";
-import { listMapPlaces } from "@/lib/map/store";
+import { listMapPlaces, listMapZones } from "@/lib/map/store";
 
 export const metadata: Metadata = {
   title: "Карта | Region WIKI",
@@ -28,8 +28,9 @@ function linkedPlace(params: SearchParams): LinkedPlace | null {
 }
 
 export default async function Page({ searchParams }: { searchParams: Promise<SearchParams> }) {
-  const [{ places, editable, problem }, admin, params] = await Promise.all([
+  const [{ places, editable, problem }, zones, admin, params] = await Promise.all([
     listMapPlaces(),
+    listMapZones(),
     getAdminContext(),
     searchParams,
   ]);
@@ -41,6 +42,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   return (
     <MapSection
       places={places}
+      zones={zones}
       editor={editor}
       problem={editor === "unavailable" ? problem : null}
       linked={linkedPlace(params)}

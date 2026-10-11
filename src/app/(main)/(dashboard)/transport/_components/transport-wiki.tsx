@@ -121,7 +121,8 @@ export function TransportWiki({ vehicles, editor = "off" }: { vehicles: Vehicle[
             <Button
               variant={view === "list" ? "secondary" : "outline"}
               size="icon"
-              className="size-10"
+              // На телефоне переключать нечего: вид только карточками
+              className="size-10 max-sm:hidden"
               aria-pressed={view === "list"}
               aria-label={view === "list" ? "Показать карточками" : "Показать списком"}
               onClick={() => setView(view === "list" ? "grid" : "list")}

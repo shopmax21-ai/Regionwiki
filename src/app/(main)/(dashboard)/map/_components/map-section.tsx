@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import dynamic from "next/dynamic";
 
 import { cn } from "cn";
-import { Check, ChevronDown, Layers, List, Plus, Search, Upload, X } from "lucide-react";
+import { Check, ChevronDown, Layers, List, PenTool, Plus, Search, Upload, X } from "lucide-react";
 
 import { LegendList, MapLegend } from "@/app/(main)/(dashboard)/map/_components/map-legend";
 import { PlaceCard } from "@/app/(main)/(dashboard)/map/_components/place-card";
@@ -15,13 +15,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { createPlaceAction, updatePlaceAction } from "../_actions";
+import { createPlaceAction, createZoneAction, updatePlaceAction, updateZoneAction } from "../_actions";
 import type { DraftMarker, FocusRequest } from "./game-map";
 import { isInsideWorld, type MapPlace } from "./map-data";
 import { MapTip, MapTipContainer } from "./map-tip";
 import { type PlaceDraft, PlaceEditor } from "./place-editor";
 import { PlaceImport } from "./place-import";
-import { zones as allZones, zoneCenter } from "./zone-data";
+import { type MapZone, ZONE_LIMITS, type ZoneDraft, zoneCenter } from "./zone-data";
+import { ZoneCard, ZoneEditor } from "./zone-editor";
 import { ZonesList, ZonesPanel } from "./zones-panel";
 
 // Карта работает только в браузере
@@ -43,6 +44,8 @@ type FullscreenMode = "off" | "native" | "css";
 
 interface MapSectionProps {
   places: MapPlace[];
+  /** Игровые зоны из базы */
+  zones: MapZone[];
   /** on — можно редактировать; unavailable — право есть, но база недоступна; off — права нет */
   editor: "on" | "off" | "unavailable";
   problem: string | null;
@@ -97,7 +100,7 @@ function MapSwitcher({
   }, [open]);
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative min-w-0 flex-1 md:flex-none">
       <button
         type="button"
         aria-haspopup="menu"
@@ -106,11 +109,11 @@ function MapSwitcher({
         onClick={() => setOpen((current) => !current)}
         className={cn(
           className,
-          "flex h-12 min-w-44 items-center gap-3 px-4 font-medium text-sm outline-none transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-ring/50",
+          "flex h-12 w-full items-center gap-3 px-4 font-medium text-sm md:min-w-44 outline-none transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-ring/50",
         )}
       >
         <Layers aria-hidden="true" className="size-5 shrink-0" />
-        <span className="flex-1 text-left">{current.label}</span>
+        <span className="min-w-0 flex-1 truncate text-left">{current.label}</span>
         <ChevronDown
           aria-hidden="true"
           className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
@@ -154,7 +157,7 @@ const parseCoordinate = (value: string): number | null => {
 
 const formatCoordinate = (value: number) => String(Math.round(value * 100) / 100);
 
-export function MapSection({ places: allPlaces, editor, problem, linked = null }: MapSectionProps) {
+export function MapSection({ places: allPlaces, zones: allZones, editor, problem, linked = null }: MapSectionProps) {
   const sectionRef = useRef<HTMLElement>(null);
   // Подсказки рисуются внутри раздела, иначе в полноэкранном режиме их не было бы видно
   const [tipContainer, setTipContainer] = useState<HTMLElement | null>(null);
@@ -164,6 +167,7 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
   const [showMarkers, setShowMarkers] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
+  const [zoneDraft, setZoneDraft] = useState<ZoneDraft | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState(false);
   const [legendOpen, setLegendOpen] = useState(true);
@@ -190,8 +194,10 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
 
   const visibleZones = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    return allZones.filter((zone) => zone.name.toLowerCase().includes(normalized));
-  }, [query]);
+    // Зона, которую сейчас правят, рисуется отдельно (с новыми точками), поэтому из общего набора её убираем.
+    return allZones.filter((zone) => zone.id !== zoneDraft?.id && zone.name.toLowerCase().includes(normalized));
+  }, [allZones, query, zoneDraft?.id]);
+  const selectedZone = mode === "zones" ? (visibleZones.find((zone) => zone.id === selectedZoneId) ?? null) : null;
 
   const selected = visiblePlaces.find((place) => place.id === selectedId) ?? null;
 
@@ -214,9 +220,9 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
 
   const handleSelectZone = (id: string) => {
     const zone = allZones.find((item) => item.id === id);
-    if (!zone) return;
+    if (!zone || zoneDraft) return;
     setSelectedZoneId(id);
-    focusPlace(id, zoneCenter(zone));
+    focusPlace(id, zoneCenter(zone.points));
     setListOpen(false);
   };
 
@@ -225,11 +231,13 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
     setListOpen(false);
     setSelectedId(null);
     setSelectedZoneId(null);
-    // Метки ставят и правят на карте мира: на карте зон редактор закрывается
+    // Метки ставят и правят на карте мира, зоны рисуют на карте зон: чужой редактор закрывается
+    setEditorError(null);
     if (next === "zones") {
       setDraft(null);
       setImportOpen(false);
-      setEditorError(null);
+    } else {
+      setZoneDraft(null);
     }
   };
 
@@ -348,6 +356,57 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
     });
   };
 
+  // Редактор зон
+  const startCreateZone = () => {
+    setSelectedZoneId(null);
+    setListOpen(false);
+    setEditorError(null);
+    setZoneDraft({ id: null, name: "", color: "green", description: "", points: [] });
+  };
+
+  const startEditZone = (zone: MapZone) => {
+    setEditorError(null);
+    setZoneDraft({
+      id: zone.id,
+      name: zone.name,
+      color: zone.color,
+      description: zone.description ?? "",
+      points: zone.points.map((point) => ({ ...point })),
+    });
+  };
+
+  const cancelZoneDraft = useCallback(() => {
+    setZoneDraft(null);
+    setEditorError(null);
+  }, []);
+
+  const saveZoneDraft = () => {
+    if (!zoneDraft) return;
+    setEditorError(null);
+    const payload = {
+      name: zoneDraft.name,
+      color: zoneDraft.color,
+      description: zoneDraft.description,
+      points: zoneDraft.points,
+    };
+    startSaving(async () => {
+      try {
+        const result = zoneDraft.id ? await updateZoneAction(zoneDraft.id, payload) : await createZoneAction(payload);
+        if (!result.ok) {
+          setEditorError(result.error);
+          return;
+        }
+        // Поиск мог бы спрятать сохранённую зону, поэтому сбрасываем его
+        setQuery("");
+        setZoneDraft(null);
+        setSelectedZoneId(result.id);
+        focusPlace(result.id, zoneCenter(payload.points));
+      } catch {
+        setEditorError("Нет связи с сервером, попробуйте ещё раз");
+      }
+    });
+  };
+
   const cancelDraft = useCallback(() => {
     setDraft(null);
     setEditorError(null);
@@ -394,11 +453,12 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
       if (listOpen) setListOpen(false);
       else if (importOpen && !typing) setImportOpen(false);
       else if (draft && !saving && !typing) cancelDraft();
+      else if (zoneDraft && !saving && !typing) cancelZoneDraft();
       else if (fullscreen === "css") setFullscreen("off");
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [listOpen, importOpen, draft, saving, fullscreen, cancelDraft]);
+  }, [listOpen, importOpen, draft, zoneDraft, saving, fullscreen, cancelDraft, cancelZoneDraft]);
 
   // Общий вид плашек панели: тёмная полупрозрачная подложка, как у остальных элементов карты
   const plate = "rounded-xl bg-card/95 shadow-sm ring-1 ring-foreground/10 backdrop-blur";
@@ -426,12 +486,30 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
           onSelect={setSelectedId}
           isFullscreen={fullscreen !== "off"}
           onToggleFullscreen={toggleFullscreen}
-          pickMode={draft !== null}
-          onPick={(point) =>
+          pickMode={draft !== null || zoneDraft !== null}
+          onPick={(point) => {
+            if (zoneDraft) {
+              if (zoneDraft.points.length >= ZONE_LIMITS.maxPoints) return;
+              setZoneDraft({ ...zoneDraft, points: [...zoneDraft.points, point] });
+              return;
+            }
             setDraft((current) =>
               current ? { ...current, x: formatCoordinate(point.x), y: formatCoordinate(point.y) } : current,
+            );
+          }}
+          pickHint={zoneDraft ? "Нажмите на карту, чтобы добавить точку зоны" : undefined}
+          zoneDraft={zoneDraft ? { points: zoneDraft.points, color: zoneDraft.color } : null}
+          onZonePointMove={(index, point) =>
+            setZoneDraft((current) =>
+              current ? { ...current, points: current.points.map((item, i) => (i === index ? point : item)) } : current,
             )
           }
+          onZonePointRemove={(index) =>
+            setZoneDraft((current) =>
+              current ? { ...current, points: current.points.filter((_, i) => i !== index) } : current,
+            )
+          }
+          onSelectZone={setSelectedZoneId}
           draft={draftMarker ?? (linkedPlace ? { x: linkedPlace.x, y: linkedPlace.y, category: "other" } : null)}
           focus={focus}
           zones={mode === "zones" ? visibleZones : undefined}
@@ -456,32 +534,49 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
           </div>
         )}
 
-        {/* Панель сверху слева: выбор карты, поиск и переключатель меток (вместо прежней боковой панели) */}
-        <div className="absolute top-3 left-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-wrap items-start gap-2 md:top-4 md:left-4">
-          <MapSwitcher value={mode} onChange={changeMode} className={plate} />
+        {/* Панель сверху слева: выбор карты, поиск и переключатель меток (вместо прежней боковой панели).
+            На телефоне она в два ряда (карта, поиск, список / метки и редактор), на компьютере в одну строку. */}
+        <div className="pointer-events-none absolute top-[max(0.75rem,env(safe-area-inset-top))] left-3 z-10 flex w-[min(calc(100%-1.5rem),24rem)] flex-col items-start gap-2 md:pointer-events-auto md:top-4 md:left-4 md:w-auto md:max-w-[calc(100%-2rem)] md:flex-row md:flex-wrap">
+          <div className="pointer-events-auto flex w-full items-start gap-2 md:contents">
+            <MapSwitcher value={mode} onChange={changeMode} className={plate} />
 
-          <MapTip label={searchOpen ? "Закрыть поиск" : searchTip} side="bottom">
-            <button
-              type="button"
-              aria-label={searchOpen ? "Закрыть поиск" : "Открыть поиск"}
-              aria-expanded={searchOpen}
-              onClick={toggleSearch}
-              className={cn(
-                plate,
-                "relative flex size-12 shrink-0 items-center justify-center outline-none transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-ring/50",
-                searchOpen && "bg-card text-primary",
-              )}
-            >
-              {searchOpen ? (
-                <X aria-hidden="true" className="size-5" />
-              ) : (
-                <Search aria-hidden="true" className="size-5" />
-              )}
-            </button>
-          </MapTip>
+            <MapTip label={searchOpen ? "Закрыть поиск" : searchTip} side="bottom">
+              <button
+                type="button"
+                aria-label={searchOpen ? "Закрыть поиск" : "Открыть поиск"}
+                aria-expanded={searchOpen}
+                onClick={toggleSearch}
+                className={cn(
+                  plate,
+                  "relative flex size-12 shrink-0 items-center justify-center outline-none transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-ring/50",
+                  searchOpen && "bg-card text-primary",
+                )}
+              >
+                {searchOpen ? (
+                  <X aria-hidden="true" className="size-5" />
+                ) : (
+                  <Search aria-hidden="true" className="size-5" />
+                )}
+              </button>
+            </MapTip>
+
+            {(mode === "zones" || showMarkers) && (
+              <Button
+                variant="outline"
+                aria-label={`${mode === "world" ? "Список меток" : "Список зон"}: ${listCount}`}
+                className={cn(plate, "relative size-12 shrink-0 p-0 md:hidden")}
+                onClick={() => setListOpen(true)}
+              >
+                <List className="size-5" />
+                <Badge variant="secondary" className="-top-1.5 -right-1.5 absolute h-5 min-w-5 px-1 tabular-nums">
+                  {listCount}
+                </Badge>
+              </Button>
+            )}
+          </div>
 
           {searchOpen && (
-            <div className={cn(plate, "flex h-12 w-full items-center px-2 sm:w-64")}>
+            <div className={cn(plate, "pointer-events-auto flex h-12 w-full items-center px-2 md:w-64")}>
               <Input
                 autoFocus
                 type="search"
@@ -496,73 +591,80 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
             </div>
           )}
 
-          <label
-            htmlFor="map-standard-markers"
-            className={cn(plate, "flex h-12 cursor-pointer items-center gap-3 px-3 font-medium text-sm")}
-          >
-            <Checkbox
-              id="map-standard-markers"
-              checked={showMarkers}
-              onCheckedChange={(checked) => {
-                setShowMarkers(checked === true);
-                if (checked !== true) setSelectedId(null);
-              }}
-              className="size-6 rounded-md"
-            />
-            Стандартные метки
-          </label>
-
-          {canEdit && mode === "world" && (
-            <>
-              <MapTip label="Добавить метку" side="bottom">
-                <button
-                  type="button"
-                  aria-label="Добавить метку"
-                  onClick={startCreate}
-                  disabled={draft !== null}
-                  className={cn(
-                    plate,
-                    "flex size-12 shrink-0 items-center justify-center outline-none transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
-                  )}
-                >
-                  <Plus aria-hidden="true" className="size-5" />
-                </button>
-              </MapTip>
-              <MapTip label="Загрузить метки из файла" side="bottom">
-                <button
-                  type="button"
-                  aria-label="Загрузить метки из файла"
-                  onClick={startImport}
-                  disabled={draft !== null || importOpen}
-                  className={cn(
-                    plate,
-                    "flex size-12 shrink-0 items-center justify-center outline-none transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
-                  )}
-                >
-                  <Upload aria-hidden="true" className="size-5" />
-                </button>
-              </MapTip>
-            </>
-          )}
-
-          {/* Телефон: список меток или зон открывается снизу */}
-          {(mode === "zones" || showMarkers) && (
-            <Button
-              variant="outline"
-              className={cn(plate, "h-12 shrink-0 gap-2 px-4 md:hidden")}
-              onClick={() => setListOpen(true)}
+          <div className="pointer-events-auto flex w-fit max-w-full flex-wrap items-start gap-2 md:contents">
+            <label
+              htmlFor="map-standard-markers"
+              className={cn(plate, "flex h-12 cursor-pointer items-center gap-3 px-3 font-medium text-sm")}
             >
-              <List className="size-4" />
-              {mode === "world" ? "Метки" : "Зоны"}
-              <Badge variant="secondary">{listCount}</Badge>
-            </Button>
-          )}
+              <Checkbox
+                id="map-standard-markers"
+                checked={showMarkers}
+                onCheckedChange={(checked) => {
+                  setShowMarkers(checked === true);
+                  if (checked !== true) setSelectedId(null);
+                }}
+                className="size-6 rounded-md"
+              />
+              Стандартные метки
+            </label>
 
-          {editor === "unavailable" && mode === "world" && (
-            <p className={cn(plate, "max-w-80 px-3 py-2 text-muted-foreground text-xs")}>
-              Редактирование карты сейчас недоступно{problem ? `: ${problem}` : ""}
-            </p>
-          )}
+            {canEdit && mode === "world" && (
+              <>
+                <MapTip label="Добавить метку" side="bottom">
+                  <button
+                    type="button"
+                    aria-label="Добавить метку"
+                    onClick={startCreate}
+                    disabled={draft !== null}
+                    className={cn(
+                      plate,
+                      "flex size-12 shrink-0 items-center justify-center outline-none transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
+                    )}
+                  >
+                    <Plus aria-hidden="true" className="size-5" />
+                  </button>
+                </MapTip>
+                <MapTip label="Загрузить метки из файла" side="bottom">
+                  <button
+                    type="button"
+                    aria-label="Загрузить метки из файла"
+                    onClick={startImport}
+                    disabled={draft !== null || importOpen}
+                    className={cn(
+                      plate,
+                      "flex size-12 shrink-0 items-center justify-center outline-none transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
+                    )}
+                  >
+                    <Upload aria-hidden="true" className="size-5" />
+                  </button>
+                </MapTip>
+              </>
+            )}
+
+            {canEdit && mode === "zones" && (
+              <MapTip label="Нарисовать зону" side="bottom">
+                <button
+                  type="button"
+                  aria-label="Нарисовать зону"
+                  onClick={startCreateZone}
+                  disabled={zoneDraft !== null}
+                  className={cn(
+                    plate,
+                    "flex h-12 shrink-0 items-center justify-center gap-2 px-4 font-medium text-sm outline-none transition-colors hover:bg-card focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
+                  )}
+                >
+                  <PenTool aria-hidden="true" className="size-5" />
+                  <span className="hidden sm:inline">Добавить зону</span>
+                </button>
+              </MapTip>
+            )}
+
+            {editor === "unavailable" && (
+              <p className={cn(plate, "max-w-80 px-3 py-2 text-muted-foreground text-xs")}>
+                Редактирование карты сейчас недоступно{problem ? `: ${problem}` : ""}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Правая колонка: карточка метки, редактор или загрузка лежат над блоком обозначений, чтобы не перекрывать его.
@@ -620,6 +722,29 @@ export function MapSection({ places: allPlaces, editor, problem, linked = null }
               onSelect={handleSelectFromList}
             />
           )}
+
+          {mode === "zones" &&
+            (zoneDraft ? (
+              <ZoneEditor
+                draft={zoneDraft}
+                onChange={(patch) => setZoneDraft((current) => (current ? { ...current, ...patch } : current))}
+                onSave={saveZoneDraft}
+                onCancel={cancelZoneDraft}
+                pending={saving}
+                error={editorError}
+              />
+            ) : (
+              selectedZone && (
+                <ZoneCard
+                  key={selectedZone.id}
+                  zone={selectedZone}
+                  onClose={() => setSelectedZoneId(null)}
+                  canEdit={canEdit}
+                  onEdit={() => startEditZone(selectedZone)}
+                  onDeleted={() => setSelectedZoneId(null)}
+                />
+              )
+            ))}
 
           {mode === "zones" && (
             <ZonesPanel zones={visibleZones} query={query} selectedId={selectedZoneId} onSelect={handleSelectZone} />

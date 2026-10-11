@@ -1,7 +1,9 @@
 import { type MapPlace, type PlaceCategoryId, seedPlaces } from "@/app/(main)/(dashboard)/map/_components/map-data";
+import type { MapZone, ZoneColorId } from "@/app/(main)/(dashboard)/map/_components/zone-data";
 import { getPool } from "@/lib/db/pool";
 
 import type { PlaceInput } from "./validate";
+import type { ZoneInput } from "./zone-validate";
 import { randomUUID } from "node:crypto";
 
 /**
@@ -43,6 +45,18 @@ async function init(): Promise<void> {
     )`);
     // Своя иконка метки появилась позже первых версий таблицы
     await client.query("ALTER TABLE map_places ADD COLUMN IF NOT EXISTS icon text NOT NULL DEFAULT ''");
+    // Игровые зоны: многоугольники хранятся списком точек в jsonb
+    await client.query(`CREATE TABLE IF NOT EXISTS map_zones (
+      id text PRIMARY KEY,
+      position bigserial NOT NULL,
+      name text NOT NULL,
+      color text NOT NULL,
+      description text NOT NULL DEFAULT '',
+      points jsonb NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now(),
+      updated_by text
+    )`);
     const existing = await client.query("SELECT 1 FROM map_places LIMIT 1");
     if (existing.rowCount === 0) {
       for (const place of seedPlaces) {
@@ -191,4 +205,57 @@ export const createMapPlaces = (inputs: PlaceInput[], updatedBy: string) =>
     } finally {
       client.release();
     }
+  });
+
+/* Игровые зоны */
+
+type ZoneRow = { id: string; name: string; color: string; description: string; points: { x: number; y: number }[] };
+
+const toZone = (row: ZoneRow): MapZone => ({
+  id: row.id,
+  name: row.name,
+  color: row.color as ZoneColorId,
+  description: row.description || undefined,
+  points: row.points,
+});
+
+/** Если базы нет или она недоступна, зон просто нет: метки при этом продолжают работать. */
+export async function listMapZones(): Promise<MapZone[]> {
+  if (!process.env.DATABASE_URL) return [];
+  try {
+    await ensureReady();
+    const { rows } = await getPool().query<ZoneRow>(
+      "SELECT id, name, color, description, points FROM map_zones ORDER BY position ASC",
+    );
+    return rows.map(toZone);
+  } catch (error) {
+    console.error("[map] Не удалось загрузить игровые зоны", error);
+    return [];
+  }
+}
+
+export const createMapZone = (input: ZoneInput, updatedBy: string) =>
+  run(async () => {
+    const id = randomUUID();
+    await getPool().query(
+      "INSERT INTO map_zones (id, name, color, description, points, updated_by) VALUES ($1, $2, $3, $4, $5::jsonb, $6)",
+      [id, input.name, input.color, input.description, JSON.stringify(input.points), updatedBy],
+    );
+    return id;
+  });
+
+export const updateMapZone = (id: string, input: ZoneInput, updatedBy: string) =>
+  run(async () => {
+    const result = await getPool().query(
+      `UPDATE map_zones SET name = $2, color = $3, description = $4, points = $5::jsonb, updated_at = now(), updated_by = $6
+       WHERE id = $1`,
+      [id, input.name, input.color, input.description, JSON.stringify(input.points), updatedBy],
+    );
+    if (result.rowCount === 0) throw new MapStoreError("not_found");
+  });
+
+export const deleteMapZone = (id: string) =>
+  run(async () => {
+    const result = await getPool().query("DELETE FROM map_zones WHERE id = $1", [id]);
+    if (result.rowCount === 0) throw new MapStoreError("not_found");
   });

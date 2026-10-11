@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { cn } from "cn";
-import { ArrowUpRight, CornerDownLeft, Search, Sparkles, X } from "lucide-react";
+import { ArrowUpRight, CornerDownLeft, Search, Sparkles, Star, X } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,7 @@ import {
   ruleGroups,
 } from "./rules-meta";
 import { entryToDoc } from "./rules-search";
+import { ruleFavoriteKey, useRuleFavorites } from "./use-rule-favorites";
 import { useSemanticRules } from "./use-semantic-rules";
 
 const PAGE_SIZE = 30;
@@ -55,6 +56,13 @@ export function RulesPage({
   });
   const [askedQuery, setAskedQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const { favorites, isFavorite, toggleFavorite } = useRuleFavorites();
+
+  // Избранные пункты этой группы правил в том порядке, в каком их добавляли. Пункты, которых уже нет в правилах, пропускаем.
+  const favoriteEntries = useMemo(() => {
+    const byKey = new Map(searchIndex.map((entry) => [ruleFavoriteKey(entry.group, entry.slug, entry.anchor), entry]));
+    return favorites.map((key) => byKey.get(key)).filter((entry): entry is RuleSearchEntry => entry !== undefined);
+  }, [favorites, searchIndex]);
 
   // Поиск не блокирует набор: тяжёлая часть считается с небольшим отставанием
   const deferredQuery = useDeferredValue(query);
@@ -106,7 +114,9 @@ export function RulesPage({
 
   const semanticEntries = useMemo(() => {
     const byKey = new Map(searchIndex.map((entry) => [`${entry.slug}#${entry.anchor}`, entry]));
-    const lexical = new Set(result.hits.map((hit) => `${searchIndex[hit.index].slug}#${searchIndex[hit.index].anchor}`));
+    const lexical = new Set(
+      result.hits.map((hit) => `${searchIndex[hit.index].slug}#${searchIndex[hit.index].anchor}`),
+    );
     return semantic.hits
       .map((hit) => byKey.get(`${hit.slug}#${hit.anchor}`))
       .filter((entry): entry is RuleSearchEntry => Boolean(entry) && !lexical.has(`${entry?.slug}#${entry?.anchor}`));
@@ -231,6 +241,8 @@ export function RulesPage({
                     entry={entry}
                     highlight={result.highlight}
                     note={note}
+                    favorite={isFavorite(ruleFavoriteKey(entry.group, entry.slug, entry.anchor))}
+                    onToggleFavorite={() => toggleFavorite(ruleFavoriteKey(entry.group, entry.slug, entry.anchor))}
                   />
                 );
               })}
@@ -246,6 +258,8 @@ export function RulesPage({
                       entry={entry}
                       highlight={null}
                       semantic
+                      favorite={isFavorite(ruleFavoriteKey(entry.group, entry.slug, entry.anchor))}
+                      onToggleFavorite={() => toggleFavorite(ruleFavoriteKey(entry.group, entry.slug, entry.anchor))}
                     />
                   ))}
                 </div>
@@ -284,6 +298,32 @@ export function RulesPage({
               </div>
             </CardContent>
           )}
+        </Card>
+      )}
+
+      {!isSearching && favoriteEntries.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Star aria-hidden="true" className="size-4 fill-amber-500 text-amber-500" />
+              Избранные пункты
+            </CardTitle>
+            <CardDescription>Пункты, которые вы отметили звёздочкой. Список хранится в этом браузере.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-2 lg:grid-cols-2">
+            {favoriteEntries.map((entry) => {
+              const key = ruleFavoriteKey(entry.group, entry.slug, entry.anchor);
+              return (
+                <RuleResultCard
+                  key={key}
+                  entry={entry}
+                  highlight={null}
+                  favorite
+                  onToggleFavorite={() => toggleFavorite(key)}
+                />
+              );
+            })}
+          </CardContent>
         </Card>
       )}
 

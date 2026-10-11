@@ -4,17 +4,19 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 
 import Link from "next/link";
 
-import { ArrowLeft, Check, Copy, Search, X } from "lucide-react";
+import { ArrowLeft, Check, Copy, Search, Star, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import type { RuleItem, RuleSectionData, TextItem } from "@/lib/rules/parse";
 import { createRuleSearcher } from "@/lib/rules/smart-search";
 
+import { RuleFavoriteButton } from "./rule-favorite-button";
 import { RuleSearchNotes } from "./rule-search-notes";
 import { RuleStatusBlock } from "./rule-status";
 import { fieldStyles, Highlight, PunishmentLegend, PunishmentList } from "./rule-ui";
 import { formatRuleRef, type RuleArticleView, ruleGroups } from "./rules-meta";
 import { articleToDocs, textBlockKey } from "./rules-search";
+import { ruleFavoriteKey, useRuleFavorites } from "./use-rule-favorites";
 
 function Paragraphs({ text, regex, className }: { text: string; regex: RegExp | null; className?: string }) {
   if (!text) return null;
@@ -70,11 +72,15 @@ function RuleCard({
   tag,
   regex,
   highlighted,
+  favorite,
+  onToggleFavorite,
 }: {
   rule: RuleItem;
   tag?: string;
   regex: RegExp | null;
   highlighted: boolean;
+  favorite: boolean;
+  onToggleFavorite: () => void;
 }) {
   const [copied, setCopied] = useState(false);
   const reference = formatRuleRef(tag, rule.number);
@@ -90,10 +96,16 @@ function RuleCard({
   return (
     <article
       id={rule.anchor}
-      className={`group/rule min-w-0 scroll-mt-24 break-words rounded-xl border bg-card p-3 sm:p-4 shadow-xs transition-[background-color,border-color,box-shadow] duration-700 md:p-5 ${
+      className={`group/rule relative min-w-0 scroll-mt-24 break-words rounded-xl border bg-card p-3 pr-12 sm:p-4 sm:pr-14 shadow-xs transition-[background-color,border-color,box-shadow] duration-700 md:p-5 md:pr-16 ${
         highlighted ? "border-primary bg-primary/5 ring-2 ring-primary/40" : ""
       }`}
     >
+      <RuleFavoriteButton
+        active={favorite}
+        reference={reference}
+        onToggle={onToggleFavorite}
+        className="absolute top-2.5 right-2.5 sm:top-3.5 sm:right-3.5 md:top-4 md:right-4"
+      />
       <div className="flex flex-col items-start gap-2 sm:flex-row sm:gap-3">
         <button
           type="button"
@@ -159,6 +171,13 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
   const groupMeta = ruleGroups[article.group];
   const inputRef = useRef<HTMLInputElement>(null);
   const [highlighted, setHighlighted] = useState<string | null>(null);
+  const [onlyFavorites, setOnlyFavorites] = useState(false);
+  const { favorites, isFavorite, toggleFavorite } = useRuleFavorites();
+  const favoriteKeyOf = (anchor: string) => ruleFavoriteKey(article.group, article.slug, anchor);
+  const articleFavoriteCount = useMemo(() => {
+    const prefix = `${article.group}/${article.slug}#`;
+    return favorites.filter((key) => key.startsWith(prefix)).length;
+  }, [favorites, article.group, article.slug]);
 
   // Переход по ссылке вида #rule-1-3 (из истории изменений или поиска) подсвечивает пункт на несколько секунд
   useEffect(() => {
@@ -202,20 +221,25 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
   const searcher = useMemo(() => createRuleSearcher(articleToDocs(article)), [article]);
   const result = useMemo(() => searcher.search(deferredQuery), [searcher, deferredQuery]);
   const isFiltering = query.trim().length > 0;
+  const isNarrowed = isFiltering || onlyFavorites;
 
   // Остаются только найденные пункты, порядок и разделы сохраняются как в правилах
   const sections = useMemo(() => {
-    if (!deferredQuery.trim()) return article.sections;
+    const searching = deferredQuery.trim().length > 0;
+    if (!searching && !onlyFavorites) return article.sections;
     const found = new Set(result.hits.map((hit) => hit.doc.key));
+    const prefix = `${article.group}/${article.slug}#`;
     return article.sections
       .map((section) => ({
         ...section,
-        entries: section.entries.filter((entry, position) =>
-          found.has(entry.type === "rule" ? entry.anchor : textBlockKey(section.id, position)),
-        ),
+        entries: section.entries.filter((entry, position) => {
+          // В режиме «Только избранное» остаются одни пункты из списка, текстовые блоки скрываются
+          if (onlyFavorites && !(entry.type === "rule" && favorites.includes(`${prefix}${entry.anchor}`))) return false;
+          return !searching || found.has(entry.type === "rule" ? entry.anchor : textBlockKey(section.id, position));
+        }),
       }))
       .filter((section) => section.entries.length > 0);
-  }, [article.sections, deferredQuery, result]);
+  }, [article.sections, article.group, article.slug, deferredQuery, result, onlyFavorites, favorites]);
 
   const shownRules = sections.reduce((total, section) => total + ruleCountOf(section), 0);
   const regex = isFiltering ? result.highlight : null;
@@ -267,7 +291,23 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
               )}
             </div>
           </div>
-          <div className="mt-4">
+          <div className="mt-4 flex flex-col items-center gap-3">
+            {(articleFavoriteCount > 0 || onlyFavorites) && (
+              <button
+                type="button"
+                onClick={() => setOnlyFavorites((current) => !current)}
+                aria-pressed={onlyFavorites}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  onlyFavorites
+                    ? "border-amber-400/60 bg-amber-400/10 text-amber-500"
+                    : "bg-card text-muted-foreground hover:border-amber-400/50 hover:text-foreground"
+                }`}
+              >
+                <Star aria-hidden="true" className={`size-3.5 ${onlyFavorites ? "fill-current" : ""}`} />
+                Только избранное
+                <span className="tabular-nums">{articleFavoriteCount}</span>
+              </button>
+            )}
             <PunishmentLegend />
           </div>
         </div>
@@ -297,14 +337,16 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
         </nav>
 
         <div className="flex min-w-0 flex-col gap-6 sm:gap-8">
-          {isFiltering && (
+          {isNarrowed && (
             <div className="flex flex-col gap-2">
               <p className="text-sm text-muted-foreground">
                 {shownRules > 0
-                  ? `Найдено пунктов: ${shownRules}`
-                  : "Ничего не найдено. Опишите ситуацию другими словами или укажите номер пункта."}
+                  ? `${onlyFavorites && !isFiltering ? "Избранных пунктов" : "Найдено пунктов"}: ${shownRules}`
+                  : onlyFavorites
+                    ? "В избранном пока нет подходящих пунктов. Нажмите на звёздочку у пункта, чтобы добавить его."
+                    : "Ничего не найдено. Опишите ситуацию другими словами или укажите номер пункта."}
               </p>
-              <RuleSearchNotes result={result} />
+              {isFiltering && <RuleSearchNotes result={result} />}
             </div>
           )}
 
@@ -319,6 +361,8 @@ export function RuleArticleViewer({ article }: { article: RuleArticleView }) {
                     tag={article.tag}
                     regex={regex}
                     highlighted={highlighted === entry.anchor}
+                    favorite={isFavorite(favoriteKeyOf(entry.anchor))}
+                    onToggleFavorite={() => toggleFavorite(favoriteKeyOf(entry.anchor))}
                   />
                 ) : (
                   <TextBlock

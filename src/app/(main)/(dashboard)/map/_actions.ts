@@ -7,12 +7,17 @@ import { getAdmin } from "@/lib/auth/admin";
 import {
   createMapPlace,
   createMapPlaces,
+  createMapZone,
   deleteMapPlace,
+  deleteMapZone,
   listMapPlaces,
+  listMapZones,
   MapStoreError,
   updateMapPlace,
+  updateMapZone,
 } from "@/lib/map/store";
 import { type PlaceInput, validatePlace } from "@/lib/map/validate";
+import { validateZone } from "@/lib/map/zone-validate";
 
 import { IMPORT_MAX_ROWS } from "./_components/import-parse";
 
@@ -123,5 +128,67 @@ export async function importPlacesAction(input: unknown): Promise<ImportActionRe
     return { ok: true, added, skipped };
   } catch (error) {
     return failure(error);
+  }
+}
+
+/* Игровые зоны: то же право «Редактирование карты» */
+
+function zoneFailure(error: unknown): { ok: false; error: string } {
+  if (error instanceof MapStoreError && error.code === "not_found") {
+    return { ok: false, error: "Зона не найдена, возможно, её уже удалили" };
+  }
+  return failure(error);
+}
+
+export async function createZoneAction(input: unknown): Promise<PlaceActionResult> {
+  const admin = await getAdmin("map.edit");
+  if (!admin) return DENIED;
+
+  const result = validateZone(input);
+  if (!result.ok) return result;
+
+  try {
+    const id = await createMapZone(result.zone, admin.id);
+    await recordContentChange(actorOf(admin), "zone", "created", { id, label: result.zone.name });
+    revalidatePath("/map");
+    return { ok: true, id };
+  } catch (error) {
+    return zoneFailure(error);
+  }
+}
+
+export async function updateZoneAction(id: string, input: unknown): Promise<PlaceActionResult> {
+  const admin = await getAdmin("map.edit");
+  if (!admin) return DENIED;
+  if (!isValidId(id)) return { ok: false, error: "Неизвестная зона" };
+
+  const result = validateZone(input);
+  if (!result.ok) return result;
+
+  try {
+    await updateMapZone(id, result.zone, admin.id);
+    await recordContentChange(actorOf(admin), "zone", "updated", { id, label: result.zone.name });
+    revalidatePath("/map");
+    return { ok: true, id };
+  } catch (error) {
+    return zoneFailure(error);
+  }
+}
+
+export async function deleteZoneAction(id: string): Promise<PlaceActionResult> {
+  const admin = await getAdmin("map.edit");
+  if (!admin) return DENIED;
+  if (!isValidId(id)) return { ok: false, error: "Неизвестная зона" };
+
+  try {
+    const name = await listMapZones()
+      .then((zones) => zones.find((zone) => zone.id === id)?.name)
+      .catch(() => undefined);
+    await deleteMapZone(id);
+    await recordContentChange(actorOf(admin), "zone", "deleted", { id, label: name ?? id });
+    revalidatePath("/map");
+    return { ok: true, id };
+  } catch (error) {
+    return zoneFailure(error);
   }
 }
