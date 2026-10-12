@@ -37,7 +37,7 @@ export function PersonName({
             <span
               role="img"
               aria-label={`Static ID ${person.staticId}`}
-              className="shrink-0 cursor-default font-normal text-[0.85em] text-muted-foreground/70 tabular-nums"
+              className="shrink-0 cursor-default font-normal text-[0.85em] font-mono text-muted-foreground/70 tabular-nums"
             >
               #{person.staticId}
             </span>

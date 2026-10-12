@@ -16,7 +16,7 @@ function Slot({ index, invalid }: { index: number; invalid: boolean }) {
     <div
       data-active={isActive}
       className={cn(
-        "relative flex h-14 min-w-0 flex-1 items-center justify-center rounded-lg bg-foreground/[0.07] font-extrabold text-foreground text-xl tabular-nums ring-1 ring-transparent transition",
+        "relative flex h-14 min-w-0 flex-1 items-center justify-center rounded-lg bg-foreground/[0.07] font-extrabold font-mono text-foreground text-xl tabular-nums ring-1 ring-transparent transition",
         "data-[active=true]:bg-foreground/[0.1] data-[active=true]:ring-2 data-[active=true]:ring-primary/70",
         char && !invalid && "ring-foreground/15",
         invalid && "ring-destructive/60",

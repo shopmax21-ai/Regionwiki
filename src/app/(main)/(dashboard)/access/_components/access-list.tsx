@@ -89,7 +89,7 @@ function PendingCard({ user, now }: { user: DbUser; now: number }) {
               <Fingerprint className="size-3.5" aria-hidden="true" />
               Telegram ID
             </dt>
-            <dd className="font-medium tabular-nums">{user.telegramId}</dd>
+            <dd className="font-medium font-mono tabular-nums">{user.telegramId}</dd>
           </div>
           {user.nickname && (
             <div className="flex items-center justify-between gap-3">
@@ -99,7 +99,7 @@ function PendingCard({ user, now }: { user: DbUser; now: number }) {
               </dt>
               <dd className="truncate font-medium">
                 {user.nickname}
-                {user.staticId ? ` · ${user.staticId}` : ""}
+                {user.staticId ? <span className="font-mono"> · {user.staticId}</span> : ""}
               </dd>
             </div>
           )}

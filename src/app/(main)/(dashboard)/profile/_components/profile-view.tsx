@@ -61,7 +61,7 @@ export function ProfileView({
 }) {
   const person = { id: user.telegramId, name: user.name, nickname: user.nickname, staticId: user.staticId, group };
   const stats = [
-    { icon: Fingerprint, label: "Telegram ID", value: user.telegramId },
+    { icon: Fingerprint, label: "Telegram ID", value: user.telegramId, mono: true },
     { icon: CalendarClock, label: "Первый вход", value: profileDateFormat.format(user.createdAt) },
     { icon: LogIn, label: "Входов всего", value: String(user.loginCount) },
   ];

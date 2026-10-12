@@ -34,8 +34,8 @@ export function ClosedTable({ requests }: { requests: PunishmentRequest[] }) {
             <TableBody>
               {requests.map((request) => (
                 <TableRow key={request.id}>
-                  <TableCell className="pl-4 text-muted-foreground tabular-nums">{request.number}</TableCell>
-                  <TableCell className="font-medium tabular-nums">{request.staticId}</TableCell>
+                  <TableCell className="pl-4 text-muted-foreground font-mono tabular-nums">{request.number}</TableCell>
+                  <TableCell className="font-medium font-mono tabular-nums">{request.staticId}</TableCell>
                   <TableCell className="whitespace-nowrap">{kindText(request)}</TableCell>
                   <TableCell className="whitespace-nowrap">{durationLabel(request)}</TableCell>
                   <TableCell>

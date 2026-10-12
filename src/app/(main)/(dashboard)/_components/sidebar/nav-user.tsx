@@ -21,7 +21,7 @@ import {
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import type { AdminGroup } from "@/lib/auth/groups";
 import { personLabel } from "@/lib/auth/person";
-import { getInitials } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 
 export type SidebarUser = {
   readonly id: string;
@@ -98,7 +98,7 @@ export function NavUser({
 
               <div className="relative z-10 grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.nickname}</span>
-                <span className="truncate text-muted-foreground text-xs">
+                <span className={cn("truncate text-muted-foreground text-xs", user.staticId && "font-mono")}>
                   {user.staticId ? `#${user.staticId}` : "Static ID не указан"}
                 </span>
               </div>
@@ -128,7 +128,13 @@ export function NavUser({
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.nickname}</span>
                   <span className="truncate text-muted-foreground text-xs">
-                    {user.staticId ? `Static ID: #${user.staticId}` : "Static ID не указан"}
+                    {user.staticId ? (
+                      <>
+                        Static ID: <span className="font-mono">#{user.staticId}</span>
+                      </>
+                    ) : (
+                      "Static ID не указан"
+                    )}
                   </span>
                 </div>
                 {user.group && (

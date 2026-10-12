@@ -71,11 +71,11 @@ export function QueueList({ items, now }: { items: QueueItem[]; now: number }) {
             <TableBody>
               {items.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell className="pl-4 text-muted-foreground tabular-nums">{item.number}</TableCell>
+                  <TableCell className="pl-4 text-muted-foreground font-mono tabular-nums">{item.number}</TableCell>
                   <TableCell className="max-w-56">
                     <PersonName person={item.requester} avatar />
                   </TableCell>
-                  <TableCell className="font-medium tabular-nums">{item.staticId}</TableCell>
+                  <TableCell className="font-medium font-mono tabular-nums">{item.staticId}</TableCell>
                   <TableCell className="whitespace-nowrap">{kindText(item)}</TableCell>
                   <TableCell className="whitespace-nowrap">{durationLabel(item)}</TableCell>
                   <TableCell>

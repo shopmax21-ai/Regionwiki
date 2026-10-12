@@ -36,8 +36,8 @@ export function MyRequests({ requests }: { requests: PunishmentRequest[] }) {
             <TableBody>
               {requests.map((request) => (
                 <TableRow key={request.id}>
-                  <TableCell className="pl-4 text-muted-foreground tabular-nums">{request.number}</TableCell>
-                  <TableCell className="font-medium tabular-nums">
+                  <TableCell className="pl-4 text-muted-foreground font-mono tabular-nums">{request.number}</TableCell>
+                  <TableCell className="font-medium font-mono tabular-nums">
                     {request.staticId}
                     {request.evidence.length > 0 && (
                       <span className="ml-1.5 inline-flex items-center gap-0.5 font-normal text-muted-foreground text-xs">

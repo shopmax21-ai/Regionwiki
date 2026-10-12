@@ -62,7 +62,7 @@ export const PREFERENCE_REGISTRY = {
 
   font: definePreference({
     values: fontKeys,
-    defaultValue: "roboto",
+    defaultValue: "onest",
     persistence: "client-cookie",
     attribute: "data-font",
   }),

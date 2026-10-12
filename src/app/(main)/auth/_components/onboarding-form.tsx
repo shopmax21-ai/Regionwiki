@@ -58,6 +58,7 @@ export function OnboardingForm({ askGroup }: { askGroup: boolean }) {
           inputMode="numeric"
           placeholder="Static ID (5443)"
           aria-label="Static ID"
+          className="font-mono"
           autoComplete="off"
           disabled={pending}
           onChange={(event) => {

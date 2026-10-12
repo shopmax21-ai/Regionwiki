@@ -128,6 +128,7 @@ export function IdentityCard({ person, mode }: IdentityCardProps) {
             <Label htmlFor="profile-static">Static ID</Label>
             <Input
               id="profile-static"
+              className="font-mono"
               inputMode="numeric"
               value={staticId}
               disabled={pending || locked}

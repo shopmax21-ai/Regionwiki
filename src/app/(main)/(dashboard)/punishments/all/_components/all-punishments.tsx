@@ -150,7 +150,7 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
                   {formatFull(event.at)}
                 </TableCell>
                 <TableCell className="font-medium">{EVENT_LABELS[event.type]}</TableCell>
-                <TableCell className="whitespace-nowrap tabular-nums">
+                <TableCell className="whitespace-nowrap font-mono tabular-nums">
                   №{event.number} · {event.staticId}
                 </TableCell>
                 <TableCell className="max-w-56">
@@ -188,8 +188,8 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
           <TableBody>
             {rows.map((request) => (
               <TableRow key={request.id} className="cursor-pointer" onClick={() => setOpenId(request.id)}>
-                <TableCell className="pl-4 text-muted-foreground tabular-nums">{request.number}</TableCell>
-                <TableCell className="font-medium tabular-nums">
+                <TableCell className="pl-4 text-muted-foreground font-mono tabular-nums">{request.number}</TableCell>
+                <TableCell className="font-medium font-mono tabular-nums">
                   {request.staticId}
                   {request.evidence.length > 0 && (
                     <Paperclip

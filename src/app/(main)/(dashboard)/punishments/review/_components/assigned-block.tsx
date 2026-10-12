@@ -147,7 +147,7 @@ export function AssignedBlock({ request, now }: { request: PunishmentRequest; no
       <CardHeader className="gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
-            Заявка №{request.number}
+            Заявка <span className="font-mono">№{request.number}</span>
             <AdminStatusBadge status={request.status} />
           </CardTitle>
           <span className="flex items-center gap-1 text-muted-foreground text-xs">
@@ -157,7 +157,7 @@ export function AssignedBlock({ request, now }: { request: PunishmentRequest; no
         <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="flex flex-col gap-0.5">
             <dt className="text-muted-foreground text-xs">Статик</dt>
-            <dd className="font-medium tabular-nums">{request.staticId}</dd>
+            <dd className="font-medium font-mono tabular-nums">{request.staticId}</dd>
           </div>
           <div className="flex flex-col gap-0.5">
             <dt className="text-muted-foreground text-xs">Наказание</dt>
