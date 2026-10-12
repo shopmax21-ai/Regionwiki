@@ -285,15 +285,27 @@ type FormatToolbarProps = {
    * (текст рядом с картинкой); в самих списках и заметках они ни к чему.
    */
   blockTools?: boolean;
+  /** Только кнопки «Маршрут по меню» и «Клавиша»: они работают в любом тексте, включая шаги и заметки */
+  insertTools?: boolean;
 };
 
 /** Панель кнопок форматирования. Нажатие не забирает фокус у поля, поэтому выделение остаётся на месте. */
-export function FormatToolbar({ getTextarea, onChange, perLine, className, blockTools }: FormatToolbarProps) {
+export function FormatToolbar({
+  getTextarea,
+  onChange,
+  perLine,
+  className,
+  blockTools,
+  insertTools,
+}: FormatToolbarProps) {
   return (
     <div
       role="toolbar"
       aria-label="Форматирование текста"
-      className={cn("flex w-fit max-w-full items-center gap-0.5 overflow-x-auto rounded-md border bg-background p-0.5 shadow-xs", className)}
+      className={cn(
+        "flex w-fit max-w-full items-center gap-0.5 overflow-x-auto rounded-md border bg-background p-0.5 shadow-xs",
+        className,
+      )}
     >
       {FORMATS.map(({ id, delimiter, label, key, icon: Icon }) => (
         <Button
@@ -312,37 +324,41 @@ export function FormatToolbar({ getTextarea, onChange, perLine, className, block
           <Icon />
         </Button>
       ))}
-      {blockTools && (
+      {(blockTools || insertTools) && (
         <>
           <span aria-hidden="true" className="mx-0.5 h-4 w-px bg-border" />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            title="Нумерованный список: каждая строка станет шагом 1, 2, 3…"
-            aria-label="Нумерованный список"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => {
-              const element = getTextarea();
-              if (element) toggleListLines(element, "ordered", onChange);
-            }}
-          >
-            <ListOrdered />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            title="Маркированный список"
-            aria-label="Маркированный список"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => {
-              const element = getTextarea();
-              if (element) toggleListLines(element, "bullet", onChange);
-            }}
-          >
-            <List />
-          </Button>
+          {blockTools && (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                title="Нумерованный список: каждая строка станет шагом 1, 2, 3…"
+                aria-label="Нумерованный список"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  const element = getTextarea();
+                  if (element) toggleListLines(element, "ordered", onChange);
+                }}
+              >
+                <ListOrdered />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                title="Маркированный список"
+                aria-label="Маркированный список"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  const element = getTextarea();
+                  if (element) toggleListLines(element, "bullet", onChange);
+                }}
+              >
+                <List />
+              </Button>
+            </>
+          )}
           <Button
             type="button"
             variant="ghost"

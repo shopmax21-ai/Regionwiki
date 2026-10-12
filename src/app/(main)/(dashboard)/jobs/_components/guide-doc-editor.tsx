@@ -12,6 +12,7 @@ import {
   ImagePlus,
   Images,
   Info,
+  Keyboard,
   Lightbulb,
   List,
   ListOrdered,
@@ -19,6 +20,7 @@ import {
   MapPinned,
   PanelRight,
   Plus,
+  Route,
   Trash2,
   TriangleAlert,
   Type,
@@ -44,7 +46,9 @@ import { AddBlockMenu, type BlockActions, ImageBody, SideToggle, SliderBody } fr
 /* Меню «/»                                                             */
 /* ------------------------------------------------------------------ */
 
-type SlashItem = { kind: BlockKind; label: string; hint: string; icon: LucideIcon; keywords: string };
+/** Пункты меню «/»: вид блока или готовая вставка в текст (маршрут, клавиша) */
+type SlashKind = BlockKind | "route" | "key";
+type SlashItem = { kind: SlashKind; label: string; hint: string; icon: LucideIcon; keywords: string };
 
 const SLASH_ITEMS: readonly SlashItem[] = [
   { kind: "text", label: "Текст", hint: "Обычный абзац", icon: Type, keywords: "text абзац параграф" },
@@ -70,6 +74,14 @@ const SLASH_ITEMS: readonly SlashItem[] = [
     keywords: "",
   },
   { kind: "map", label: "Карта", hint: "Места на карте штата", icon: MapPinned, keywords: "map места" },
+  {
+    kind: "route",
+    label: "Маршрут по меню",
+    hint: "Телефон > Whoosh > Арендовать",
+    icon: Route,
+    keywords: "route маршрут путь меню стрелка",
+  },
+  { kind: "key", label: "Клавиша", hint: "F10 или Ctrl+C", icon: Keyboard, keywords: "key клавиша кнопка сочетание" },
 ];
 
 const matches = (item: SlashItem, query: string) =>
@@ -249,7 +261,7 @@ export function DocField({
             }, 400);
           }}
         >
-          <FormatToolbar getTextarea={() => area.current} onChange={onChange} blockTools={blocks} />
+          <FormatToolbar getTextarea={() => area.current} onChange={onChange} blockTools={blocks} insertTools />
         </div>
       )}
       <textarea
@@ -376,6 +388,18 @@ function TextBlock({ block, ctx }: { block: Extract<EditorBlock, { type: "text" 
   const current = Math.min(active, Math.max(items.length - 1, 0));
 
   const pick = (item: SlashItem) => {
+    if (item.kind === "route" || item.kind === "key") {
+      // Вставка в текст: пример выделяется, чтобы его сразу можно было переписать
+      const example = item.kind === "route" ? "Телефон > Приложение" : "F10";
+      const [open, close] = item.kind === "route" ? ["[[", "]]"] : ["{{", "}}"];
+      ctx.actions.update(block.id, { text: `${open}${example}${close}` });
+      requestAnimationFrame(() => {
+        const area = document.querySelector<HTMLTextAreaElement>(`[data-block-id="${block.id}"] textarea`);
+        area?.focus();
+        area?.setSelectionRange(2, 2 + example.length);
+      });
+      return;
+    }
     ctx.actions.replace(block.id, item.kind);
     requestAnimationFrame(() => focusField(block.id));
   };
