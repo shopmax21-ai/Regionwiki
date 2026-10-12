@@ -254,13 +254,19 @@ export function ItemEditor({ item, defaultCategory, onClose }: ItemEditorProps) 
           </p>
         )}
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={saving}>
-            Отмена
-          </Button>
-          <Button onClick={save} disabled={saving}>
-            {saving ? "Сохраняем..." : "Сохранить"}
-          </Button>
+        <DialogFooter className="items-center sm:justify-between">
+          <span className="hidden text-muted-foreground text-xs sm:inline">
+            <kbd className="rounded border bg-background px-1 font-sans">Ctrl</kbd>+
+            <kbd className="rounded border bg-background px-1 font-sans">Enter</kbd> — сохранить
+          </span>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            <Button variant="outline" onClick={onClose} disabled={saving}>
+              Отмена
+            </Button>
+            <Button onClick={save} disabled={saving}>
+              {saving ? "Сохраняем..." : "Сохранить"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

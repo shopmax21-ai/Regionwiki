@@ -159,13 +159,19 @@ export function ReplyEditor(props: ReplyEditorProps) {
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={pending}>
-            Отмена
-          </Button>
-          <Button onClick={save} disabled={pending}>
-            {pending ? "Сохранение..." : "Сохранить"}
-          </Button>
+        <DialogFooter className="items-center sm:justify-between">
+          <span className="hidden text-muted-foreground text-xs sm:inline">
+            <kbd className="rounded border bg-background px-1 font-sans">Ctrl</kbd>+
+            <kbd className="rounded border bg-background px-1 font-sans">Enter</kbd> — сохранить
+          </span>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={pending}>
+              Отмена
+            </Button>
+            <Button onClick={save} disabled={pending}>
+              {pending ? "Сохранение..." : "Сохранить"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

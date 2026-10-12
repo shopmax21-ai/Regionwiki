@@ -260,11 +260,17 @@ export function CatalogAddDialog({
             </FieldSet>
           ))}
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-              Отмена
-            </Button>
-            <Button type="submit">{addLabel}</Button>
+          <DialogFooter className="items-center sm:justify-between">
+            <span className="hidden text-muted-foreground text-xs sm:inline">
+              <kbd className="rounded border bg-background px-1 font-sans">Ctrl</kbd>+
+              <kbd className="rounded border bg-background px-1 font-sans">Enter</kbd> — сохранить
+            </span>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+                Отмена
+              </Button>
+              <Button type="submit">{addLabel}</Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

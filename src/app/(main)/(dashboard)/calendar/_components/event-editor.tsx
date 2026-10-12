@@ -389,13 +389,19 @@ function EditorBody({
         </p>
       )}
 
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onClose} disabled={pending}>
-          Отмена
-        </Button>
-        <Button type="button" onClick={submit} disabled={pending || !rangeValid}>
-          {submitLabel}
-        </Button>
+      <DialogFooter className="items-center sm:justify-between">
+        <span className="hidden text-muted-foreground text-xs sm:inline">
+          <kbd className="rounded border bg-background px-1 font-sans">Ctrl</kbd>+
+          <kbd className="rounded border bg-background px-1 font-sans">Enter</kbd> — сохранить
+        </span>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row">
+          <Button type="button" variant="outline" onClick={onClose} disabled={pending}>
+            Отмена
+          </Button>
+          <Button type="button" onClick={submit} disabled={pending || !rangeValid}>
+            {submitLabel}
+          </Button>
+        </div>
       </DialogFooter>
     </DialogContent>
   );
