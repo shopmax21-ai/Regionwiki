@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { cn } from "cn";
 import { Copy, EllipsisVertical, LogIn, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,7 +22,7 @@ import {
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import type { AdminGroup } from "@/lib/auth/groups";
 import { personLabel } from "@/lib/auth/person";
-import { cn, getInitials } from "@/lib/utils";
+import { getInitials } from "@/lib/utils";
 
 export type SidebarUser = {
   readonly id: string;
