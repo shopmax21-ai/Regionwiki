@@ -311,7 +311,7 @@ export function WikiPage({
         <div className="relative px-6 py-10 md:px-12 md:py-14">
           <div className="max-w-2xl">
             <h1 className="wk-rise mt-5 text-balance font-extrabold text-4xl leading-[1.05] tracking-tight [animation-delay:60ms] md:text-6xl">
-              Всё о жизни на <span className="wk-accent italic">Region</span>
+              Всё о жизни на <span className="wk-accent">Region</span>
             </h1>
             <p className="wk-rise mt-5 max-w-xl text-base text-muted-foreground leading-7 [animation-delay:120ms] md:text-lg">
               Здесь Вы можете найти любую информацию о проекте Region, его игровых системах
