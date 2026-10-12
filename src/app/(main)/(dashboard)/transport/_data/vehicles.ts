@@ -71,7 +71,7 @@ export const vehicles: Vehicle[] = [
     speed: 290,
     tunedSpeed: 325,
     price: 17000000,
-    sources: ["Majestic Премиум"],
+    sources: [],
     fuel: "АИ-98",
     trunkKg: 100,
     transferable: true,
@@ -88,7 +88,7 @@ export const vehicles: Vehicle[] = [
     speed: 300,
     tunedSpeed: 335,
     price: 20000000,
-    sources: ["Majestic Премиум"],
+    sources: [],
     fuel: "АИ-98",
     trunkKg: 70,
     transferable: true,
@@ -344,3 +344,14 @@ export const getScrapPrice = (vehicle: Vehicle) => vehicle.scrapPrice ?? Math.ro
 
 export const formatTrunk = (vehicle: Vehicle) =>
   vehicle.loadTons ? `${vehicle.trunkKg} кг · ${vehicle.loadTons} т` : `${vehicle.trunkKg} кг`;
+
+/** Самые частые источники из каталога: подсказки под полем «Источники» */
+export const popularSources = (() => {
+  const counts = new Map<string, number>();
+  for (const vehicle of vehicles)
+    for (const source of vehicle.sources) counts.set(source, (counts.get(source) ?? 0) + 1);
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([source]) => source);
+})();

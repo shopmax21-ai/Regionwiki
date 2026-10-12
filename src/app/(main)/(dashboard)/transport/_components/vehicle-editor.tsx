@@ -25,7 +25,7 @@ import {
   type FuelType,
   formatPrice,
   fuelTypes,
-  vehicles as seedVehicles,
+  popularSources,
   type Vehicle,
   type VehicleCategory,
   vehicleCategories,
@@ -48,17 +48,6 @@ import {
 import { categoryIcons } from "./vehicle-image";
 import { VehicleImageDrop } from "./vehicle-image-drop";
 import { VehicleUpgradesEditor } from "./vehicle-upgrades-editor";
-
-/** Самые частые источники из каталога: подсказки под полем «Источники» */
-const popularSources = (() => {
-  const counts = new Map<string, number>();
-  for (const vehicle of seedVehicles)
-    for (const source of vehicle.sources) counts.set(source, (counts.get(source) ?? 0) + 1);
-  return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([source]) => source);
-})();
 
 const features = [
   { key: "transferable", label: "Можно передавать", icon: ArrowLeftRight },

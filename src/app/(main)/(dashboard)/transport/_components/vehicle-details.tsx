@@ -19,10 +19,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { formatPrice, formatTrunk, getScrapPrice, type Vehicle, vehicleTitle } from "../_data/vehicles";
+import {
+  formatPrice,
+  formatTrunk,
+  getScrapPrice,
+  popularSources,
+  type Vehicle,
+  vehicleTitle,
+} from "../_data/vehicles";
 import { VehicleDelete } from "./vehicle-delete";
 import { VehicleEditor } from "./vehicle-editor";
 import { VehicleImage } from "./vehicle-image";
+import { VehicleSourcesEditor } from "./vehicle-sources-editor";
 import { VehiclePaint } from "./vehicle-paint";
 import { VehicleTuning } from "./vehicle-tuning";
 
@@ -129,15 +137,21 @@ export function VehicleDetails({ vehicle, canEdit = false }: { vehicle: Vehicle;
       </section>
 
       <Section id="sources" title="Источники получения" description="Где можно получить данный транспорт">
-        <ul className="flex flex-wrap gap-2">
-          {vehicle.sources.map((source) => (
-            <li key={source}>
-              <Badge variant="secondary" className="h-7 px-3 text-sm">
-                {source}
-              </Badge>
-            </li>
-          ))}
-        </ul>
+        {canEdit ? (
+          <VehicleSourcesEditor vehicle={vehicle} suggestions={popularSources} />
+        ) : vehicle.sources.length > 0 ? (
+          <ul className="flex flex-wrap gap-2">
+            {vehicle.sources.map((source) => (
+              <li key={source}>
+                <Badge variant="secondary" className="h-7 px-3 text-sm">
+                  {source}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-muted-foreground text-sm">Источник не указан</p>
+        )}
       </Section>
 
       {vehicle.upgrades && vehicle.upgrades.length > 0 && (
