@@ -14,7 +14,7 @@ import { updateJobAction } from "../_actions";
 import type { GuideBlock, Job } from "../_data/jobs";
 import { DropOverlay } from "./drop-overlay";
 import { editorBlocksFromJob, toGuideBlocks } from "./editor-model";
-import { GuideCanvas } from "./guide-canvas";
+import { GuideDocEditor } from "./guide-doc-editor";
 import { GuideTemplatesDialog } from "./guide-templates-dialog";
 import { JobArticleView } from "./job-article-view";
 import { JobDelete } from "./job-delete";
@@ -24,7 +24,7 @@ type Props = { job: Job; jobs: Job[] };
 
 /**
  * Страница гайда для редакторов: обычный вид с кнопкой «Править здесь».
- * В режиме правки разделы гайда становятся редактором, а настройки (название, обложка, доступ) остаются как есть.
+ * В режиме правки разделы гайда становятся редактором-документом (как в GitBook), а настройки (название, обложка, доступ) остаются как есть.
  */
 export function JobArticleEditable({ job, jobs }: Props) {
   const [editing, setEditing] = useState(false);
@@ -176,7 +176,15 @@ function InlineEditing({
     <div onFocusCapture={trackFocus}>
       {dragging && <DropOverlay />}
 
-      <JobArticleView job={draft} jobs={draftJobs} guideSlot={<GuideCanvas blocks={blocks} actions={actions} />} />
+      <JobArticleView
+        job={draft}
+        jobs={draftJobs}
+        guideSlot={
+          <div className="rounded-xl border bg-card p-4 shadow-xs sm:p-6">
+            <GuideDocEditor inline blocks={blocks} actions={actions} />
+          </div>
+        }
+      />
 
       <div className="sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t bg-background/90 px-4 py-3 backdrop-blur md:-mx-6 md:px-6">
         <div className="min-w-0 text-sm" role="status">

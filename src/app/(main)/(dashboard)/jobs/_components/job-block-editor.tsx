@@ -52,6 +52,8 @@ export type BlockActions = {
   duplicate: (id: string) => void;
   /** Вставить новый блок после блока afterId (null — в начало) */
   insert: (kind: BlockKind, afterId: string | null) => void;
+  /** Превратить блок в пустой блок другого вида (меню «/»): id остаётся прежним, чтобы не терять фокус */
+  replace: (id: string, kind: BlockKind) => void;
   /** Открыть окно шаблонов: выбранное вставится после блока afterId (null — в начало) */
   openTemplates: (afterId: string | null) => void;
   /** Добавить картинки после блока targetId. Пустой блок с картинкой заполняется первым файлом, replace заменяет заполненный. */

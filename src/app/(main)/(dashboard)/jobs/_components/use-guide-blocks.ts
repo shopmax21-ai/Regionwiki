@@ -234,6 +234,10 @@ export function useGuideBlocks(initial: () => EditorBlock[], enabled: boolean) {
         return [...prev.slice(0, at), newBlock, ...prev.slice(at)];
       });
     },
+    replace: (id, kind) => {
+      focusedId.current = id;
+      setBlocks((prev) => prev.map((block) => (block.id === id ? { ...createBlock(kind), id } : block)));
+    },
     openTemplates: (afterId) => setTemplatesTarget({ afterId }),
     addFiles,
     addSliderFiles,
