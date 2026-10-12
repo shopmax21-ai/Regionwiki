@@ -241,7 +241,15 @@ export function TestEditor(props: TestEditorProps) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-h-[90dvh] gap-5 overflow-y-auto sm:max-w-3xl">
+      <DialogContent
+        className="max-h-[90dvh] gap-5 overflow-y-auto sm:max-w-3xl"
+        onKeyDown={(event) => {
+            if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+              event.preventDefault();
+              if (!pending) submit();
+            }
+          }}
+      >
         <DialogHeader>
           <DialogTitle>{editing ? "Изменить тест" : "Новый тест"}</DialogTitle>
           <DialogDescription>

@@ -168,7 +168,15 @@ export function CatalogAddDialog({
           {addLabel}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
+      <DialogContent
+        className="max-h-[90dvh] overflow-y-auto sm:max-w-xl"
+        onKeyDown={(event) => {
+          if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+            event.preventDefault();
+            event.currentTarget.querySelector("form")?.requestSubmit();
+          }
+        }}
+      >
         <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>

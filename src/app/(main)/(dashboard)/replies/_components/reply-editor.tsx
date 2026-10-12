@@ -91,7 +91,15 @@ export function ReplyEditor(props: ReplyEditorProps) {
         )}
       </DialogTrigger>
 
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent
+          className="max-h-[90vh] overflow-y-auto sm:max-w-xl"
+          onKeyDown={(event) => {
+            if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+              event.preventDefault();
+              if (!pending) save();
+            }
+          }}
+        >
         <DialogHeader>
           <DialogTitle>{editing ? "Изменение ответа" : "Новый быстрый ответ"}</DialogTitle>
           <DialogDescription>Изменения сразу увидят все, у кого есть доступ к разделу.</DialogDescription>

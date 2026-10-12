@@ -81,7 +81,15 @@ export function ChannelsManager({ channels, streams, onChanged }: Props) {
           Каналы
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent
+        className="sm:max-w-lg"
+        onKeyDown={(event) => {
+          if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+            event.preventDefault();
+            event.currentTarget.querySelector("form")?.requestSubmit();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Отслеживаемые каналы</DialogTitle>
           <DialogDescription>

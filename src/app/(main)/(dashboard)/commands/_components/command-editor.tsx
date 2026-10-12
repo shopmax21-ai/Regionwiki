@@ -92,7 +92,15 @@ export function CommandEditor(props: CommandEditorProps) {
         )}
       </DialogTrigger>
 
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent
+          className="max-h-[90vh] overflow-y-auto sm:max-w-xl"
+          onKeyDown={(event) => {
+            if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+              event.preventDefault();
+              if (!pending) save();
+            }
+          }}
+        >
         <DialogHeader>
           <DialogTitle>{editing ? "Изменение команды" : "Новая команда"}</DialogTitle>
           <DialogDescription>Изменения сразу увидят все администраторы.</DialogDescription>

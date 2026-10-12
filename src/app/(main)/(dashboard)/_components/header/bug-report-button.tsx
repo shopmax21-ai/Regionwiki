@@ -73,7 +73,15 @@ export function BugReportButton() {
       </Tooltip>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent
+          className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
+          onKeyDown={(event) => {
+            if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+              event.preventDefault();
+              if (!pending) send();
+            }
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Сообщить об ошибке</DialogTitle>
             <DialogDescription>Опишите, что пошло не так. Сообщение увидит только администрация.</DialogDescription>

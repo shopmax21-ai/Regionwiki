@@ -160,10 +160,10 @@ function InlineEditing({
     onClose();
   };
 
-  // Ctrl+S / Cmd+S сохраняют гайд, а не страницу
+  // Ctrl+S / Ctrl+Enter (и Cmd) сохраняют гайд, а не страницу
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+      if ((event.ctrlKey || event.metaKey) && (event.key.toLowerCase() === "s" || event.key === "Enter")) {
         event.preventDefault();
         if (!pending) save();
       }
