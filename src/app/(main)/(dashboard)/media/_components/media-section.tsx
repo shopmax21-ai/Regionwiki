@@ -103,25 +103,14 @@ export function MediaSection({ isAdmin, canManage, notifyEnabled }: MediaSection
   const offlineChannels = channels.filter((channel) => !liveKeys.has(channelKey(channel)));
 
   return (
-    <main className="relative isolate mx-auto flex w-full max-w-7xl flex-col gap-6 overflow-hidden pb-10">
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[520px] overflow-hidden" aria-hidden="true">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_8%,oklch(0.7_0.16_25/0.18),transparent_34%),radial-gradient(circle_at_82%_0%,oklch(0.7_0.12_245/0.16),transparent_38%),linear-gradient(to_bottom,oklch(0.16_0.04_260/0.42),transparent_82%)]" />
-        <div className="absolute inset-x-0 top-0 h-px bg-border/70" />
-      </div>
-
-      <header className="relative flex flex-col gap-6 overflow-hidden rounded-2xl border bg-card/60 px-5 py-7 shadow-sm backdrop-blur-sm md:px-8 md:py-9">
-        <div className="absolute right-[-4rem] top-[-5rem] size-48 rounded-full bg-primary/10 blur-3xl" aria-hidden="true" />
-        <div className="relative flex flex-col gap-3">
-          <Badge variant="outline" className="w-fit gap-1.5 bg-background/50 text-xs uppercase tracking-[0.16em]">
-            <span className="size-1.5 rounded-full bg-destructive" aria-hidden="true" />
-            Live media
-          </Badge>
-          <h1 className="font-semibold text-3xl tracking-tight md:text-5xl">Медиа</h1>
-          <p className="max-w-2xl text-muted-foreground text-sm leading-6">
-            Трансляции игроков REGION на Twitch и YouTube. Список обновляется сам — открывайте эфиры, следите за
-            активностью сообщества и находите новые каналы проекта.
-          </p>
-        </div>
+    <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-10">
+      <header className="flex flex-col items-center gap-3 py-4 text-center md:py-6">
+        <h1 className="font-semibold text-3xl tracking-tight md:text-5xl">Медиа</h1>
+        <p className="max-w-xl text-muted-foreground text-sm">
+          Трансляции игроков REGION на Twitch и YouTube. Список обновляется сам. На Twitch показываются только стримы
+          категории Grand Theft Auto V: каналы, которые добавила администрация, и стримы с названием проекта в
+          заголовке, имени канала или тегах.
+        </p>
       </header>
 
       {isAdmin && (
@@ -198,7 +187,7 @@ export function MediaSection({ isAdmin, canManage, notifyEnabled }: MediaSection
           title="Трансляции пока недоступны"
           description={
             isAdmin
-              ? "Задайте в переменных окружения сервера TWITCH_CLIENT_ID и TWITCH_CLIENT_SECRET (при��ожение создаётся на dev.twitch.tv/console) и/или YOUTUBE_API_KEY (ключ YouTube Data API v3 из Google Cloud Console)."
+              ? "Задайте в переменных окружения сервера TWITCH_CLIENT_ID и TWITCH_CLIENT_SECRET (приложение создаётся на dev.twitch.tv/console) и/или YOUTUBE_API_KEY (ключ YouTube Data API v3 из Google Cloud Console)."
               : "Раздел ещё настраивается. Загляните позже."
           }
         />
