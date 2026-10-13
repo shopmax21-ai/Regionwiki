@@ -107,9 +107,7 @@ export function MediaSection({ isAdmin, canManage, notifyEnabled }: MediaSection
       <header className="flex flex-col items-center gap-3 py-4 text-center md:py-6">
         <h1 className="font-semibold text-3xl tracking-tight md:text-5xl">Медиа</h1>
         <p className="max-w-xl text-muted-foreground text-sm">
-          Трансляции игроков REGION на Twitch и YouTube. Список обновляется сам. На Twitch показываются только стримы
-          категории Grand Theft Auto V: каналы, которые добавила администрация, и стримы с названием проекта в
-          заголовке, имени канала или тегах.
+          Трансляции игроков REGION на Twitch и YouTube.
         </p>
       </header>
 

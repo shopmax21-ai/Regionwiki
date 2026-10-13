@@ -94,7 +94,7 @@ export function ChannelsManager({ channels, streams, onChanged }: Props) {
           <DialogTitle>Отслеживаемые каналы</DialogTitle>
           <DialogDescription>
             Трансляции этих каналов на Twitch и YouTube показываются в разделе, даже если в заголовке нет названия
-            проекта. Для канала можно включить оповещение: бот напишет в Telegram, когда он начнёт эфир.
+            проекта.
           </DialogDescription>
         </DialogHeader>
 
