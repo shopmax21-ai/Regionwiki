@@ -396,7 +396,6 @@ export function WikiPage({
           <section className="flex flex-col gap-4">
             <div className="flex items-baseline justify-between gap-4">
               <h2 className="font-semibold text-xl tracking-tight">Разделы</h2>
-              <span className="text-muted-foreground text-sm">{sections.length} разделов</span>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {sections.map((section, index) => (
