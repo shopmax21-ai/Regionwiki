@@ -142,11 +142,6 @@ function buildSections(stats: WikiStats, rulesStatus?: RulesStatusLabel): Sectio
       icon: MonitorPlay,
       href: "/media",
     },
-    {
-      title: "Начало игры",
-      description: "Всё, что нужно знать перед первым входом на сервер",
-      icon: Sparkles,
-    },
   ];
 }
 
@@ -409,40 +404,6 @@ export function WikiPage({
               ))}
             </div>
           </section>
-
-          <div className="grid items-stretch gap-6">
-            <section className="flex min-w-0 flex-col gap-4 rounded-2xl border bg-card p-5 sm:p-6">
-              <div>
-                <h2 className="font-semibold text-lg tracking-tight">Недавно обновлённые правила</h2>
-                <p className="mt-1 text-muted-foreground text-sm">Свежие изменения, которые стоит перечитать</p>
-              </div>
-              <ul className="-mx-2 grid grid-cols-[minmax(0,1fr)] gap-1">
-                {recent.map((article) => (
-                  <li key={article.href} className="min-w-0">
-                    <Link
-                      href={article.href}
-                      prefetch={false}
-                      className="group flex min-w-0 items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/60"
-                    >
-                      {article.tag && (
-                        <span className="flex h-8 min-w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 px-2 font-bold text-primary text-xs">
-                          {article.tag}
-                        </span>
-                      )}
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate font-medium text-sm">{article.title}</span>
-                        <span className="mt-0.5 block truncate text-muted-foreground text-xs">
-                          {article.group} · {plural(article.ruleCount, ["пункт", "пункта", "пунктов"])}
-                        </span>
-                      </span>
-                      <span className="shrink-0 text-muted-foreground text-xs tabular-nums">{article.updatedAt}</span>
-                      <ArrowRight className="hidden size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-foreground sm:block" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          </div>
         </>
       )}
     </main>
