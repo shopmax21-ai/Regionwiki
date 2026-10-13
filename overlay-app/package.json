@@ -1,0 +1,26 @@
+{
+  "name": "region-overlay",
+  "productName": "REGION Overlay",
+  "version": "1.1.0",
+  "description": "Оверлей поверх игры: поиск по правилам, быстрые ответы, биндер",
+  "main": "main.js",
+  "author": "REGION",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "test": "node test/search.test.js",
+    "dist": "electron-builder --win portable nsis"
+  },
+  "build": {
+    "appId": "game.region.overlay",
+    "productName": "REGION Overlay",
+    "files": ["main.js", "preload.js", "preload-hud.js", "src/**/*", "data/**/*", "build/icon.png"],
+    "win": { "target": ["portable", "nsis"], "icon": "build/icon.png" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
+    "artifactName": "${productName}-${version}.${ext}"
+  },
+  "devDependencies": {
+    "electron": "^44.7.0",
+    "electron-builder": "^26.0.0"
+  }
+}

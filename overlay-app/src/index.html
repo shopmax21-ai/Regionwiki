@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'">
+  <title>REGION Overlay</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="rg" x1="0" y1="6.65" x2="30.7" y2="6.65" gradientUnits="userSpaceOnUse"><stop stop-color="#E63F3F"/><stop offset="1" stop-color="#AB2929"/></linearGradient>
+    <symbol id="r-mark" viewBox="0 0 43 42"><path d="M12.252 30.5459C13.1582 30.546 13.9836 31.0646 14.3721 31.8789L19.2012 42H10.3662C9.43069 41.9999 8.58456 41.4474 8.21289 40.5938L5.25879 33.8057C4.58842 32.2653 5.72408 30.5462 7.41211 30.5459H12.252ZM23.5176 0C28.6786 0 32.8302 1.44515 35.9707 4.33496C39.1311 7.20522 40.7109 10.8667 40.7109 15.3184C40.7109 16.9583 40.4713 18.5007 39.9912 19.9453C39.5313 21.3707 38.9709 22.5324 38.3105 23.4307C37.6505 24.3288 36.9905 25.1106 36.3301 25.7744C35.6902 26.4381 35.1398 26.9063 34.6797 27.1797L33.96 27.5898L42.2412 42H30.5635C29.4369 41.9998 28.4098 41.3584 27.9209 40.3496L23.2002 30.6064L16.918 18.5029H28.4326C29.1728 18.5029 29.5085 18.3499 30.2412 17.6592C30.7818 17.1494 30.9609 15.4236 30.9609 14.3184C30.9609 13.2132 30.0138 12.0773 29.458 11.6055C28.9022 11.1337 27.4473 10.9043 26.707 10.9043H13.6797L11.6523 6.38281C11.3709 5.75491 10.876 5.24535 10.2539 4.94531L0 0H23.5176Z" fill="#fff"/><path d="M30.7194 13.3C30.4094 12.2523 29.9575 6.43445 24.9342 2.91666C21.9595 0.833447 18.01 -7.79511e-08 14.778 0C6.08842 2.09583e-07 0 0 0 0L6.60024 3.20833C7.49601 3.64038 10.4496 5.43981 11.7338 7.29167C13.0179 9.14352 13.6405 10.9043 13.6405 10.9043H26.7068C27.447 10.9043 28.9021 11.1335 29.458 11.6053C29.8167 11.9099 30.3944 12.6286 30.7194 13.3Z" fill="url(#rg)"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-shrink" viewBox="0 0 24 24"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" x2="21" y1="10" y2="3"/><line x1="3" x2="10" y1="21" y2="14"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M13 8H7"/><path d="M17 12H7"/></symbol>
+    <symbol id="i-keys" viewBox="0 0 24 24"><path d="M10 8h.01"/><path d="M12 12h.01"/><path d="M14 8h.01"/><path d="M16 12h.01"/><path d="M18 8h.01"/><path d="M6 8h.01"/><path d="M7 16h10"/><path d="M8 12h.01"/><rect width="20" height="16" x="2" y="4" rx="2"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  </defs>
+</svg>
+  <div class="compact-bar" id="compact">
+    <svg class="logo big" viewBox="0 0 43 42" aria-hidden="true"><use href="#r-mark"/></svg>
+    <input id="c-q" type="search" placeholder="Номер, слова из правила, ответ или бинд…" autocomplete="off" spellcheck="false">
+    <div class="pills" role="group" aria-label="Где искать">
+      <button data-scope="all" class="active">Всё</button>
+      <button data-scope="rules">Правила</button>
+      <button data-scope="replies">Ответы</button>
+    </div>
+    <span class="vsep"></span>
+    <button class="icon" id="c-history" title="Недавние запросы"><svg class="ico"><use href="#i-history"/></svg></button>
+    <button class="icon" id="c-expand" title="Развернуть (Ctrl+M)"><svg class="ico"><use href="#i-expand"/></svg></button>
+  </div>
+  <div class="list c-list" id="c-list"></div>
+
+  <header class="top" id="top">
+    <button class="brand-btn" id="home-btn" title="На главную"><svg class="logo" viewBox="0 0 43 42" aria-hidden="true"><use href="#r-mark"/></svg></button>
+    <div class="nav-arrows">
+      <button class="icon nav-back" id="back" title="Назад (Esc)" hidden><svg class="ico"><use href="#i-left"/></svg></button>
+    </div>
+    <input id="all-q" class="big-search" type="search" placeholder="Поиск по всему…" autocomplete="off" spellcheck="false">
+    <div class="pills" role="group" aria-label="Где искать">
+      <button data-scope="all" class="active">Всё</button>
+      <button data-scope="rules">Правила</button>
+      <button data-scope="replies">Ответы</button>
+    </div>
+    <span class="vsep"></span>
+    <div class="top-actions">
+      <button class="icon" id="nav-binder" data-tab="binder" title="Биндер (Ctrl+4)"><svg class="ico"><use href="#i-keys"/></svg></button>
+      <button class="icon" id="history" title="Недавние запросы"><svg class="ico"><use href="#i-history"/></svg></button>
+      <button class="icon" id="refresh" title="Обновить данные с сайта"><svg class="ico"><use href="#i-refresh"/></svg></button>
+      <button class="icon" id="nav-settings" data-tab="settings" title="Настройки (Ctrl+5)"><svg class="ico"><use href="#i-sliders"/></svg></button>
+      <button class="icon" id="collapse" title="Свернуть в строку поиска (Ctrl+M)"><svg class="ico"><use href="#i-shrink"/></svg></button>
+      <button class="icon" id="pin" title="Поверх всех окон" aria-pressed="true"><svg class="ico"><use href="#i-pin"/></svg></button>
+      <button class="icon" id="close" title="Скрыть (Esc)"><svg class="ico"><use href="#i-x"/></svg></button>
+    </div>
+  </header>
+
+  <main>
+    <section id="tab-all" class="panel active">
+      <div class="home" id="home"></div>
+      <div class="list" id="all-list"></div>
+    </section>
+
+    <section id="tab-rules" class="panel">
+      <div class="search" hidden>
+        <input id="rules-q" type="search" placeholder="Номер (ОП 1.19) или слова: ограбление, баг…" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="chips" id="rules-filter"></div>
+      <div class="list" id="rules-list"></div>
+    </section>
+
+    <section id="tab-replies" class="panel">
+      <div class="search" hidden>
+        <input id="replies-q" type="search" placeholder="Поиск по быстрым ответам" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="chips" id="replies-filter"></div>
+      <div class="list" id="replies-list"></div>
+    </section>
+
+    <section id="tab-binder" class="panel">
+      <div class="bar">
+        <span class="hint" id="binder-hint">Бинд отправляет строки в чат игры по горячей клавише.</span>
+        <button class="btn" id="bind-add">+ Бинд</button>
+      </div>
+      <div class="list" id="binder-list"></div>
+      <form id="bind-form" class="form" hidden>
+        <label>Название<input name="title" maxlength="60" required></label>
+        <label class="check"><input name="hint" type="checkbox" checked> Показывать в подсказках на экране игры</label>
+        <label>Горячая клавиша
+          <input name="hotkey" id="bind-hotkey" readonly placeholder="Нажмите сочетание…">
+        </label>
+        <label>Текст (каждая строка — отдельное сообщение)
+          <textarea name="text" rows="6" required></textarea>
+        </label>
+        <div class="row">
+          <label>Клавиша чата<input name="openKey" maxlength="8" placeholder="по умолчанию"></label>
+          <label>Пауза, мс<input name="delay" type="number" min="200" max="10000" step="50" placeholder="по умолчанию"></label>
+        </div>
+        <div class="row end">
+          <button type="button" class="btn ghost" id="bind-cancel">Отмена</button>
+          <button type="button" class="btn danger" id="bind-delete">Удалить</button>
+          <button type="submit" class="btn">Сохранить</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="tab-settings" class="panel">
+      <div class="form">
+        <label>Адрес сайта<input id="set-url" placeholder="region-wiki.up.railway.app" spellcheck="false"></label>
+        <label>Токен оверлея (для быстрых ответов)<input id="set-token" type="password" placeholder="OVERLAY_TOKEN с сервера" spellcheck="false"></label>
+        <label>Показать / скрыть оверлей<input id="set-hotkey" readonly></label>
+        <label>Прозрачность окна <span id="opacity-val"></span><input id="set-opacity" type="range" min="40" max="100" step="2"></label>
+        <label class="check"><input id="set-top" type="checkbox"> Держать поверх игры</label>
+        <div class="group-title">Подсказки биндера на экране игры</div>
+        <label class="check"><input id="set-hud" type="checkbox"> Показывать список биндов поверх игры</label>
+        <div class="row">
+          <label>Угол экрана
+            <select id="set-hud-corner">
+              <option value="top-left">Слева сверху</option>
+              <option value="top-right">Справа сверху</option>
+              <option value="bottom-left">Слева снизу</option>
+              <option value="bottom-right">Справа снизу</option>
+            </select>
+          </label>
+          <label>Показать / скрыть<input id="set-hud-hotkey" readonly></label>
+        </div>
+        <div class="row">
+          <label>Размер <span id="hud-scale-val"></span><input id="set-hud-scale" type="range" min="70" max="200" step="10"></label>
+          <label>Непрозрачность <span id="hud-op-val"></span><input id="set-hud-op" type="range" min="20" max="100" step="5"></label>
+        </div>
+        <div class="group-title">Общее</div>
+        <label class="check"><input id="set-hide" type="checkbox"> Скрывать окно после копирования</label>
+        <label class="check"><input id="set-paste" type="checkbox"> Вставлять в игру сразу после копирования (Ctrl+V, Windows)</label>
+        <div class="row">
+          <label>Клавиша открытия чата<input id="set-chat" maxlength="8" placeholder="например T или F6"></label>
+          <label>Пауза между строками, мс<input id="set-delay" type="number" min="200" max="10000" step="50"></label>
+        </div>
+        <div class="row end">
+          <button class="btn ghost" id="export-binds">Копировать бинды</button>
+          <button class="btn ghost" id="import-binds">Импорт из буфера</button>
+          <button class="btn danger" id="quit">Закрыть программу</button>
+        </div>
+        <p class="hint" id="settings-msg"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot" id="foot"><span class="status" id="status"></span><span class="keys">Enter — копировать · Shift+Enter — с текстом · Ctrl+M — свернуть</span></footer>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="search.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

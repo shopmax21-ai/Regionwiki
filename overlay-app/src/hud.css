@@ -1,0 +1,8 @@
+html, body { margin: 0; background: transparent; overflow: hidden; user-select: none; font-family: "Segoe UI", system-ui, sans-serif; }
+.box { display: inline-flex; flex-direction: column; gap: 3px; padding: 6px 8px; background: rgba(20, 20, 20, var(--bg, .85)); border: 1px solid rgba(255, 255, 255, .12); border-left: 2px solid #cf3030; border-radius: 6px; color: #eee; font-size: calc(12px * var(--scale, 1)); white-space: nowrap; }
+.box.right { float: right; border-left-width: 1px; border-right: 2px solid #cf3030; }
+.row { display: flex; align-items: center; gap: 8px; padding: 1px 2px; border-radius: 4px; transition: background .2s; }
+.row.fire { background: rgba(207, 48, 48, .55); }
+.key { font-family: "JetBrains Mono", Consolas, monospace; font-size: .88em; background: rgba(255, 255, 255, .1); border-radius: 3px; padding: 0 5px; min-width: 56px; text-align: center; }
+.title { overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+.n { color: #9a9a9a; font-size: .85em; margin-left: auto; padding-left: 8px; }

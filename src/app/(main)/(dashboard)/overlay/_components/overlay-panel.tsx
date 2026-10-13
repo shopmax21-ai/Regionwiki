@@ -52,66 +52,92 @@ async function copy(text: string, label: string) {
   }
 }
 
-/* ───────────── Макет окна оверлея: показывает, что человек получит в игре ───────────── */
+/* ───────────── Макет окна оверлея: повторяет главную программы ───────────── */
+
+const R_PATH =
+  "M12.252 30.5459C13.1582 30.546 13.9836 31.0646 14.3721 31.8789L19.2012 42H10.3662C9.43069 41.9999 8.58456 41.4474 8.21289 40.5938L5.25879 33.8057C4.58842 32.2653 5.72408 30.5462 7.41211 30.5459H12.252ZM23.5176 0C28.6786 0 32.8302 1.44515 35.9707 4.33496C39.1311 7.20522 40.7109 10.8667 40.7109 15.3184C40.7109 16.9583 40.4713 18.5007 39.9912 19.9453C39.5313 21.3707 38.9709 22.5324 38.3105 23.4307C37.6505 24.3288 36.9905 25.1106 36.3301 25.7744C35.6902 26.4381 35.1398 26.9063 34.6797 27.1797L33.96 27.5898L42.2412 42H30.5635C29.4369 41.9998 28.4098 41.3584 27.9209 40.3496L23.2002 30.6064L16.918 18.5029H28.4326C29.1728 18.5029 29.5085 18.3499 30.2412 17.6592C30.7818 17.1494 30.9609 15.4236 30.9609 14.3184C30.9609 13.2132 30.0138 12.0773 29.458 11.6055C28.9022 11.1337 27.4473 10.9043 26.707 10.9043H13.6797L11.6523 6.38281C11.3709 5.75491 10.876 5.24535 10.2539 4.94531L0 0H23.5176Z";
+const R_ACCENT_PATH =
+  "M30.7194 13.3C30.4094 12.2523 29.9575 6.43445 24.9342 2.91666C21.9595 0.833447 18.01 -7.79511e-08 14.778 0C6.08842 2.09583e-07 0 0 0 0L6.60024 3.20833C7.49601 3.64038 10.4496 5.43981 11.7338 7.29167C13.0179 9.14352 13.6405 10.9043 13.6405 10.9043H26.7068C27.447 10.9043 28.9021 11.1335 29.458 11.6053C29.8167 11.9099 30.3944 12.6286 30.7194 13.3Z";
+
+function MiniMark() {
+  return (
+    <svg viewBox="0 0 43 42" fill="none" aria-hidden className="h-6 w-auto shrink-0 overflow-visible">
+      <path fill="#fff" d={R_PATH} />
+      <path fill="url(#ov-mock-grad)" d={R_ACCENT_PATH} />
+      <defs>
+        <linearGradient id="ov-mock-grad" x1="0" y1="6.65" x2="30.7194" y2="6.65" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#E63F3F" />
+          <stop offset="1" stopColor="#AB2929" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
 
 function OverlayMock() {
-  const tabs = ["Всё", "Правила", "Ответы", "Биндер"];
+  const nav = ["Правила", "Ответы", "Биндер"];
+  const cards: { title: string; chips: string[] }[] = [
+    { title: "Разделы правил", chips: ["ОП", "ОГ", "ПГ"] },
+    { title: "Быстрые ответы", chips: ["Приветствие", "Ожидание"] },
+  ];
   return (
     <div
       aria-hidden
-      className="relative w-full select-none overflow-hidden rounded-xl border border-white/10 bg-[#121214] text-[#e8e8ea] shadow-2xl shadow-black/40"
+      className="relative w-full select-none overflow-hidden rounded-xl border border-white/10 bg-[#131314] text-[#f0f0f2] shadow-2xl shadow-black/40"
     >
-      <div className="flex items-center gap-2 border-white/8 border-b px-3 py-2">
-        <span
-          className="grid size-5 place-items-center rounded font-bold text-[11px] text-white"
-          style={{ background: ACCENT }}
-        >
-          R
+      <div className="flex items-center gap-3 border-white/8 border-b bg-[#0f0f10] px-3.5 py-3">
+        <MiniMark />
+        <span className="min-w-0 flex-1 truncate text-[15px]">
+          огра<span className="ml-px inline-block h-4 w-px translate-y-0.5 bg-[#e63f3f]" />
         </span>
-        <div className="flex gap-0.5 text-[11px]">
-          {tabs.map((tab, i) => (
-            <span
-              key={tab}
-              className={`rounded px-2 py-1 ${i === 0 ? "bg-white/10 text-white" : "text-white/45"}`}
-            >
+        <span className="flex rounded-full border border-white/8 bg-[#1b1b1d] p-0.5 text-[10px]">
+          {["Всё", "Правила", "Ответы"].map((tab, i) => (
+            <span key={tab} className={`rounded-full px-2 py-0.5 ${i === 0 ? "bg-[#2b2b2e] text-white" : "text-white/45"}`}>
               {tab}
             </span>
           ))}
-        </div>
-        <span className="ml-auto font-mono text-[10px] text-white/35">Alt+R</span>
+        </span>
       </div>
 
-      <div className="px-3 pt-3">
-        <div className="flex items-center gap-2 rounded-md border border-white/12 bg-black/30 px-3 py-2 text-sm">
-          <Search className="size-3.5 text-white/40" />
-          <span>ограбить</span>
-          <span className="-ml-1 h-4 w-px bg-white/70" />
+      <div className="space-y-2 p-3">
+        <div className="grid grid-cols-3 gap-2">
+          {nav.map((item) => (
+            <div key={item} className="rounded-lg border border-white/8 bg-[#1b1b1d] px-2.5 py-2">
+              <div className="font-semibold text-[11px]">{item}</div>
+              <div className="mt-0.5 h-1 w-8 rounded-full bg-white/10" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {cards.map((card) => (
+            <div
+              key={card.title}
+              className="relative overflow-hidden rounded-xl border border-white/8 bg-[#1b1b1d] p-3"
+            >
+              <div
+                className="pointer-events-none absolute -right-8 -bottom-10 size-24 rounded-full"
+                style={{ background: "radial-gradient(closest-side, rgba(230,63,63,.28), transparent)" }}
+              />
+              <div className="relative font-extrabold text-[13px]">{card.title}</div>
+              <div className="relative mt-2.5 flex flex-wrap gap-1.5">
+                {card.chips.map((chip) => (
+                  <span
+                    key={chip}
+                    className="rounded-md border border-white/8 bg-[#242427] px-2 py-1 font-semibold text-[10px]"
+                  >
+                    {chip}
+                  </span>
+                ))}
+              </div>
+              <div className="h-5" />
+            </div>
+          ))}
         </div>
       </div>
 
-      <ul className="space-y-1 p-3 text-[13px]">
-        <li className="flex items-center gap-3 rounded-md bg-white/[0.07] px-3 py-2 ring-1 ring-white/10">
-          <span className="font-mono text-xs" style={{ color: ACCENT }}>
-            ОП 1.19
-          </span>
-          <span className="min-w-0 flex-1 truncate text-white/80">Ограбления и похищения</span>
-          <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-white/55">Правило</span>
-        </li>
-        <li className="flex items-center gap-3 rounded-md px-3 py-2">
-          <span className="font-mono text-white/45 text-xs">Ответ</span>
-          <span className="min-w-0 flex-1 truncate text-white/70">Жалоба передана, ожидайте решения</span>
-          <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-white/55">Копировать</span>
-        </li>
-        <li className="flex items-center gap-3 rounded-md px-3 py-2">
-          <span className="font-mono text-white/45 text-xs">Бинд</span>
-          <span className="min-w-0 flex-1 truncate text-white/70">Приветствие ×2</span>
-          <span className="font-mono text-[10px] text-white/45">Ctrl+Alt+1</span>
-        </li>
-      </ul>
-
-      <div className="flex items-center justify-between border-white/8 border-t px-3 py-1.5 font-mono text-[10px] text-white/35">
+      <div className="flex items-center justify-between border-white/8 border-t bg-[#0f0f10] px-3.5 py-1.5 text-[10px] text-white/35">
         <span>Enter — копировать</span>
-        <span>Shift+Enter — с текстом</span>
+        <span>Ctrl+M — свернуть</span>
       </div>
     </div>
   );

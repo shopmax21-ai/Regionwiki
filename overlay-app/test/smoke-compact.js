@@ -1,0 +1,28 @@
+const { app, BrowserWindow } = require("electron");
+const fs = require("node:fs"), path = require("node:path"), os = require("node:os");
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "ovl-"));
+app.setPath("userData", tmp);
+fs.writeFileSync(path.join(tmp, "settings.json"), JSON.stringify({ serverUrl: "http://127.0.0.1:4599", token: "secret", compact: true, hud: false }));
+fs.writeFileSync(path.join(tmp, "binds.json"), "[]");
+require("../main.js");
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+process.on("unhandledRejection", (e) => { console.log("UNHANDLED", e); process.exit(1); });
+app.whenReady().then(async () => {
+  await wait(2500);
+  const win = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().endsWith("index.html"));
+  const js = (c) => win.webContents.executeJavaScript(c);
+  const h0 = win.getBounds();
+  fs.writeFileSync("/tmp/shot-c0.png", (await win.webContents.capturePage()).toPNG());
+  await js(`(()=>{const q=document.getElementById('c-q'); q.value='ограбление'; q.dispatchEvent(new Event('input'))})()`);
+  await wait(500);
+  const h1 = win.getBounds();
+  fs.writeFileSync("/tmp/shot-c1.png", (await win.webContents.capturePage()).toPNG());
+  await js(`(()=>{const q=document.getElementById('c-q'); q.value=''; q.dispatchEvent(new Event('input'))})()`);
+  await wait(400);
+  const h2 = win.getBounds();
+  await js(`document.getElementById('c-expand').click()`);
+  await wait(500);
+  const h3 = win.getBounds();
+  console.log("RESULT", JSON.stringify({ h0, h1: h1.height, h2: h2.height, expanded: h3 }));
+  process.exit(0);
+});

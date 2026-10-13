@@ -39,6 +39,7 @@
       "!.next",
       "!dist",
       "!out",
+      "!overlay-app",
       "!src/components/ui",
       "!src/components/calendar",
       "!**/*.svg"
