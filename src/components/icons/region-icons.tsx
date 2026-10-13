@@ -198,7 +198,10 @@ export const PunishmentListIcon = createIcon(
 export const RepliesIcon = createIcon(
   "RepliesIcon",
   <>
-    <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H11l-4 4v-4h-.5A2.5 2.5 0 0 1 4 13.5Z" {...tint} />
+    <path
+      d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H11l-4 4v-4h-.5A2.5 2.5 0 0 1 4 13.5Z"
+      {...tint}
+    />
     <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H11l-4 4v-4h-.5A2.5 2.5 0 0 1 4 13.5Z" />
     <path d="M10.5 7.5 8 10l2.5 2.5" />
     <path d="M8 10h5a2 2 0 0 1 2 2" />
@@ -212,6 +215,17 @@ export const CommandsIcon = createIcon(
     <rect x="2.5" y="4.5" width="19" height="15" rx="3" />
     <path d="m7 9.5 3 2.5-3 2.5" />
     <path d="M12.5 15H17" />
+  </>,
+);
+
+export const OverlayIcon = createIcon(
+  "OverlayIcon",
+  <>
+    <rect x="2.5" y="4" width="19" height="13" rx="3" {...tint} />
+    <rect x="2.5" y="4" width="19" height="13" rx="3" />
+    <rect x="12" y="8" width="7" height="6" rx="1.5" />
+    <path d="M8 20.5h8" />
+    <path d="M12 17v3.5" />
   </>,
 );
 
