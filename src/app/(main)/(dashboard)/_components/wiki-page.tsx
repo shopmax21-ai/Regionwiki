@@ -166,10 +166,10 @@ function SectionCard({ section, index }: { section: Section; index: number }) {
     <div
       style={{ animationDelay: `${index * 45}ms` }}
       className={cn(
-        "wk-rise group relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl border p-5 transition-all",
+        "wk-rise hv-reg group relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl border p-5 transition-all",
         soon
           ? "border-dashed bg-muted/30"
-          : "bg-card hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5",
+          : "bg-card hover:-translate-y-0.5",
       )}
     >
       <div className="flex items-start justify-between">

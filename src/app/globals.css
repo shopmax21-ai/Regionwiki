@@ -99,6 +99,8 @@
   --font-heading: var(--font-unbounded);
   --background: rgb(248, 248, 255);
   --foreground: oklch(0.145 0 0);
+
+  --color-background-hv: #242424;
 }
 
 .dark {
@@ -247,4 +249,8 @@ html:has([data-landing-page]) {
   --card: oklch(0.19 0 0);
   --border: oklch(1 0 0 / 9%);
   --input: oklch(1 0 0 / 12%);
+}
+
+.hv-reg:hover{
+  background-color: var(--color-text-hv);
 }
