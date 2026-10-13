@@ -475,7 +475,7 @@ export function VehicleEditor(props: VehicleEditorProps) {
             </p>
           )}
 
-          <DialogFooter className="sticky bottom-0 z-10 items-center sm:justify-between">
+          <DialogFooter className="sticky -bottom-4 z-10 items-center sm:justify-between">
             <span className="hidden text-muted-foreground text-xs sm:inline">
               <kbd className="rounded border bg-background px-1 font-sans">Ctrl</kbd>+
               <kbd className="rounded border bg-background px-1 font-sans">Enter</kbd> — сохранить
