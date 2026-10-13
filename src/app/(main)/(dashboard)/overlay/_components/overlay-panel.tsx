@@ -15,7 +15,6 @@ import {
   Laptop,
   MonitorPlay,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -93,31 +92,19 @@ export function OverlayPanel({ files, siteUrl, token, tokenConfigured, externalU
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <section className="relative overflow-hidden rounded-2xl border bg-card px-6 py-7 shadow-sm sm:px-8">
-        <div className="pointer-events-none absolute -top-24 -right-16 size-72 rounded-full bg-primary/10 blur-3xl" />
-        <div className="relative flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
+      <section className="border-b pb-6">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border bg-background/60 px-3 py-1 text-muted-foreground text-xs uppercase tracking-widest">
-              <Sparkles className="size-3.5 text-primary" /> Инструменты администрации
-            </div>
-            <h1 className="font-semibold text-3xl tracking-tight sm:text-4xl">Оверлей для игры</h1>
+            <p className="mb-3 font-medium text-muted-foreground text-xs uppercase tracking-[0.18em]">Game utilities / 01</p>
+            <h1 className="font-semibold text-3xl tracking-tight sm:text-4xl">Игровой оверлей</h1>
             <p className="mt-3 max-w-xl text-muted-foreground text-sm leading-6 sm:text-base">
-              Быстрый доступ к правилам и ответам прямо поверх игры. Настройте один раз — и не переключайтесь между
-              окнами.
+              Правила, быстрые ответы и служебные материалы — в одном окне поверх игры. Установите приложение и настройте его один раз.
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            {[
-              { icon: MonitorPlay, value: "Alt+R", label: "оверлей" },
-              { icon: Gamepad2, value: "Alt+H", label: "бинды" },
-              { icon: Laptop, value: "Windows", label: "платформа" },
-            ].map(({ icon: Icon, value, label }) => (
-              <div key={label} className="rounded-xl border bg-background/60 px-3 py-3 text-center">
-                <Icon className="mx-auto mb-2 size-4 text-primary" />
-                <div className="font-medium text-xs">{value}</div>
-                <div className="mt-0.5 text-[10px] text-muted-foreground uppercase tracking-wider">{label}</div>
-              </div>
-            ))}
+          <div className="flex shrink-0 items-center gap-5 border-l pl-5 text-sm">
+            <div><MonitorPlay className="mb-2 size-4 text-primary" /><span className="font-medium">Alt+R</span><p className="mt-1 text-muted-foreground text-xs">Открыть</p></div>
+            <div><Gamepad2 className="mb-2 size-4 text-primary" /><span className="font-medium">Alt+H</span><p className="mt-1 text-muted-foreground text-xs">Бинды</p></div>
+            <div><Laptop className="mb-2 size-4 text-primary" /><span className="font-medium">Windows</span><p className="mt-1 text-muted-foreground text-xs">Платформа</p></div>
           </div>
         </div>
       </section>
