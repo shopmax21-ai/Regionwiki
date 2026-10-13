@@ -39,7 +39,6 @@ export function RuleRefreshButton({ className }: { className?: string }) {
       className={cn("h-auto self-stretch rounded-xl px-3", className)}
     >
       <RefreshCw className={cn("size-4", pending && "animate-spin")} aria-hidden="true" />
-      <span className="hidden sm:inline">{pending ? "Обновление…" : "Обновить"}</span>
     </Button>
   );
 }
