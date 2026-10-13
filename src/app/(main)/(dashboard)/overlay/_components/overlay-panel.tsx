@@ -91,123 +91,66 @@ export function OverlayPanel({ files, siteUrl, token, tokenConfigured, externalU
   const downloads = files.length + (externalUrl ? 1 : 0);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <section className="border-b pb-6">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
+      <section className="relative overflow-hidden rounded-2xl border bg-card p-6 sm:p-8">
+        <div className="pointer-events-none absolute -right-16 -top-24 size-72 rounded-full bg-primary/10 blur-3xl" />
+        <div className="relative flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <p className="mb-3 font-medium text-muted-foreground text-xs uppercase tracking-[0.18em]">Game utilities / 01</p>
-            <h1 className="font-semibold text-3xl tracking-tight sm:text-4xl">Игровой оверлей</h1>
-            <p className="mt-3 max-w-xl text-muted-foreground text-sm leading-6 sm:text-base">
-              Правила, быстрые ответы и служебные материалы — в одном окне поверх игры. Установите приложение и настройте его один раз.
+            <div className="mb-6 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              <span className="flex size-2 rounded-full bg-primary shadow-[0_0_16px] shadow-primary" />
+              Control room / Overlay 01
+            </div>
+            <h1 className="max-w-xl font-semibold text-4xl tracking-[-0.04em] sm:text-6xl">Оверлей, который остаётся в игре.</h1>
+            <p className="mt-5 max-w-xl text-muted-foreground text-sm leading-6 sm:text-base">
+              Правила, ответы и служебные материалы доступны поверх игрового окна. Настройте один раз — используйте без лишних переключений.
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-5 border-l pl-5 text-sm">
-            <div><MonitorPlay className="mb-2 size-4 text-primary" /><span className="font-medium">Alt+R</span><p className="mt-1 text-muted-foreground text-xs">Открыть</p></div>
-            <div><Gamepad2 className="mb-2 size-4 text-primary" /><span className="font-medium">Alt+H</span><p className="mt-1 text-muted-foreground text-xs">Бинды</p></div>
-            <div><Laptop className="mb-2 size-4 text-primary" /><span className="font-medium">Windows</span><p className="mt-1 text-muted-foreground text-xs">Платформа</p></div>
+          <div className="grid grid-cols-3 border-t pt-5 text-sm lg:min-w-[330px] lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+            <div><MonitorPlay className="mb-4 size-4 text-primary" /><span className="font-semibold">Alt+R</span><p className="mt-1 text-muted-foreground text-xs">Открыть</p></div>
+            <div><Gamepad2 className="mb-4 size-4 text-primary" /><span className="font-semibold">Alt+H</span><p className="mt-1 text-muted-foreground text-xs">Бинды</p></div>
+            <div><Laptop className="mb-4 size-4 text-primary" /><span className="font-semibold">Windows</span><p className="mt-1 text-muted-foreground text-xs">Платформа</p></div>
           </div>
         </div>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-        <Card className="gap-0 overflow-hidden p-0">
-          <div className="flex items-center justify-between border-b px-5 py-4 sm:px-6">
+      <div className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+        <Card className="gap-0 overflow-hidden border-primary/20 bg-card p-0">
+          <div className="flex items-center justify-between border-b bg-muted/20 px-5 py-4 sm:px-7">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-primary/10 p-2 text-primary">
-                <FileDown className="size-4" />
-              </div>
-              <div>
-                <h2 className="font-medium text-sm">Дистрибутив</h2>
-                <p className="text-muted-foreground text-xs">Версия для Windows</p>
-              </div>
+              <div className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground"><FileDown className="size-4" /></div>
+              <div><h2 className="font-semibold text-sm">Дистрибутив</h2><p className="text-muted-foreground text-xs">Windows · стабильный канал</p></div>
             </div>
-            <div className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground text-xs tabular-nums">
-              {downloads} {downloads === 1 ? "файл" : "файла"}
-            </div>
+            <div className="font-mono text-muted-foreground text-xs tabular-nums">{String(downloads).padStart(2, "0")} files</div>
           </div>
           <div className="divide-y">
             {externalUrl ? (
-              <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-6">
-                <div>
-                  <div className="font-medium">Актуальная сборка</div>
-                  <div className="mt-1 text-muted-foreground text-xs">Рекомендуемый способ установки</div>
-                </div>
-                <Button asChild>
-                  <a href={externalUrl} target="_blank" rel="noreferrer">
-                    <ExternalLink data-icon="inline-start" /> Открыть загрузку
-                  </a>
-                </Button>
+              <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-6 sm:px-7">
+                <div><div className="font-medium">Актуальная сборка</div><div className="mt-1 text-muted-foreground text-xs">Рекомендуемый способ установки</div></div>
+                <Button asChild><a href={externalUrl} target="_blank" rel="noreferrer"><ExternalLink data-icon="inline-start" /> Открыть загрузку</a></Button>
               </div>
             ) : null}
             {files.map((file) => (
-              <div key={file.name} className="flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-6">
-                <div className="min-w-0">
-                  <div className="truncate font-medium font-mono text-sm">{file.name}</div>
-                  <div className="mt-1 text-muted-foreground text-xs tabular-nums">
-                    {formatSize(file.size)} · обновлён {formatDate(file.updatedAt)}
-                  </div>
-                </div>
-                <Button asChild variant={externalUrl ? "outline" : "default"}>
-                  <a href={`/api/overlay/download?file=${encodeURIComponent(file.name)}`}>
-                    <Download data-icon="inline-start" /> Скачать
-                  </a>
-                </Button>
+              <div key={file.name} className="flex flex-wrap items-center justify-between gap-4 px-5 py-6 sm:px-7">
+                <div className="min-w-0"><div className="truncate font-medium font-mono text-sm">{file.name}</div><div className="mt-1 text-muted-foreground text-xs tabular-nums">{formatSize(file.size)} · обновлён {formatDate(file.updatedAt)}</div></div>
+                <Button asChild variant={externalUrl ? "outline" : "default"}><a href={`/api/overlay/download?file=${encodeURIComponent(file.name)}`}><Download data-icon="inline-start" /> Скачать</a></Button>
               </div>
             ))}
-            {!externalUrl && files.length === 0 ? (
-              <div className="px-6 py-10 text-center text-muted-foreground text-sm">
-                Файлов пока нет. Добавьте сборку на сервер или задайте <code>OVERLAY_DOWNLOAD_URL</code>.
-              </div>
-            ) : null}
+            {!externalUrl && files.length === 0 ? <div className="px-6 py-10 text-center text-muted-foreground text-sm">Файлов пока нет. Добавьте сборку на сервер или задайте <code>OVERLAY_DOWNLOAD_URL</code>.</div> : null}
           </div>
         </Card>
 
-        <Card className="gap-5 p-5 sm:p-6">
-          <div className="flex items-start gap-3">
-            <div className="rounded-lg bg-primary/10 p-2 text-primary">
-              <KeyRound className="size-4" />
-            </div>
-            <div>
-              <h2 className="font-medium text-sm">Данные подключения</h2>
-              <p className="mt-1 text-muted-foreground text-xs">Скопируйте их в настройках программы</p>
-            </div>
-          </div>
+        <Card className="gap-6 border-primary/20 bg-primary/[0.04] p-5 sm:p-7">
+          <div className="flex items-start justify-between gap-3"><div><p className="mb-2 font-mono text-muted-foreground text-xs uppercase tracking-widest">01 / secure link</p><h2 className="font-semibold">Данные подключения</h2><p className="mt-1 text-muted-foreground text-xs">Для настроек приложения</p></div><KeyRound className="size-5 text-primary" /></div>
           {siteUrl ? <CopyField label="Адрес сайта" value={siteUrl} /> : null}
-          {token ? (
-            <CopyField label="Токен оверлея" value={token} secret />
-          ) : (
-            <div className="rounded-lg border border-dashed px-4 py-3 text-muted-foreground text-sm">
-              {tokenConfigured
-                ? "Токен доступен администраторам с правом просмотра быстрых ответов."
-                : "Токен не задан. Добавьте переменную OVERLAY_TOKEN на сервере."}
-            </div>
-          )}
-          <div className="flex gap-2 text-muted-foreground text-xs leading-5">
-            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" /> Не передавайте токен игрокам: он открывает
-            быстрые ответы администрации.
-          </div>
+          {token ? <CopyField label="Токен оверлея" value={token} secret /> : <div className="rounded-lg border border-dashed px-4 py-3 text-muted-foreground text-sm">{tokenConfigured ? "Токен доступен администраторам с правом просмотра быстрых ответов." : "Токен не задан. Добавьте переменную OVERLAY_TOKEN на сервере."}</div>}
+          <div className="flex gap-2 border-t pt-4 text-muted-foreground text-xs leading-5"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" /> Не передавайте токен игрокам: он открывает быстрые ответы администрации.</div>
         </Card>
       </div>
 
-      <Card className="gap-5 p-5 sm:p-6">
-        <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-primary/10 p-2 text-primary">
-            <Check className="size-4" />
-          </div>
-          <div>
-            <h2 className="font-medium text-sm">Быстрый старт</h2>
-            <p className="mt-1 text-muted-foreground text-xs">Четыре шага до первого запуска</p>
-          </div>
-        </div>
-        <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {STEPS.map((step, index) => (
-            <li key={step} className="flex gap-3 text-sm leading-5">
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted font-medium text-xs">
-                {index + 1}
-              </span>
-              <span>{step}</span>
-            </li>
-          ))}
+      <Card className="gap-7 bg-card p-5 sm:p-7">
+        <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="mb-2 font-mono text-muted-foreground text-xs uppercase tracking-widest">02 / deployment</p><h2 className="font-semibold text-xl">Быстрый старт</h2><p className="mt-1 text-muted-foreground text-sm">Четыре шага до первого запуска</p></div><Check className="size-5 text-primary" /></div>
+        <ol className="grid gap-0 border-y sm:grid-cols-2 lg:grid-cols-4">
+          {STEPS.map((step, index) => <li key={step} className="flex gap-4 border-b px-0 py-5 text-sm leading-5 last:border-0 sm:border-r sm:px-5 sm:first:pl-0 sm:nth-[2]:border-r-0 lg:border-b-0 lg:last:border-r-0"><span className="font-mono text-primary text-xs">0{index + 1}</span><span>{step}</span></li>)}
         </ol>
       </Card>
     </div>
