@@ -9,6 +9,7 @@
     index: [],
     binds: [],
     hotkeyErrors: {},
+    pun: { configured: false, data: null, error: null, badge: 0 },
     tab: "all",
     compact: false,
     scope: "all",
@@ -93,7 +94,7 @@
     document.body.dataset.tab = name;
     if (name === "rules") { $("rules-q").value = $("all-q").value; renderRules(); }
     if (name === "replies") { $("replies-q").value = $("all-q").value; renderReplies(); }
-    $("all-q").placeholder = { rules: "Номер или слова из правила…", replies: "Поиск по ответам…", binder: "Биндер", settings: "Настройки" }[name] || "Поиск по всему…";
+    $("all-q").placeholder = { rules: "Номер или слова из правила…", replies: "Поиск по ответам…", binder: "Биндер", punishments: "Наказания", settings: "Настройки" }[name] || "Поиск по всему…";
     focusSearch();
   }
 
@@ -279,7 +280,8 @@
     const pattern = highlightPattern(query);
     const list = $("replies-list");
     list.replaceChildren();
-    const words = window.RuleSearch.normalize(query).split(/\s+/).filter(Boolean).map(window.RuleSearch.stem);
+    const effective = window.RuleSearch.pickQuery(query, (state.data.replies || []).map((reply) => `${reply.title} ${reply.text} ${reply.category}`));
+    const words = window.RuleSearch.normalize(effective).split(/\s+/).filter(Boolean).map(window.RuleSearch.stem);
     const replies = (state.data.replies || []).filter((reply) => {
       if (state.replyCat && reply.category !== state.replyCat) return false;
       const haystack = window.RuleSearch.normalize(`${reply.title} ${reply.text} ${reply.category}`);
@@ -351,8 +353,9 @@
         return;
       }
       const where = scope();
-      const { normalize, stem } = window.RuleSearch;
-      const words = normalize(query).split(/\s+/).filter(Boolean).map(stem);
+      const { normalize, stem, pickQuery } = window.RuleSearch;
+      const pool = [...state.binds.map((bind) => `${bind.title} ${bind.text} ${bind.hotkey}`), ...(state.data.replies || []).map((reply) => `${reply.title} ${reply.text} ${reply.category}`)];
+      const words = normalize(pickQuery(query, pool)).split(/\s+/).filter(Boolean).map(stem);
       const match = (text) => {
         const hay = normalize(text);
         return words.every((word) => hay.includes(word));
@@ -477,12 +480,15 @@
     after?.();
   }
 
-  $("c-history").addEventListener("click", () => showHistory($("c-list"), $("c-q"), compactSearch, () => requestAnimationFrame(fitCompact)));
-  $("history").addEventListener("click", () => {
+  function showRecent() {
+    if (state.compact) {
+      showHistory($("c-list"), $("c-q"), compactSearch, () => requestAnimationFrame(fitCompact));
+      return;
+    }
     if (state.tab !== "all") switchTab("all");
     $("all-q").value = "";
     showHistory($("all-list"), $("all-q"), allSearch, () => $("tab-all").classList.add("has-results"));
-  });
+  }
 
   $("home-btn").addEventListener("click", () => { $("all-q").value = ""; switchTab("all"); allSearch.render(); });
   $("back").addEventListener("click", () => { $("all-q").value = ""; switchTab("all"); allSearch.render(); });
@@ -501,8 +507,66 @@
     else allSearch.render();
     focusSearch();
   }
-  $("collapse").addEventListener("click", () => setCompact(true));
-  $("c-expand").addEventListener("click", () => setCompact(false));
+
+  /* ---------- меню: все иконки-действия спрятаны под одной кнопкой ---------- */
+
+  const menu = $("menu");
+  const menuOpen = () => !menu.hidden;
+
+  function closeMenu() {
+    if (menu.hidden) return;
+    menu.hidden = true;
+    if (state.compact) fitCompact();
+  }
+
+  function menuItems() {
+    const s = state.settings;
+    const goTab = async (tab) => { if (state.compact) await setCompact(false); switchTab(tab); };
+    return [
+      { icon: "i-alert", label: state.pun.badge > 0 ? `Наказания (${state.pun.badge})` : "Наказания", run: () => goTab("punishments") },
+      { icon: "i-keys", label: "Биндер", hint: "Ctrl+4", run: () => goTab("binder") },
+      { icon: "i-history", label: "Недавние запросы", run: showRecent },
+      { icon: "i-refresh", label: "Обновить данные с сайта", run: () => refresh() },
+      { icon: "i-sliders", label: "Настройки", hint: "Ctrl+5", run: () => goTab("settings") },
+      "sep",
+      { icon: state.compact ? "i-expand" : "i-shrink", label: state.compact ? "Развернуть окно" : "Свернуть в строку поиска", hint: "Ctrl+M", run: () => setCompact(!state.compact) },
+      { icon: "i-pin", label: "Поверх всех окон", toggle: Boolean(s.alwaysOnTop), run: () => patchSettings({ alwaysOnTop: !s.alwaysOnTop }), keep: true },
+      { icon: "i-lock", label: "Зафиксировать окно", toggle: Boolean(s.lockWindow), run: () => patchSettings({ lockWindow: !s.lockWindow }), keep: true },
+      { icon: "i-move", label: "Двигать подсказки на экране", toggle: s.hudLocked === false, run: () => patchSettings({ hudLocked: !(s.hudLocked !== false), hud: true }), keep: true },
+      "sep",
+      { icon: "i-x", label: "Скрыть оверлей", hint: "Esc", run: () => api.hide() },
+    ];
+  }
+
+  function renderMenu() {
+    menu.replaceChildren(
+      ...menuItems().map((item) =>
+        item === "sep"
+          ? el("div", { class: "menu-sep" })
+          : el("button", { class: `menu-item${item.toggle ? " on" : ""}`, type: "button", onclick: async () => { await item.run(); if (item.keep) renderMenu(); else closeMenu(); } },
+              icon(item.icon),
+              el("span", { class: "mi-label", text: item.label }),
+              item.hint ? el("span", { class: "mi-hint", text: item.hint }) : null,
+              item.toggle !== undefined ? icon("i-check", "ico mi-check") : null,
+            ),
+      ),
+    );
+  }
+
+  function openMenu() {
+    renderMenu();
+    menu.hidden = false;
+    if (state.compact) api.setCompactHeight(menu.offsetHeight + 8);
+  }
+
+  document.querySelectorAll("[data-menu]").forEach((button) =>
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      menuOpen() ? closeMenu() : openMenu();
+    }),
+  );
+  document.addEventListener("click", (event) => { if (menuOpen() && !menu.contains(event.target)) closeMenu(); });
+  window.addEventListener("blur", closeMenu);
 
   /* ---------- горячие клавиши (запись сочетания) ---------- */
 
@@ -632,9 +696,11 @@
 
   function fillSettings() {
     const s = state.settings;
-    $("set-url").value = s.serverUrl || "";
-    $("set-token").value = s.token || "";
+    renderConnection();
     $("set-hotkey").value = s.hotkey || "";
+    $("set-search-hotkey").value = s.searchHotkey || "";
+    $("set-user-token").value = s.userToken || "";
+    $("set-notify").checked = s.notifyPunishments !== false;
     $("set-opacity").value = Math.round((s.opacity ?? 0.96) * 100);
     $("opacity-val").textContent = `${Math.round((s.opacity ?? 0.96) * 100)}%`;
     $("set-top").checked = Boolean(s.alwaysOnTop);
@@ -649,10 +715,14 @@
     $("set-paste").checked = Boolean(s.pasteOnCopy);
     $("set-chat").value = s.openChatKey || "";
     $("set-delay").value = s.lineDelay || 700;
-    $("pin").setAttribute("aria-pressed", String(Boolean(s.alwaysOnTop)));
+    $("set-lock").checked = Boolean(s.lockWindow);
+    $("set-hud-lock").checked = s.hudLocked !== false;
+    document.body.classList.toggle("locked", Boolean(s.lockWindow));
+    if (menuOpen()) renderMenu();
     renderHome();
     const err = state.hotkeyErrors.toggle;
-    $("settings-msg").textContent = err ? `Клавиша оверлея не назначена: ${err}` : "";
+    const searchErr = state.hotkeyErrors.search;
+    $("settings-msg").textContent = err ? `Клавиша оверлея не назначена: ${err}` : searchErr ? `Клавиша поиска не назначена: ${searchErr}` : "";
   }
 
   async function patchSettings(patch) {
@@ -664,8 +734,7 @@
   }
 
   hotkeyField($("set-hotkey"), (value) => value && patchSettings({ hotkey: value }));
-  $("set-url").addEventListener("change", (event) => patchSettings({ serverUrl: event.target.value.trim() }).then(refresh));
-  $("set-token").addEventListener("change", (event) => patchSettings({ token: event.target.value.trim() }).then(refresh));
+  hotkeyField($("set-search-hotkey"), (value) => patchSettings({ searchHotkey: value }));
   $("set-opacity").addEventListener("input", (event) => {
     $("opacity-val").textContent = `${event.target.value}%`;
     patchSettings({ opacity: Number(event.target.value) / 100 });
@@ -676,11 +745,26 @@
   $("set-hud-scale").addEventListener("input", (event) => patchSettings({ hudScale: Number(event.target.value) / 100 }));
   $("set-hud-op").addEventListener("input", (event) => patchSettings({ hudOpacity: Number(event.target.value) / 100 }));
   $("set-top").addEventListener("change", (event) => patchSettings({ alwaysOnTop: event.target.checked }));
+  $("set-user-token").addEventListener("change", (event) => patchSettings({ userToken: event.target.value.trim() }).then(() => { refresh(); renderConnection(true); }));
+  $("disconnect").addEventListener("click", async () => {
+    await patchSettings({ userToken: "", serverUrl: "", token: "" });
+    state.me = null;
+    renderConnection();
+    toast("Оверлей отключён от сайта");
+  });
+  $("set-notify").addEventListener("change", (event) => patchSettings({ notifyPunishments: event.target.checked }));
+  $("set-lock").addEventListener("change", (event) => patchSettings({ lockWindow: event.target.checked }));
+  $("set-hud-lock").addEventListener("change", (event) => patchSettings({ hudLocked: event.target.checked, ...(event.target.checked ? {} : { hud: true }) }));
+  $("hud-reset").addEventListener("click", () => patchSettings({ hudPos: null }).then(() => toast("Подсказки вернулись в угол экрана")));
+  $("connect-clip").addEventListener("click", async () => {
+    const result = await api.connectFromClipboard();
+    if (result.ok) toast("Оверлей подключён к сайту");
+    else toast("В буфере нет ключа. Создайте его в профиле на сайте и скопируйте", true);
+  });
   $("set-hide").addEventListener("change", (event) => patchSettings({ hideOnCopy: event.target.checked }));
   $("set-paste").addEventListener("change", (event) => patchSettings({ pasteOnCopy: event.target.checked }));
   $("set-chat").addEventListener("change", (event) => patchSettings({ openChatKey: event.target.value.trim() }));
   $("set-delay").addEventListener("change", (event) => patchSettings({ lineDelay: Number(event.target.value) || 700 }));
-  $("pin").addEventListener("click", () => patchSettings({ alwaysOnTop: !state.settings.alwaysOnTop }));
   $("close").addEventListener("click", () => api.hide());
   $("quit").addEventListener("click", () => api.quit());
 
@@ -700,6 +784,357 @@
       toast("В буфере нет списка биндов", true);
     }
   });
+
+  /* ---------- наказания ---------- */
+
+  const STATUS_TEXT = { pending: "Ожидает администратора", claimed: "На рассмотрении", approved: "На рассмотрении", issued: "Выдано", rejected: "Отклонено" };
+  const absUrl = (url) => (/^https?:/i.test(url) ? url : new URL(url, /^https?:/i.test(state.settings.serverUrl) ? state.settings.serverUrl : `https://${state.settings.serverUrl}`).href);
+  const ago = (iso) => {
+    const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+    if (minutes < 1) return "только что";
+    if (minutes < 60) return `${minutes} мин назад`;
+    const hours = Math.round(minutes / 60);
+    return hours < 24 ? `${hours} ч назад` : `${Math.round(hours / 24)} дн. назад`;
+  };
+
+  function punSummary() {
+    const data = state.pun.data;
+    if (!data) return "";
+    const parts = [];
+    if (data.me.canReview) parts.push(`в очереди ${data.queue.length}`, `у вас ${data.assigned.length}`);
+    else parts.push(`${data.mine.length} ${plural(data.mine.length, "заявка", "заявки", "заявок")}`);
+    return parts.join(", ");
+  }
+
+  async function punAct(payload, okText) {
+    const result = await api.punishmentsAct(payload);
+    if (result.ok) { if (okText) toast(okText); }
+    else toast(result.error || "Не удалось выполнить действие", true);
+    return result.ok;
+  }
+
+  function punHead(item) {
+    return el("div", { class: "pun-head-row" },
+      el("div", { class: "pun-title" }, el("b", { text: `№${item.number}` }), el("span", { text: `${item.kind}, ${item.duration}` })),
+      el("div", { class: "pun-sub", text: `ID ${item.staticId} · ${item.requester} · ${ago(item.createdAt)}` }),
+    );
+  }
+
+  function queueCard(item) {
+    return el("div", { class: "card pun-card" },
+      punHead(item),
+      el("div", { class: "pun-rules", text: item.rules.join(", ") || "—" }),
+      item.evidenceCount > 0 ? el("div", { class: "pun-meta", text: `Доказательства: ${item.evidenceCount}. Увидите после того, как возьмёте заявку.` }) : el("div", { class: "pun-meta", text: "Без доказательств" }),
+      el("div", { class: "pun-actions" }, el("button", { class: "btn sm", onclick: () => punAct({ id: item.id, action: "claim" }, `Заявка №${item.number} ваша`), text: "Взять в работу" })),
+    );
+  }
+
+  function assignedCard(item) {
+    const ui = state.punUi;
+    const forumInput = el("input", { class: "pun-forum", placeholder: "Жалоба на форуме (по желанию)", value: item.forum || "", maxlength: "60" });
+    const children = [punHead(item), el("div", { class: "pun-rules", text: item.rules.join(", ") || "—" })];
+
+    if (item.evidence.length) {
+      children.push(el("div", { class: "pun-evidence" }, item.evidence.map((entry, index) =>
+        el("button", { class: "chip", title: entry.url, onclick: () => api.openExternal(absUrl(entry.url)), text: `${entry.type === "image" ? "Скрин" : "Ссылка"} ${index + 1}` }),
+      )));
+    }
+
+    children.push(el("div", { class: "pun-forum-row" }, forumInput,
+      el("button", { class: "btn ghost sm", onclick: () => punAct({ id: item.id, action: "forum", forum: forumInput.value }, "Жалоба сохранена"), text: "Сохранить" })));
+
+    if (item.needsDecision) {
+      const noteInput = el("input", { class: "pun-note", placeholder: "Причина отказа", maxlength: "300" });
+      const noteRow = el("div", { class: "pun-forum-row", hidden: !ui.rejecting.has(item.id) }, noteInput,
+        el("button", { class: "btn danger sm", onclick: () => punAct({ id: item.id, action: "reject", note: noteInput.value }, "Заявка отклонена"), text: "Отклонить" }));
+      children.push(el("div", { class: "pun-actions" },
+        el("button", { class: "btn sm", onclick: () => punAct({ id: item.id, action: "approve" }, "Заявка одобрена"), text: "Одобрить" }),
+        el("button", { class: "btn ghost sm", onclick: () => { ui.rejecting.has(item.id) ? ui.rejecting.delete(item.id) : ui.rejecting.add(item.id); noteRow.hidden = !ui.rejecting.has(item.id); if (!noteRow.hidden) noteInput.focus(); }, text: "Отклонить…" }),
+      ), noteRow);
+    }
+
+    if (item.command) {
+      children.push(el("div", { class: "pun-command" },
+        el("code", { text: item.command }),
+        el("button", { class: "btn ghost sm", onclick: async () => {
+          await api.copy(item.command, { paste: false, hide: false });
+          toast("Команда скопирована");
+          if (!item.copied) punAct({ id: item.id, action: "copied" });
+        }, text: "Копировать" }),
+      ));
+      children.push(el("div", { class: "pun-actions" },
+        el("button", { class: "btn sm", disabled: !item.copied, title: item.copied ? "" : "Сначала скопируйте команду", onclick: () => punAct({ id: item.id, action: "issue" }, `Наказание по заявке №${item.number} выдано`), text: "Выдал наказание" }),
+      ));
+    }
+
+    children.push(el("div", { class: "pun-actions" }, el("button", { class: "btn ghost sm", onclick: () => punAct({ id: item.id, action: "release" }, "Заявка вернулась в очередь"), text: "Вернуть в очередь" })));
+    return el("div", { class: "card pun-card" }, children);
+  }
+
+  function mineRow(item) {
+    return el("div", { class: "card pun-card slim" },
+      el("div", { class: "pun-head-row" },
+        el("div", { class: "pun-title" }, el("b", { text: `№${item.number}` }), el("span", { text: `${item.kind}, ${item.duration}` })),
+        el("span", { class: `pun-status ${item.status}`, text: STATUS_TEXT[item.status] || item.status }),
+      ),
+      el("div", { class: "pun-sub", text: `ID ${item.staticId} · ${ago(item.createdAt)}${item.status === "rejected" && item.decisionNote ? ` · ${item.decisionNote}` : ""}` }),
+    );
+  }
+
+  function punSection(title, nodes, emptyText) {
+    return el("section", { class: "pun-section" }, el("h3", { text: title }), nodes.length ? nodes : el("div", { class: "empty", text: emptyText }));
+  }
+
+  function updateBadge() {
+    document.querySelectorAll("[data-menu]").forEach((button) => button.classList.toggle("dot", state.pun.badge > 0));
+  }
+
+  /** Обновление по таймеру опроса: пока человек печатает в поле, список не перерисовываем, иначе введённое пропадёт. */
+  function renderPunishments() {
+    const root = $("pun");
+    if (!root) return;
+    if (root.contains(document.activeElement) && document.activeElement.tagName === "INPUT") {
+      clearTimeout(state.punTimer);
+      state.punTimer = setTimeout(renderPunishments, 2500);
+      return;
+    }
+    paintPunishments();
+  }
+
+  /** Перерисовка по действию пользователя (форма, кнопки): фокус возвращается в то же поле. */
+  function paintPunishments(focusId) {
+    const root = $("pun");
+    if (!root) return;
+    const keep = focusId || document.activeElement?.dataset?.id;
+    const p = state.pun;
+    const parts = [];
+    if (!p.configured) {
+      parts.push(el("div", { class: "pun-setup" },
+        el("h3", { text: "Наказания в оверлее" }),
+        el("p", { text: "Чтобы получать уведомления о новых заявках и закрывать их прямо из игры, подключите личный токен. Создайте его на странице «Оверлей» сайта (раздел «Наказания в оверлее»), скопируйте код подключения и откройте оверлей, либо вставьте токен вручную в настройках." }),
+        el("button", { class: "btn sm", onclick: () => switchTab("settings"), text: "Открыть настройки" }),
+      ));
+    } else {
+      if (p.error) parts.push(el("div", { class: "pun-error", text: p.error }));
+      if (p.data) {
+        const { me, queue, assigned, mine } = p.data;
+        const formOpen = Boolean(state.punForm);
+        parts.push(el("div", { class: "pun-top" }, el("h2", { text: "Наказания" }),
+          el("div", { class: "pun-top-actions" },
+            me.canRequest ? el("button", { class: formOpen ? "btn ghost sm" : "btn sm", onclick: () => { state.punForm = formOpen ? null : newPunForm(); paintPunishments("static"); }, text: formOpen ? "Закрыть форму" : "Новая заявка" }) : null,
+            el("button", { class: "btn ghost sm", onclick: () => api.punishmentsRefresh(), text: "Обновить" }),
+          ),
+        ));
+        if (formOpen && me.canRequest) parts.push(punFormNode());
+        if (me.canReview) {
+          parts.push(punSection("В работе у меня", assigned.map(assignedCard), "Вы пока не взяли ни одной заявки"));
+          parts.push(punSection("Очередь", queue.map(queueCard), "Очередь пуста"));
+        }
+        if (me.canRequest) parts.push(punSection("Мои заявки", mine.slice(0, 10).map(mineRow), "Вы ещё не подавали заявок"));
+        if (!me.canReview && !me.canRequest) parts.push(el("div", { class: "empty", text: "У вашей роли нет доступа к наказаниям. Права настраиваются в разделе «Роли и права» на сайте." }));
+      } else if (!p.error) {
+        parts.push(el("div", { class: "empty", text: "Загружаю…" }));
+      }
+    }
+    root.replaceChildren(...parts);
+    if (keep) root.querySelector(`[data-id="${keep}"]`)?.focus();
+  }
+
+  /* ----- форма новой заявки ----- */
+
+  const KIND_OPTIONS = [["jail", "Деморган"], ["mute", "Мут"], ["ban", "Бан"], ["hardban", "Хардбан"]];
+  const RULE_LABEL = /^([A-Za-zА-Яа-яЁё]{1,10})\s*(\d{1,3}(?:\.\d{1,3}){0,3})$/;
+  const normalizeLabel = (value) => { const m = RULE_LABEL.exec(String(value).trim()); return m ? `${m[1].toUpperCase()} ${m[2]}` : null; };
+  const LIMITS = { staticDigits: 9, minutes: 10000, days: 3650, rules: 5, evidence: 6 };
+
+  const newPunForm = () => ({ staticId: "", kind: "jail", muteChannel: "chat", duration: "", rules: [], ruleQuery: "", forum: "", evidence: [], linkDraft: "", uploading: 0, busy: false, error: "" });
+  const isDays = (kind) => kind === "ban" || kind === "hardban";
+
+  function ruleSuggestions(query) {
+    if (!query.trim()) return [];
+    const seen = new Set();
+    const out = [];
+    for (const hit of window.RuleSearch.search(state.index, query, 12)) {
+      const label = normalizeLabel(`${(hit.rule.tag || hit.rule.article || "").toUpperCase()} ${hit.rule.number}`);
+      if (!label || seen.has(label)) continue;
+      seen.add(label);
+      out.push({ label, text: String(hit.rule.text || "").replace(/\s+/g, " ").slice(0, 90), punishments: hit.rule.punishments || [] });
+      if (out.length >= 6) break;
+    }
+    return out;
+  }
+
+  function addRule(label) {
+    const form = state.punForm;
+    const normalized = normalizeLabel(label);
+    if (!normalized || form.rules.includes(normalized)) return;
+    if (form.rules.length >= LIMITS.rules) { toast(`Не больше ${LIMITS.rules} пунктов правил`, true); return; }
+    form.rules.push(normalized);
+    form.ruleQuery = "";
+    paintPunishments("rule");
+  }
+
+  function addLink() {
+    const form = state.punForm;
+    const value = form.linkDraft.trim();
+    if (!value) return;
+    try { if (new URL(value).protocol !== "https:") throw new Error(); } catch { toast("Ссылка должна начинаться с https://", true); return; }
+    if (form.evidence.length >= LIMITS.evidence) { toast(`Не больше ${LIMITS.evidence} доказательств`, true); return; }
+    if (!form.evidence.some((entry) => entry.url === value)) form.evidence.push({ type: "link", url: value });
+    form.linkDraft = "";
+    paintPunishments("link");
+  }
+
+  async function addImage(file) {
+    const form = state.punForm;
+    if (!form || !file) return;
+    if (form.evidence.length + form.uploading >= LIMITS.evidence) { toast(`Не больше ${LIMITS.evidence} доказательств`, true); return; }
+    form.uploading += 1;
+    paintPunishments();
+    const result = await api.punishmentsUpload(new Uint8Array(await file.arrayBuffer()), file.type, file.name);
+    form.uploading -= 1;
+    if (result.ok) form.evidence.push({ type: "image", url: result.url });
+    else toast(result.error || "Не удалось загрузить скриншот", true);
+    paintPunishments();
+  }
+
+  async function submitPunForm() {
+    const form = state.punForm;
+    const duration = Number(form.duration);
+    const max = isDays(form.kind) ? LIMITS.days : LIMITS.minutes;
+    let error = "";
+    if (!/^\d{1,9}$/.test(form.staticId)) error = "Статик состоит из цифр";
+    else if (!Number.isInteger(duration) || duration < 1 || duration > max) error = `Срок от 1 до ${max} ${isDays(form.kind) ? "дн." : "мин"}`;
+    else if (!form.rules.length) error = "Укажите хотя бы один пункт правил";
+    else if (form.uploading) error = "Дождитесь загрузки скриншота";
+    form.error = error;
+    if (error) { paintPunishments(); return; }
+    form.busy = true;
+    paintPunishments();
+    const result = await api.punishmentsCreate({
+      staticId: form.staticId,
+      kind: form.kind,
+      muteChannel: form.kind === "mute" ? form.muteChannel : null,
+      duration,
+      forum: form.forum,
+      rules: form.rules,
+      evidence: form.evidence,
+    });
+    form.busy = false;
+    if (result.ok) {
+      toast(`Заявка №${result.number} отправлена администраторам`);
+      state.punForm = null;
+    } else {
+      form.error = result.error || "Не удалось отправить заявку";
+    }
+    paintPunishments();
+  }
+
+  function punFormNode() {
+    const form = state.punForm;
+    const days = isDays(form.kind);
+    const field = (label, ...nodes) => el("label", { class: "pf-field" }, el("span", { text: label }), ...nodes);
+    const seg = (options, current, onPick) => el("div", { class: "seg" }, options.map(([value, text]) => el("button", { type: "button", class: value === current ? "active" : "", onclick: () => onPick(value), text })));
+
+    const staticInput = el("input", { "data-id": "static", inputmode: "numeric", maxlength: String(LIMITS.staticDigits), placeholder: "Например 5476", value: form.staticId });
+    staticInput.addEventListener("input", () => { staticInput.value = staticInput.value.replace(/\D/g, ""); form.staticId = staticInput.value; });
+    const durationInput = el("input", { "data-id": "duration", inputmode: "numeric", placeholder: days ? "Дней" : "Минут", value: form.duration });
+    durationInput.addEventListener("input", () => { durationInput.value = durationInput.value.replace(/\D/g, ""); form.duration = durationInput.value; });
+
+    const suggestions = el("div", { class: "pf-suggest" });
+    const ruleInput = el("input", { "data-id": "rule", placeholder: "Номер пункта (ОП 4.9) или слова из правила", value: form.ruleQuery, autocomplete: "off" });
+    const fillSuggestions = () => {
+      const hits = ruleSuggestions(ruleInput.value);
+      suggestions.replaceChildren(...hits.map((hit) => el("button", { type: "button", class: "pf-hit", onclick: () => addRule(hit.label) },
+        el("b", { text: hit.label }), el("span", { text: hit.text }), hit.punishments.length ? el("small", { text: hit.punishments.join(" · ") }) : null)));
+      return hits;
+    };
+    ruleInput.addEventListener("input", () => { form.ruleQuery = ruleInput.value; fillSuggestions(); });
+    ruleInput.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      const hits = fillSuggestions();
+      if (normalizeLabel(ruleInput.value) && !hits.some((hit) => hit.label === normalizeLabel(ruleInput.value))) addRule(ruleInput.value);
+      else if (hits[0]) addRule(hits[0].label);
+    });
+    fillSuggestions();
+
+    const linkInput = el("input", { "data-id": "link", placeholder: "https://…", value: form.linkDraft });
+    linkInput.addEventListener("input", () => { form.linkDraft = linkInput.value; });
+    linkInput.addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); addLink(); } });
+
+    const fileInput = el("input", { type: "file", accept: "image/png,image/jpeg,image/webp,image/gif", hidden: true });
+    fileInput.addEventListener("change", () => { for (const file of fileInput.files) addImage(file); fileInput.value = ""; });
+    const drop = el("div", { class: "pf-drop", tabindex: "0", title: "Вставьте скриншот через Ctrl+V, перетащите файл или нажмите", onclick: () => fileInput.click() },
+      form.uploading ? `Загружаю скриншот (${form.uploading})…` : "Скриншот: Ctrl+V, перетащите файл или нажмите");
+    drop.addEventListener("dragover", (event) => { event.preventDefault(); drop.classList.add("over"); });
+    drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+    drop.addEventListener("drop", (event) => { event.preventDefault(); drop.classList.remove("over"); for (const file of event.dataTransfer.files) addImage(file); });
+
+    const node = el("div", { class: "card pun-form" },
+      el("div", { class: "pf-row" }, field("Static ID нарушителя", staticInput), field(days ? "Срок, дней" : "Срок, минут", durationInput)),
+      field("Вид наказания", seg(KIND_OPTIONS, form.kind, (value) => { form.kind = value; if (value === "mute" && !form.muteChannel) form.muteChannel = "chat"; paintPunishments(); })),
+      form.kind === "mute" ? field("Тип мута", seg([["chat", "Чат"], ["voice", "Голосовой"]], form.muteChannel, (value) => { form.muteChannel = value; paintPunishments(); })) : null,
+      field(`Пункты правил (до ${LIMITS.rules})`,
+        form.rules.length ? el("div", { class: "pf-chips" }, form.rules.map((label) => el("button", { type: "button", class: "chip active", title: "Убрать", onclick: () => { form.rules = form.rules.filter((item) => item !== label); paintPunishments("rule"); }, text: `${label} ×` }))) : null,
+        ruleInput, suggestions),
+      field("Жалоба на форуме (по желанию)", (() => { const input = el("input", { "data-id": "forum", maxlength: "60", placeholder: "Например Garik-0018", value: form.forum }); input.addEventListener("input", () => { form.forum = input.value; }); return input; })()),
+      field(`Доказательства (${form.evidence.length}/${LIMITS.evidence})`,
+        form.evidence.length ? el("div", { class: "pf-chips" }, form.evidence.map((entry, index) => el("button", { type: "button", class: "chip", title: `${entry.url}\nНажмите, чтобы убрать`, onclick: () => { form.evidence = form.evidence.filter((item) => item !== entry); paintPunishments(); }, text: `${entry.type === "image" ? "Скрин" : "Ссылка"} ${index + 1} ×` }))) : null,
+        el("div", { class: "pf-link" }, linkInput, el("button", { type: "button", class: "btn ghost sm", onclick: addLink, text: "Добавить" })),
+        drop, fileInput),
+      form.error ? el("div", { class: "pun-error", text: form.error }) : null,
+      el("div", { class: "pun-actions" },
+        el("button", { type: "button", class: "btn", disabled: form.busy || form.uploading > 0, onclick: submitPunForm, text: form.busy ? "Отправляю…" : "Отправить заявку" }),
+        el("button", { type: "button", class: "btn ghost", onclick: () => { state.punForm = null; paintPunishments(); }, text: "Отмена" }),
+      ),
+    );
+    // Скриншот можно вставить через Ctrl+V из любого поля формы
+    node.addEventListener("paste", (event) => {
+      const image = [...(event.clipboardData?.files || [])].find((file) => file.type.startsWith("image/"));
+      if (image) { event.preventDefault(); addImage(image); }
+    });
+    return node;
+  }
+
+  state.punUi = { rejecting: new Set() };
+  api.onPunishments((payload) => {
+    state.pun = payload;
+    renderPunishments();
+    renderHome();
+    updateBadge();
+    if (menuOpen()) renderMenu();
+  });
+  api.onGoto(async (tab) => {
+    if (state.compact) await setCompact(false);
+    switchTab(tab);
+  });
+
+  /* ---------- подключение ---------- */
+
+  /** Показывает, к какому сайту и под кем подключён оверлей; адрес берётся из ключа. */
+  async function renderConnection(force = false) {
+    const status = $("connect-status");
+    const s = state.settings;
+    $("set-user-token").value = s.userToken || "";
+    $("disconnect").hidden = !s.userToken && !s.serverUrl;
+    if (!s.serverUrl) {
+      status.textContent = "Не подключено";
+      status.className = "connect-status off";
+      return;
+    }
+    const host = String(s.serverUrl).replace(/^https?:\/\//i, "");
+    status.className = "connect-status on";
+    status.textContent = `Подключено к ${host}`;
+    if (!s.userToken) { status.textContent += " (старый способ: токен и адрес; создайте ключ в профиле)"; return; }
+    if (state.me?.key === s.userToken && !force) { status.textContent = state.me.ok ? `${host}: ${state.me.name}` : state.me.error; status.className = `connect-status ${state.me.ok ? "on" : "bad"}`; return; }
+    const me = await api.connectionMe();
+    state.me = { ...me, key: s.userToken };
+    if ($("connect-status") && state.settings.userToken === s.userToken) {
+      status.textContent = me.ok ? `${host}: ${me.name}` : me.error;
+      status.className = `connect-status ${me.ok ? "on" : "bad"}`;
+    }
+  }
 
   /* ---------- главная ---------- */
 
@@ -754,6 +1189,7 @@
     const screenChips = [
       chip("i-monitor", state.settings.hud ? "Подсказки: вкл" : "Подсказки: выкл", () => patchSettings({ hud: !state.settings.hud }), "Список биндов поверх игры"),
       chip("i-pin", state.settings.alwaysOnTop ? "Поверх игры: вкл" : "Поверх игры: выкл", () => patchSettings({ alwaysOnTop: !state.settings.alwaysOnTop })),
+      chip("i-move", state.settings.hudLocked === false ? "Подсказки: двигаю" : "Двигать подсказки", () => patchSettings({ hudLocked: state.settings.hudLocked === false, hud: true }), "Перетащите подсказки мышью и нажмите «Зафиксировать»"),
       chip("i-shrink", "Свернуть", () => setCompact(true), "Ctrl+M"),
       chip("i-sliders", "Настройки", () => switchTab("settings")),
     ];
@@ -772,11 +1208,12 @@
       : null;
 
     home.replaceChildren(
-      el("div", { class: "nav-row" },
+      el("div", { class: "nav-row" }, [
         linkCard("i-shield", "Правила", rules.length ? `${rules.length} ${plural(rules.length, "пункт", "пункта", "пунктов")}, ${tags.size} ${plural(tags.size, "раздел", "раздела", "разделов")}` : "нет данных", "rules"),
         linkCard("i-msg", "Ответы", replies.length ? `${replies.length} ${plural(replies.length, "шаблон", "шаблона", "шаблонов")}` : "нет данных", "replies"),
         linkCard("i-keys", "Биндер", `${state.binds.length} ${plural(state.binds.length, "бинд", "бинда", "биндов")}`, "binder"),
-      ),
+        state.pun.data ? linkCard("i-alert", "Наказания", punSummary(), "punishments") : null,
+      ].filter(Boolean)),
       el("div", { class: "cat-grid" },
         category("Разделы правил", "i-shield", ruleChips),
         category("Быстрые ответы", "i-msg", replyChips),
@@ -801,25 +1238,27 @@
     renderHome();
   }
 
-  async function refresh() {
-    const button = $("refresh");
-    button.classList.add("spin");
+  async function refresh(quiet = false) {
+    const buttons = document.querySelectorAll("[data-menu]");
+    buttons.forEach((button) => button.classList.add("spin"));
     const result = await api.refreshData();
-    button.classList.remove("spin");
+    buttons.forEach((button) => button.classList.remove("spin"));
     if (result.ok) {
+      state.lastFetch = Date.now();
       applyData(result.data);
-      toast(`Обновлено: ${result.data.rules.length} пунктов`);
-    } else {
+      if (quiet !== true) toast(`Обновлено: ${result.data.rules.length} пунктов`);
+    } else if (quiet !== true) {
       toast(result.error, true);
     }
   }
-  $("refresh").addEventListener("click", refresh);
 
-  document.querySelectorAll(".top [data-tab]").forEach((button) =>
-    button.addEventListener("click", () => switchTab(state.tab === button.dataset.tab ? "all" : button.dataset.tab)),
-  );
+  /* Сайт подтягивается сам: при запуске, при открытии окна (если данные старше 3 минут) и раз в 10 минут. */
+  setInterval(() => { if (state.settings.serverUrl) refresh(true); }, 10 * 60 * 1000);
+  api.onConnected(() => { refresh(); if (state.tab === "settings") switchTab("all"); });
+
 
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && menuOpen()) { closeMenu(); return; }
     if (event.key === "Escape") {
       const q = state.compact ? $("c-q") : $("all-q");
       if (q.value) { q.value = ""; q.dispatchEvent(new Event("input")); }
@@ -836,7 +1275,20 @@
     }
   });
 
-  api.onShown(() => focusSearch());
+  // Глобальная клавиша поиска: главный процесс уже переключил окно в строку поиска, остаётся обновить интерфейс.
+  api.onSearch(async () => {
+    state.settings = await api.getSettings();
+    state.compact = true;
+    document.body.classList.add("compact");
+    closeMenu();
+    compactSearch.render();
+    focusSearch();
+  });
+
+  api.onShown(() => {
+    focusSearch();
+    if (state.settings.serverUrl && Date.now() - (state.lastFetch || 0) > 3 * 60 * 1000) refresh(true);
+  });
   api.onSettingsChanged((settings) => { state.settings = settings; fillSettings(); });
   api.onHotkeyErrors((errors) => { state.hotkeyErrors = errors || {}; renderBinds(); fillSettings(); });
 
@@ -854,7 +1306,14 @@
     document.body.classList.toggle("compact", state.compact);
     applyData(await api.cachedData());
     focusSearch();
-    if (state.settings.serverUrl) refresh();
+    state.pun = await api.punishmentsState();
+    renderPunishments();
+    updateBadge();
+    if (!state.settings.userToken) {
+      const linked = await api.connectFromClipboard();
+      if (linked.ok) { state.settings = await api.getSettings(); fillSettings(); }
+    }
+    if (state.settings.serverUrl) refresh(true);
     else { if (state.compact) await setCompact(false); switchTab("settings"); }
   })();
 })();

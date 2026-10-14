@@ -5,6 +5,7 @@ import type { DbUser, LoginEvent } from "@/lib/auth/db";
 import type { AdminGroup } from "@/lib/auth/groups";
 import { identityLocked } from "@/lib/auth/identity";
 
+import { OverlayKeyCard, type OverlayKeyInfo } from "../../overlay/_components/overlay-key-card";
 import { AcademyStatsCard } from "./academy-stats-card";
 import { IdentityCard } from "./identity-card";
 import { LoginHistory } from "./login-history";
@@ -48,6 +49,7 @@ export function ProfileView({
   canReceiveRequests,
   academy,
   group,
+  overlay,
 }: {
   user: DbUser;
   /** Группа администратора с учётом TELEGRAM_ADMIN_IDS; у обычного участника null */
@@ -58,6 +60,8 @@ export function ProfileView({
   canReceiveRequests: boolean;
   /** Статистика тестов Академии; только у администраторов */
   academy: UserStats | null;
+  /** Подключение оверлея; только у администраторов */
+  overlay: { key: OverlayKeyInfo | null } | null;
 }) {
   const person = { id: user.telegramId, name: user.name, nickname: user.nickname, staticId: user.staticId, group };
   const stats = [
@@ -84,6 +88,8 @@ export function ProfileView({
       {academy && <AcademyStatsCard stats={academy} />}
 
       {canReceiveRequests && <NotificationsCard initialEnabled={user.notifyRequests} />}
+
+      {overlay && <OverlayKeyCard info={overlay.key} />}
 
       <SecurityCard />
 

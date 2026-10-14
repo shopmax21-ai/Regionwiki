@@ -7,6 +7,7 @@ import { getAdminContext } from "@/lib/auth/admin";
 import { LOGIN_PATH } from "@/lib/auth/config";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getLoginEvent, getLoginEvents, getUser } from "@/lib/auth/db";
+import { getUserTokenInfo } from "@/lib/overlay/user-token";
 
 import { ProfileView } from "./_components/profile-view";
 
@@ -38,6 +39,9 @@ export default async function Page() {
     }
   }
 
+  // Ключ доступа оверлея есть у администраторов
+  const overlayKey = admin ? await getUserTokenInfo(admin.id) : null;
+
   // Активная сессия определяется по записи входа из токена. У старых токенов её нет, тогда берём последний вход.
   const events = await getLoginEvents(user.telegramId);
   let activeId = session.loginId;
@@ -55,6 +59,7 @@ export default async function Page() {
       canReceiveRequests={canReceiveRequests}
       academy={academy}
       group={admin?.group ?? null}
+      overlay={admin ? { key: overlayKey } : null}
     />
   );
 }

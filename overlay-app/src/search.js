@@ -9,6 +9,45 @@
       .replace(/ё/g, "е")
       .replace(/[^a-zа-я0-9.\s-]/g, " ");
 
+  /* Неверная раскладка: «jkhjkj» ↔ «огрбление» (QWERTY ↔ ЙЦУКЕН). Конвертируем сырой запрос до normalize, пока знаки ; ' , [ ] ещё на месте. */
+  const EN = "qwertyuiop[]asdfghjkl;'zxcvbnm,`";
+  const RU = "йцукенгшщзхъфывапролджэячсмитьбё";
+  const EN_TO_RU = new Map([...EN].map((ch, i) => [ch, RU[i]]));
+  const RU_TO_EN = new Map([...RU].map((ch, i) => [ch, EN[i]]));
+  const isLatin = (ch) => /[a-z]/i.test(ch || "");
+
+  /** Запрос, набранный в другой раскладке, или null, если менять нечего (цифры, смешанный ввод). */
+  function swapLayout(rawQuery) {
+    const text = String(rawQuery || "").toLowerCase();
+    const hasLatin = /[a-z]/.test(text);
+    const hasCyrillic = /[а-яё]/.test(text);
+    if (hasLatin === hasCyrillic) return null;
+    let out = "";
+    for (let i = 0; i < text.length; i += 1) {
+      const ch = text[i];
+      if (hasLatin) {
+        // «.» и «,» в середине слова — это «ю» и «б»; рядом с цифрами остаются знаками (1.19)
+        if ((ch === "." || ch === ",") && !(isLatin(text[i - 1]) || isLatin(text[i + 1]))) out += ch;
+        else if (ch === "." && !(isLatin(text[i - 1]) && isLatin(text[i + 1]))) out += ch;
+        else out += ch === "." ? "ю" : (EN_TO_RU.get(ch) ?? ch);
+      } else {
+        out += RU_TO_EN.get(ch) ?? ch;
+      }
+    }
+    return out === text ? null : out;
+  }
+
+  /** Оставляем запрос как есть; конвертируем раскладку, только если иначе ничего не найдётся. */
+  function pickQuery(rawQuery, haystacks) {
+    const alt = swapLayout(rawQuery);
+    if (!alt) return rawQuery;
+    const hits = (query) => {
+      const words = tokenize(query).filter((word) => !STOP.has(word)).map(stem);
+      return words.length > 0 && haystacks.some((hay) => words.every((word) => normalize(hay).includes(word)));
+    };
+    return hits(rawQuery) ? rawQuery : hits(alt) ? alt : rawQuery;
+  }
+
   /* Грубая основа: отбрасываем окончание у длинных слов, чтобы «грабёж» находил «ограбление». */
   const stem = (word) => {
     if (/^\d/.test(word) || word.length <= 3) return word;
@@ -43,7 +82,7 @@
 
   const REF = /^([a-zа-я]{0,6})?\s*(\d+(?:\.\d+)*)$/;
 
-  function search(index, rawQuery, limit = 40) {
+  function searchOne(index, rawQuery, limit) {
     const query = normalize(rawQuery).trim();
     if (!query) return [];
 
@@ -90,8 +129,16 @@
     return hits.sort((a, b) => b.score - a.score).slice(0, limit);
   }
 
+  function search(index, rawQuery, limit = 40) {
+    const first = searchOne(index, rawQuery, limit);
+    if (first.length > 0) return first;
+    const alt = swapLayout(rawQuery);
+    return alt ? searchOne(index, alt, limit) : first;
+  }
+
   function highlightPattern(rawQuery) {
-    const words = tokenize(rawQuery).filter((word) => !STOP.has(word) && !/^\d/.test(word));
+    const alt = swapLayout(rawQuery);
+    const words = tokenize(alt ? `${rawQuery} ${alt}` : rawQuery).filter((word) => !STOP.has(word) && !/^\d/.test(word));
     if (words.length === 0) return null;
     const parts = words.map((word) => stem(word).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/е/g, "[её]"));
     return new RegExp(`(${parts.join("|")})[а-яёa-z0-9]*`, "gi");
@@ -99,5 +146,5 @@
 
   const ruleRef = (rule) => (rule.tag ? `${rule.tag} ${rule.number}` : rule.number);
 
-  return { buildIndex, search, highlightPattern, ruleRef, normalize, stem };
+  return { buildIndex, search, highlightPattern, ruleRef, normalize, stem, swapLayout, pickQuery };
 });

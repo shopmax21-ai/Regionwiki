@@ -2,11 +2,15 @@ const { app, BrowserWindow, globalShortcut, ipcMain, clipboard, screen, Tray, Me
 const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
+const { createPunishments } = require("./punishments");
 
 const DEFAULT_SETTINGS = {
   serverUrl: "",
   token: "",
   hotkey: "Alt+R",
+  searchHotkey: "Alt+S",
+  userToken: "",
+  notifyPunishments: true,
   opacity: 0.96,
   alwaysOnTop: true,
   hideOnCopy: false,
@@ -19,6 +23,9 @@ const DEFAULT_SETTINGS = {
   hudScale: 1,
   hudOpacity: 0.85,
   hudHotkey: "Alt+H",
+  hudLocked: true,
+  hudPos: null,
+  lockWindow: false,
   compact: false,
   compactBounds: null,
 };
@@ -28,6 +35,9 @@ const COMPACT_HEIGHT = 58;
 
 let win = null;
 let hud = null;
+let punishments = null;
+let hudSize = { width: 260, height: 40 };
+let hudSaveTimer = null;
 let tray = null;
 let settings = { ...DEFAULT_SETTINGS };
 let binds = [];
@@ -134,14 +144,14 @@ function setMode(compact) {
     win.setBounds(compactTarget());
   } else {
     settings.compact = false;
-    win.setMinimumSize(340, 360);
+    win.setMinimumSize(380, 360);
     const area = screen.getPrimaryDisplay().workArea;
     const saved = settings.bounds;
     win.setBounds({
-      x: saved?.x ?? area.x + area.width - 484,
+      x: saved?.x ?? area.x + area.width - Math.min(880, area.width - 80) - 24,
       y: saved?.y ?? area.y + 40,
-      width: saved?.width ?? 460,
-      height: saved?.height ?? Math.min(680, area.height - 80),
+      width: saved?.width ?? Math.min(880, area.width - 80),
+      height: saved?.height ?? Math.min(700, area.height - 80),
     });
   }
   writeJson(userFile("settings.json"), settings);
@@ -154,18 +164,70 @@ function applyWindowSettings() {
   // Уровень «screen-saver» держит окно выше игры в режиме «в окне без рамки».
   win.setAlwaysOnTop(Boolean(settings.alwaysOnTop), "screen-saver");
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  win.setMovable(!settings.lockWindow);
+  win.setResizable(!settings.lockWindow);
 }
 
 function showWindow() {
   if (!win) return;
   applyWindowSettings();
+  if (!settings.userToken) connectFromClipboard(true);
   win.show();
   win.focus();
   win.webContents.send("overlay:shown");
 }
 
+/* ---------- автоподключение к сайту: «код подключения» из буфера обмена ---------- */
+
+/* ---------- подключение: один ключ из профиля на сайте ---------- */
+
+const KEY_PATTERN = /rgo_[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{20,}/;
+
+/** Адрес сайта зашит в ключ (rgo_<адрес в base64url>.<секрет>), поэтому вводить ссылку не нужно. */
+function originFromKey(key) {
+  const match = /^rgo_([A-Za-z0-9_-]+)\.[A-Za-z0-9_-]{20,}$/.exec(String(key || "").trim());
+  if (!match) return "";
+  try {
+    const url = new URL(Buffer.from(match[1], "base64url").toString("utf8"));
+    return /^https?:$/.test(url.protocol) ? url.origin : "";
+  } catch {
+    return "";
+  }
+}
+
+/** Адрес всегда берётся из ключа; без ключа остаются настройки старых версий. */
+function withDerivedUrl(next) {
+  const origin = originFromKey(next.userToken);
+  return origin ? { ...next, serverUrl: origin } : next;
+}
+
+/** auto: ключ из буфера обмена применяется сам, только если ключа ещё нет. */
+function connectFromClipboard(auto = false) {
+  const found = KEY_PATTERN.exec(clipboard.readText() || "");
+  if (!found || !originFromKey(found[0])) return { ok: false };
+  if (auto && settings.userToken) return { ok: false };
+  settings = withDerivedUrl({ ...settings, userToken: found[0] });
+  writeJson(userFile("settings.json"), settings);
+  punishments?.restart();
+  win?.webContents.send("settings:changed", settings);
+  win?.webContents.send("overlay:connected");
+  return { ok: true };
+}
+
 function hideWindow() {
   if (win && win.isVisible()) win.hide();
+}
+
+/** Быстрый поиск: сочетание открывает строку поиска поверх игры, повторное нажатие закрывает её. */
+function toggleSearch() {
+  if (!win) return;
+  if (win.isVisible() && win.isFocused() && settings.compact) {
+    hideWindow();
+    return;
+  }
+  if (!settings.compact) setMode(true);
+  showWindow();
+  win.webContents.send("overlay:search");
 }
 
 function toggleWindow() {
@@ -189,11 +251,22 @@ function createHud() {
     alwaysOnTop: true,
     webPreferences: { preload: path.join(__dirname, "preload-hud.js"), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
-  hud.setIgnoreMouseEvents(true);
+  hud.setIgnoreMouseEvents(Boolean(settings.hudLocked));
   hud.setAlwaysOnTop(true, "screen-saver");
   hud.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   hud.loadFile(path.join(__dirname, "src", "hud.html"));
   hud.webContents.on("did-finish-load", updateHud);
+  // Положение запоминаем, когда подсказки передвинули руками (пока они не зафиксированы).
+  hud.on("move", () => {
+    if (settings.hudLocked || !hud || hud.isDestroyed()) return;
+    clearTimeout(hudSaveTimer);
+    hudSaveTimer = setTimeout(() => {
+      if (!hud || hud.isDestroyed()) return;
+      const { x, y } = hud.getBounds();
+      settings.hudPos = { x, y };
+      writeJson(userFile("settings.json"), settings);
+    }, 250);
+  });
   hud.on("closed", () => {
     hud = null;
   });
@@ -205,6 +278,15 @@ function hudItems() {
 
 function placeHud(width, height) {
   if (!hud || hud.isDestroyed()) return;
+  hudSize = { width, height };
+  const saved = settings.hudPos;
+  if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
+    const area = screen.getDisplayNearestPoint({ x: saved.x, y: saved.y }).workArea;
+    const x = Math.min(Math.max(saved.x, area.x), area.x + area.width - width);
+    const y = Math.min(Math.max(saved.y, area.y), area.y + area.height - height);
+    hud.setBounds({ x, y, width, height });
+    return;
+  }
   const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
   const margin = 12;
   const [vertical, horizontal] = String(settings.hudCorner || "top-left").split("-");
@@ -220,7 +302,19 @@ function updateHud() {
     return;
   }
   if (!hud) createHud();
-  hud.webContents.send("hud:data", { items, scale: Number(settings.hudScale) || 1, opacity: Number(settings.hudOpacity) || 0.85, align: String(settings.hudCorner).endsWith("right") ? "right" : "left" });
+  hud.setIgnoreMouseEvents(Boolean(settings.hudLocked));
+  hud.webContents.send("hud:data", {
+    items,
+    scale: Number(settings.hudScale) || 1,
+    opacity: Number(settings.hudOpacity) || 0.85,
+    align: String(settings.hudCorner).endsWith("right") ? "right" : "left",
+    locked: Boolean(settings.hudLocked),
+  });
+  // Скрытое окно не отрисовывает кадры и не пришлёт размер, поэтому возвращаем его на экран сразу.
+  if (!hud.isVisible()) {
+    placeHud(hudSize.width, hudSize.height);
+    hud.showInactive();
+  }
 }
 
 function toggleHud() {
@@ -249,6 +343,8 @@ function registerHotkeys() {
   };
 
   register("toggle", settings.hotkey, toggleWindow);
+  if (settings.searchHotkey && ![settings.hotkey, settings.hudHotkey].includes(settings.searchHotkey)) register("search", settings.searchHotkey, toggleSearch);
+  else if (settings.searchHotkey) hotkeyError.search = "совпадает с другой клавишей оверлея";
   if (settings.hudHotkey && settings.hudHotkey !== settings.hotkey) register("hud", settings.hudHotkey, toggleHud);
   for (const bind of binds) {
     if (!bind.hotkey || bind.hotkey === settings.hotkey) {
@@ -345,11 +441,13 @@ function emptyData() {
 
 async function fetchData() {
   const base = String(settings.serverUrl || "").trim().replace(/\/+$/, "");
-  if (!base) return { ok: false, error: "Не указан адрес сайта (вкладка «Настройки»)" };
+  if (!base) return { ok: false, error: "Оверлей не подключён: вставьте ключ из профиля на сайте (вкладка «Настройки»)" };
   const url = /^https?:\/\//i.test(base) ? base : `https://${base}`;
   try {
     const headers = { Accept: "application/json" };
-    if (settings.token) headers["X-Overlay-Token"] = settings.token.trim();
+    // Личный ключ открывает данные по правам администратора; общий токен остаётся для старых настроек
+    if (settings.userToken) headers.Authorization = `Bearer ${String(settings.userToken).trim()}`;
+    else if (settings.token) headers["X-Overlay-Token"] = settings.token.trim();
     const response = await fetch(`${url}/api/overlay/data`, { headers, signal: AbortSignal.timeout(20000) });
     if (!response.ok) return { ok: false, error: `Сайт ответил ${response.status}` };
     const data = await response.json();
@@ -373,8 +471,16 @@ function loadCached() {
 
 function registerIpc() {
   ipcMain.handle("settings:get", () => settings);
+  ipcMain.handle("connection:me", () => punishments.me());
+  ipcMain.handle("punishments:state", () => punishments.getState());
+  ipcMain.handle("punishments:refresh", () => punishments.poll());
+  ipcMain.handle("punishments:act", (_event, payload) => punishments.act(payload));
+  ipcMain.handle("punishments:create", (_event, payload) => punishments.create(payload));
+  ipcMain.handle("punishments:upload", (_event, bytes, type, name) => punishments.upload(bytes, type, name));
   ipcMain.handle("settings:set", (_event, patch) => {
-    settings = { ...settings, ...patch };
+    const connectionChanged = ["serverUrl", "userToken"].some((key) => key in patch && patch[key] !== settings[key]);
+    settings = withDerivedUrl({ ...settings, ...patch });
+    if (connectionChanged) punishments.restart();
     writeJson(userFile("settings.json"), settings);
     applyWindowSettings();
     registerHotkeys();
@@ -428,6 +534,13 @@ function registerIpc() {
     placeHud(width, height);
     if (settings.hud && !hud.isVisible()) hud.showInactive();
   });
+  ipcMain.on("hud:lock", () => {
+    settings.hudLocked = true;
+    writeJson(userFile("settings.json"), settings);
+    updateHud();
+    win?.webContents.send("settings:changed", settings);
+  });
+  ipcMain.handle("connect:clipboard", () => connectFromClipboard());
   ipcMain.handle("platform", () => process.platform);
 }
 
@@ -458,14 +571,28 @@ if (!app.requestSingleInstanceLock()) {
 } else {
   app.on("second-instance", showWindow);
   app.whenReady().then(() => {
-    settings = { ...DEFAULT_SETTINGS, ...readJson(userFile("settings.json"), {}) };
+    settings = withDerivedUrl({ ...DEFAULT_SETTINGS, ...readJson(userFile("settings.json"), {}) });
     binds = readJson(userFile("binds.json"), []);
+    app.setAppUserModelId("ru.region.overlay");
+    punishments = createPunishments({
+      getSettings: () => settings,
+      onUpdate: (payload) => win?.webContents.send("punishments:update", payload),
+      onOpen: () => {
+        showWindow();
+        win?.webContents.send("overlay:goto", "punishments");
+      },
+    });
     registerIpc();
     createWindow();
     createTray();
     registerHotkeys();
     updateHud();
+    if (!settings.userToken) connectFromClipboard(true);
+    punishments.restart();
   });
-  app.on("will-quit", () => globalShortcut.unregisterAll());
+  app.on("will-quit", () => {
+    globalShortcut.unregisterAll();
+    punishments?.stop();
+  });
   app.on("window-all-closed", () => {});
 }

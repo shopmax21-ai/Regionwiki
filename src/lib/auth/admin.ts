@@ -23,9 +23,13 @@ export type AdminContext = {
 export async function getAdminContext(): Promise<AdminContext | null> {
   const session = await getCurrentUser();
   if (!session) return null;
+  return getAdminContextById(session.id);
+}
 
+/** Тот же контекст по Telegram ID: нужен там, где нет сессии на сайте (например, личный токен оверлея). */
+export async function getAdminContextById(telegramId: string): Promise<AdminContext | null> {
   try {
-    const user = await getUser(session.id);
+    const user = await getUser(telegramId);
     if (!user || user.status !== "approved") return null;
 
     const fromEnv = getAuthConfig()?.adminIds.includes(user.telegramId) ?? false;

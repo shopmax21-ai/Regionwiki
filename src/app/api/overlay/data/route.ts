@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { getSearchIndex } from "@/app/(main)/(dashboard)/rules/_components/rules-content";
 import { type RuleGroup, ruleGroups } from "@/app/(main)/(dashboard)/rules/_components/rules-meta";
+import { authenticateOverlayUser } from "@/lib/overlay/user-auth";
 import { listReplies } from "@/lib/replies/store";
 import { getRulesVersion } from "@/lib/rules/store";
 
@@ -20,8 +21,10 @@ function tokenMatches(request: NextRequest): boolean {
 
 /**
  * Данные для оверлея поверх игры: GET /api/overlay/data
- * Правила открыты, как и на сайте. Быстрые ответы закрыты: отдаются только с заголовком X-Overlay-Token,
- * совпадающим с переменной окружения OVERLAY_TOKEN. Если переменная не задана, ответы не отдаются никому.
+ * Правила открыты, как и на сайте. Быстрые ответы закрыты и отдаются:
+ *  - по личному ключу оверлея (Authorization: Bearer rgo_…), если у администратора есть право просмотра ответов;
+ *  - по общему X-Overlay-Token, совпадающему с OVERLAY_TOKEN (старые версии оверлея).
+ * Если ничего не подошло, ответы не отдаются.
  */
 export async function GET(request: NextRequest) {
   const groups = Object.keys(ruleGroups) as RuleGroup[];
@@ -38,7 +41,8 @@ export async function GET(request: NextRequest) {
     notes: rule.notes,
   }));
 
-  const authorized = tokenMatches(request);
+  const user = await authenticateOverlayUser(request);
+  const authorized = tokenMatches(request) || Boolean(user?.permissions.includes("replies.view"));
   const replies = authorized ? (await listReplies()).replies : null;
 
   return NextResponse.json(

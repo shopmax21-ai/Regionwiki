@@ -1,32 +1,17 @@
 "use client";
 
-import { useState } from "react";
-
-import {
-  Download,
-  ExternalLink,
-  Eye,
-  EyeOff,
-  Copy,
-  Keyboard,
-  MessageSquareText,
-  Monitor,
-  Search,
-  TriangleAlert,
-  Check,
-} from "lucide-react";
-import { toast } from "sonner";
+import { Download, ExternalLink, Keyboard, MessageSquareText, Monitor, Search, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 
+import { OverlayKeyCard, type OverlayKeyInfo } from "./overlay-key-card";
+
 type Props = {
   files: { name: string; size: number; updatedAt: string }[];
-  siteUrl: string;
-  /** null — токен скрыт: не задан на сервере или нет права на быстрые ответы */
-  token: string | null;
-  tokenConfigured: boolean;
   externalUrl: string | null;
+  /** Ключ доступа текущего администратора: null, если ещё не создан (сам ключ на сервере не хранится) */
+  keyInfo: OverlayKeyInfo | null;
 };
 
 /** Акцент Region: тот же красный, что на страницах входа */
@@ -42,15 +27,6 @@ const formatDate = (iso: string) =>
     year: "numeric",
     timeZone: "Europe/Moscow",
   });
-
-async function copy(text: string, label: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-    toast.success(`${label} скопирован`);
-  } catch {
-    toast.error("Не удалось скопировать");
-  }
-}
 
 /* ───────────── Макет окна оверлея: повторяет главную программы ───────────── */
 
@@ -143,44 +119,6 @@ function OverlayMock() {
   );
 }
 
-/* ───────────── Поле с копированием ───────────── */
-
-function CopyField({ label, value, secret }: { label: string; value: string; secret?: boolean }) {
-  const [shown, setShown] = useState(!secret);
-  const [done, setDone] = useState(false);
-
-  const onCopy = async () => {
-    await copy(value, label);
-    setDone(true);
-    setTimeout(() => setDone(false), 1500);
-  };
-
-  return (
-    <div className="space-y-1.5">
-      <div className="font-medium text-sm">{label}</div>
-      <div className="flex items-stretch gap-2">
-        <code className="flex min-w-0 flex-1 items-center truncate rounded-md border bg-muted/40 px-3 py-2 font-mono text-[13px]">
-          {shown ? value : "•".repeat(Math.min(value.length, 36))}
-        </code>
-        {secret ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            aria-label={shown ? "Скрыть токен" : "Показать токен"}
-            onClick={() => setShown((prev) => !prev)}
-          >
-            {shown ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-          </Button>
-        ) : null}
-        <Button type="button" variant="outline" size="icon" aria-label={`Копировать: ${label}`} onClick={onCopy}>
-          {done ? <Check className="size-4 text-emerald-500" /> : <Copy className="size-4" />}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 /* ───────────── Данные ───────────── */
 
 const FEATURES = [
@@ -202,13 +140,14 @@ const FEATURES = [
   {
     icon: Monitor,
     title: "Подсказки поверх игры",
-    text: "Прозрачная панель со списком биндов не перехватывает мышь. Угол экрана, размер и прозрачность — в настройках.",
+    text: "Прозрачная панель со списком биндов не мешает кликам. Её можно перетащить в любое место экрана и зафиксировать.",
   },
 ];
 
 const HOTKEYS: { keys: string[]; label: string }[] = [
   { keys: ["Alt", "R"], label: "Показать или скрыть оверлей" },
-  { keys: ["Alt", "H"], label: "Список биндов на экране игры" },
+  { keys: ["Alt", "S"], label: "Открыть или закрыть строку поиска" },
+  { keys: ["Alt", "H"], label: "Показать или скрыть подсказки биндов" },
   { keys: ["Ctrl", "M"], label: "Свернуть до строки поиска" },
   { keys: ["Ctrl", "1…5"], label: "Переключение вкладок" },
   { keys: ["Esc"], label: "Очистить поиск, затем скрыть" },
@@ -216,7 +155,7 @@ const HOTKEYS: { keys: string[]; label: string }[] = [
 
 /* ───────────── Страница ───────────── */
 
-export function OverlayPanel({ files, siteUrl, token, tokenConfigured, externalUrl }: Props) {
+export function OverlayPanel({ files, externalUrl, keyInfo }: Props) {
   const latest = files[0] ?? null;
   const olderFiles = files.slice(1);
 
@@ -329,27 +268,13 @@ export function OverlayPanel({ files, siteUrl, token, tokenConfigured, externalU
             <span className="-left-[2.6rem] absolute top-0 grid size-5 place-items-center rounded-full bg-(--ov) font-semibold text-[11px] text-white">
               2
             </span>
-            <h3 className="font-medium">Подключите к сайту</h3>
+            <h3 className="font-medium">Подключите ключом</h3>
             <p className="mt-1 mb-4 text-muted-foreground text-sm leading-relaxed">
-              Вкладка «Настройки» в оверлее: вставьте адрес сайта и токен.
+              Создайте ключ ниже (он же доступен в профиле) и откройте оверлей: он найдёт ключ в буфере обмена и
+              подключится сам. Адрес сайта вводить не нужно, а правила, ответы и наказания подтягиваются автоматически.
             </p>
-
-            <div className="max-w-xl space-y-4 rounded-xl border bg-card p-4">
-              {siteUrl ? <CopyField label="Адрес сайта" value={siteUrl} /> : null}
-              {token ? (
-                <CopyField label="Токен оверлея" value={token} secret />
-              ) : (
-                <div className="rounded-md border border-dashed px-3 py-2.5 text-muted-foreground text-sm">
-                  {tokenConfigured
-                    ? "Токен видят администраторы с доступом к быстрым ответам. Без него в оверлее будут только встроенные ответы."
-                    : "Токен не задан. Добавьте на сервере переменную OVERLAY_TOKEN (любая длинная случайная строка), иначе быстрые ответы в оверлей не попадут."}
-                </div>
-              )}
-              {token ? (
-                <p className="text-muted-foreground text-xs">
-                  Не передавайте токен игрокам: с ним открываются быстрые ответы администрации.
-                </p>
-              ) : null}
+            <div className="max-w-xl">
+              <OverlayKeyCard info={keyInfo} />
             </div>
           </li>
 
@@ -359,7 +284,7 @@ export function OverlayPanel({ files, siteUrl, token, tokenConfigured, externalU
             </span>
             <h3 className="font-medium">Запустите игру в окне</h3>
             <p className="mt-1 text-muted-foreground text-sm leading-relaxed">
-              Режим «в окне» или «окно без рамок». Alt+R открывает оверлей, Alt+H показывает бинды.
+              Режим «в окне» или «окно без рамок». Alt+R открывает оверлей, Alt+S строку поиска, Alt+H подсказки биндов.
             </p>
             <div className="mt-3 flex max-w-xl gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 text-sm">
               <TriangleAlert className="mt-0.5 size-4 shrink-0 text-amber-500" />
