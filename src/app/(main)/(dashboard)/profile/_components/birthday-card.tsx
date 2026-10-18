@@ -5,12 +5,22 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { cn } from "cn";
-import { Cake, Check, ChevronDown, Gift, PartyPopper, Save, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  BirthdayCakeIcon,
+  CaretDownIcon,
+  CheckMarkIcon,
+  ClearDateIcon,
+  ConfettiIcon,
+  DayPickIcon,
+  GiftBoxIcon,
+  MonthPickIcon,
+  SaveDiskIcon,
+  SparkleIcon,
+} from "@/components/icons/region-icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   birthdayInYear,
@@ -61,7 +71,8 @@ type PickerProps = {
   display: string;
   disabled: boolean;
   columns: string;
-  options: { value: string; label: string; disabled?: boolean }[];
+  icon: typeof DayPickIcon;
+  options: { value: string; label: string }[];
   onSelect: (value: string) => void;
   className?: string;
 };
@@ -75,6 +86,7 @@ function Picker({
   display,
   disabled,
   columns,
+  icon: Icon,
   options,
   onSelect,
   className,
@@ -82,24 +94,28 @@ function Picker({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className={cn("flex flex-col gap-1.5", className)}>
-      <Label htmlFor={id}>{label}</Label>
+    <div className={className}>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button
             id={id}
             type="button"
             disabled={disabled}
+            aria-label={label}
+            title={label}
             aria-haspopup="listbox"
             aria-expanded={open}
             className={cn(
-              "flex h-10 w-full items-center justify-between gap-2 rounded-xl border border-pink-500/25 bg-background/70 px-3 text-sm outline-none backdrop-blur transition",
+              "flex h-9 w-full items-center gap-2 rounded-xl border border-pink-500/25 bg-background/70 px-2.5 text-sm outline-none backdrop-blur transition",
               "hover:border-pink-500/50 hover:bg-pink-500/5 focus-visible:border-pink-500/60 focus-visible:ring-3 focus-visible:ring-pink-500/20",
               "disabled:cursor-not-allowed disabled:opacity-50 data-[state=open]:border-pink-500/60 data-[state=open]:ring-3 data-[state=open]:ring-pink-500/20",
             )}
           >
-            <span className={cn("truncate", !value && "text-muted-foreground")}>{value ? display : placeholder}</span>
-            <ChevronDown
+            <Icon className="size-4 shrink-0 text-pink-500" aria-hidden="true" />
+            <span className={cn("flex-1 truncate text-left", !value && "text-muted-foreground")}>
+              {value ? display : placeholder}
+            </span>
+            <CaretDownIcon
               className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
               aria-hidden="true"
             />
@@ -115,7 +131,6 @@ function Picker({
                   type="button"
                   role="option"
                   aria-selected={active}
-                  disabled={option.disabled}
                   onClick={() => {
                     onSelect(option.value);
                     setOpen(false);
@@ -123,13 +138,12 @@ function Picker({
                   className={cn(
                     "relative flex h-8 items-center justify-center rounded-lg px-1 text-sm tabular-nums outline-none transition-colors",
                     "hover:bg-pink-500/10 focus-visible:bg-pink-500/10 focus-visible:ring-2 focus-visible:ring-pink-500/40",
-                    "disabled:pointer-events-none disabled:opacity-30",
                     active && "bg-pink-500 font-semibold text-white hover:bg-pink-500",
                   )}
                 >
                   {option.label}
                   {active && columns.includes("grid-cols-2") && (
-                    <Check className="absolute right-2 size-3.5" aria-hidden="true" />
+                    <CheckMarkIcon className="absolute right-2 size-3.5" aria-hidden="true" />
                   )}
                 </button>
               );
@@ -185,62 +199,54 @@ export function BirthdayCard({ initial }: { initial: string | null }) {
   };
 
   return (
-    <Card className="relative overflow-hidden border-pink-500/25 bg-linear-to-br from-pink-500/10 via-card to-amber-400/10">
-      {/* Праздничный фон: мягкие пятна света и крупные значки в углах */}
+    <Card className="relative gap-0 overflow-hidden border-pink-500/25 bg-linear-to-br from-pink-500/10 via-card to-amber-400/10 py-0">
+      {/* Праздничный фон: мягкие пятна света и значки в углах */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-16 -right-12 size-52 rounded-full bg-pink-500/15 blur-3xl" />
-        <div className="absolute -bottom-20 -left-10 size-56 rounded-full bg-amber-400/15 blur-3xl" />
-        <PartyPopper className="absolute top-4 right-5 size-16 rotate-12 text-pink-500/15" />
-        <Gift className="absolute right-24 bottom-3 size-12 -rotate-12 text-amber-500/15" />
-        <Sparkles className="absolute top-10 right-36 size-6 text-amber-500/30" />
+        <div className="absolute -top-12 -right-10 size-36 rounded-full bg-pink-500/15 blur-3xl" />
+        <div className="absolute -bottom-14 -left-8 size-40 rounded-full bg-amber-400/15 blur-3xl" />
+        <ConfettiIcon className="absolute top-2 right-3 size-9 rotate-12 text-pink-500/25" />
+        <GiftBoxIcon className="absolute right-16 bottom-2 size-8 -rotate-12 text-amber-500/20" />
       </div>
 
-      <CardContent className="relative flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-8">
-        <div className="flex flex-col items-start gap-3 sm:w-56 sm:shrink-0">
-          <div className="flex size-12 items-center justify-center rounded-2xl bg-linear-to-br from-pink-500 to-rose-400 text-white shadow-lg shadow-pink-500/25">
-            <Cake className="size-6" aria-hidden="true" />
-          </div>
-          <div className="flex flex-col gap-1">
-            <h3 className="font-semibold text-lg leading-tight">День рождения</h3>
-            {initial ? (
-              <>
-                <p className="font-semibold text-2xl text-pink-600 tracking-tight dark:text-pink-400">
-                  {formatBirthday(initial)}
-                </p>
+      <CardContent className="relative flex flex-col gap-3 px-4 py-3.5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-pink-500 to-rose-400 text-white shadow-md shadow-pink-500/25">
+              <BirthdayCakeIcon className="size-5.5" aria-hidden="true" />
+            </div>
+            <div className="flex min-w-0 flex-col">
+              <h3 className="font-semibold leading-tight">День рождения</h3>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <span className="text-muted-foreground text-sm">
+                  {initial ? formatBirthday(initial) : "Дата пока не указана"}
+                </span>
                 {left !== null && (
                   <span
                     className={cn(
-                      "mt-1 inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs",
+                      "inline-flex items-center gap-1 rounded-full border px-2 py-px text-[11px]",
                       isToday
                         ? "border-amber-500/40 bg-amber-400/15 font-medium text-amber-700 dark:text-amber-300"
                         : "border-pink-500/25 bg-pink-500/10 text-pink-700 dark:text-pink-300",
                     )}
                   >
-                    <Sparkles className="size-3" aria-hidden="true" />
+                    <SparkleIcon className="size-3" aria-hidden="true" />
                     {countdownText(left)}
                   </span>
                 )}
-              </>
-            ) : (
-              <p className="text-muted-foreground text-sm">Дата пока не указана</p>
-            )}
+              </div>
+            </div>
           </div>
-          <p className="text-muted-foreground text-xs leading-relaxed">
-            Год не нужен. Дата появится в календаре, коллеги получат напоминание в Telegram за день, а в сам день
-            рождения сайт поздравит вас при первом входе.
-          </p>
-        </div>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-4 sm:max-w-sm">
-          <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-3">
+          <div className="flex items-center gap-2 sm:mr-14">
             <Picker
               id="birthday-day"
               label="День"
               value={day}
               display={day}
-              placeholder="—"
+              placeholder="День"
               disabled={pending}
               columns="grid-cols-7"
+              icon={DayPickIcon}
               options={Array.from({ length: dayCount }, (_, index) => ({
                 value: String(index + 1),
                 label: String(index + 1),
@@ -249,15 +255,17 @@ export function BirthdayCard({ initial }: { initial: string | null }) {
                 setError(null);
                 setDay(next);
               }}
+              className="w-24"
             />
             <Picker
               id="birthday-month"
               label="Месяц"
               value={month}
               display={month ? MONTHS[monthNumber - 1] : ""}
-              placeholder="Выберите месяц"
+              placeholder="Месяц"
               disabled={pending}
               columns="grid-cols-2"
+              icon={MonthPickIcon}
               options={MONTHS.map((name, index) => ({ value: String(index + 1), label: name }))}
               onSelect={(next) => {
                 setError(null);
@@ -265,34 +273,47 @@ export function BirthdayCard({ initial }: { initial: string | null }) {
                 // Если в новом месяце меньше дней, выбранный день сбрасываем
                 if (next && Number(day) > MAX_DAYS[Number(next) - 1]) setDay("");
               }}
+              className="w-36"
             />
-          </div>
-
-          {error && (
-            <p
-              role="alert"
-              className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive text-sm"
-            >
-              {error}
-            </p>
-          )}
-
-          <div className="flex flex-wrap items-center gap-2">
             <Button
+              size="icon"
               onClick={() => value && save(value)}
               disabled={pending || !valid || !dirty}
-              className="bg-linear-to-r from-pink-500 to-rose-500 text-white hover:from-pink-500/90 hover:to-rose-500/90"
+              aria-label="Сохранить"
+              title={pending ? "Сохранение..." : "Сохранить"}
+              className="size-9 shrink-0 rounded-xl bg-linear-to-br from-pink-500 to-rose-500 text-white hover:from-pink-500/90 hover:to-rose-500/90"
             >
-              <Save data-icon="inline-start" />
-              {pending ? "Сохранение..." : "Сохранить"}
+              <SaveDiskIcon className="size-5" />
             </Button>
             {initial && (
-              <Button variant="ghost" onClick={() => save(null)} disabled={pending}>
-                Убрать дату
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => save(null)}
+                disabled={pending}
+                aria-label="Убрать дату"
+                title="Убрать дату"
+                className="size-9 shrink-0 rounded-xl text-muted-foreground"
+              >
+                <ClearDateIcon className="size-5" />
               </Button>
             )}
           </div>
         </div>
+
+        {error && (
+          <p
+            role="alert"
+            className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-destructive text-sm"
+          >
+            {error}
+          </p>
+        )}
+
+        <p className="max-w-2xl text-muted-foreground text-xs leading-relaxed">
+          Год не нужен. Дата появится в календаре, коллеги получат напоминание в Telegram за день, а в сам день рождения
+          сайт поздравит вас при первом входе.
+        </p>
       </CardContent>
     </Card>
   );

@@ -390,3 +390,92 @@ export const ChiefRoleIcon = createIcon(
     <path d="M7 15.5h10" />
   </>,
 );
+
+/* Иконки карточки дня рождения */
+
+export const BirthdayCakeIcon = createIcon(
+  "BirthdayCakeIcon",
+  <>
+    <rect x="4" y="12" width="16" height="8.5" rx="2.2" {...tint} />
+    <rect x="4" y="12" width="16" height="8.5" rx="2.2" />
+    <path d="M4 16c1.8 1.4 3.2 1.4 4 0s2.2-1.4 4 0 3.2 1.4 4 0 2.2-1.4 4 0" />
+    <path d="M8.5 12V9.2M12 12V8.2M15.5 12V9.2" />
+    <path d="M8.5 7.2c-.6-.7-.6-1.4 0-2.2.6.8.6 1.5 0 2.2ZM12 6.2c-.6-.7-.6-1.4 0-2.2.6.8.6 1.5 0 2.2ZM15.5 7.2c-.6-.7-.6-1.4 0-2.2.6.8.6 1.5 0 2.2Z" />
+  </>,
+);
+
+export const SaveDiskIcon = createIcon(
+  "SaveDiskIcon",
+  <>
+    <path d="M5 3.5h10.5l4 4V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V5A1.5 1.5 0 0 1 5 3.5Z" {...tint} />
+    <path d="M5 3.5h10.5l4 4V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V5A1.5 1.5 0 0 1 5 3.5Z" />
+    <path d="M8 3.5V8h7V3.5" />
+    <path d="M7.5 20.5v-6h9v6" />
+  </>,
+);
+
+export const ClearDateIcon = createIcon(
+  "ClearDateIcon",
+  <>
+    <circle cx="12" cy="12" r="8.5" {...tint} />
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="m9 9 6 6M15 9l-6 6" />
+  </>,
+);
+
+export const DayPickIcon = createIcon(
+  "DayPickIcon",
+  <>
+    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" {...tint} />
+    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+    <path d="M8 3v4M16 3v4M3.5 10h17" />
+    <circle cx="12" cy="15" r="1.6" fill="currentColor" stroke="none" />
+  </>,
+);
+
+export const MonthPickIcon = createIcon(
+  "MonthPickIcon",
+  <>
+    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" {...tint} />
+    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+    <path d="M8 3v4M16 3v4M3.5 10h17" />
+    <path d="M8 14h.01M12 14h.01M16 14h.01M8 17.2h.01M12 17.2h.01" strokeWidth="2.4" />
+  </>,
+);
+
+export const CaretDownIcon = createIcon("CaretDownIcon", <path d="m6.5 9.5 5.5 5.5 5.5-5.5" />);
+
+export const CheckMarkIcon = createIcon("CheckMarkIcon", <path d="m5 12.5 4.5 4.5L19 7.5" />);
+
+export const GiftBoxIcon = createIcon(
+  "GiftBoxIcon",
+  <>
+    <rect x="4" y="10" width="16" height="10.5" rx="2" {...tint} />
+    <rect x="4" y="10" width="16" height="10.5" rx="2" />
+    <rect x="3" y="7" width="18" height="3.5" rx="1.4" />
+    <path d="M12 7v13.5" />
+    <path d="M12 7C9.5 7 8 6 8 4.8S9 3 10 3.2C11.4 3.5 12 5.5 12 7Zm0 0c2.5 0 4-1 4-2.2S15 3 14 3.2C12.6 3.5 12 5.5 12 7Z" />
+  </>,
+);
+
+export const ConfettiIcon = createIcon(
+  "ConfettiIcon",
+  <>
+    <path d="M4 20 8 8l8 8Z" {...tint} />
+    <path d="M4 20 8 8l8 8Z" />
+    <path d="M14 4v2M19 9h-2M17.5 5.5l-1.2 1.2M12 9.5c1.5-1 3-.5 3.5.8" />
+    <path d="M19.5 14.5h.01M10.5 3.5h.01" strokeWidth="2.4" />
+  </>,
+);
+
+export const SparkleIcon = createIcon(
+  "SparkleIcon",
+  <>
+    <path
+      d="M12 3.5c.6 4.4 2.1 5.9 6.5 6.5-4.4.6-5.9 2.1-6.5 6.5-.6-4.4-2.1-5.9-6.5-6.5 4.4-.6 5.9-2.1 6.5-6.5Z"
+      {...tint}
+    />
+    <path d="M12 3.5c.6 4.4 2.1 5.9 6.5 6.5-4.4.6-5.9 2.1-6.5 6.5-.6-4.4-2.1-5.9-6.5-6.5 4.4-.6 5.9-2.1 6.5-6.5Z" />
+    <path d="M19 16v4M17 18h4" />
+  </>,
+);
