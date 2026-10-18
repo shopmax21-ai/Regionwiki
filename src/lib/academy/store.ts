@@ -10,13 +10,17 @@ import {
   type AttemptQuestion,
   type AttemptSummary,
   type Difficulty,
+  INVITE_LIMITS,
+  type InviteLanding,
+  type InviteStatus,
+  type InviteSummary,
   type PublicQuestion,
   percentOf,
   type QuestionDef,
   type RulesConfig,
 } from "./types";
 import type { TestInput } from "./validate";
-import { randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 
 /**
  * Академия хранится в Postgres:
@@ -82,6 +86,23 @@ async function init(): Promise<void> {
       percent      integer,
       passed       boolean
     )`);
+    await client.query("ALTER TABLE academy_tests ADD COLUMN IF NOT EXISTS closed boolean NOT NULL DEFAULT false");
+    // Одноразовые ссылки на закрытые тесты: в базе только хеш ссылки, сама ссылка показывается один раз
+    await client.query(`CREATE TABLE IF NOT EXISTS academy_invites (
+      id          text PRIMARY KEY,
+      token_hash  text NOT NULL UNIQUE,
+      test_id     text NOT NULL,
+      label       text NOT NULL DEFAULT '',
+      created_by  text NOT NULL,
+      created_at  timestamptz NOT NULL DEFAULT now(),
+      expires_at  timestamptz NOT NULL,
+      used_at     timestamptz,
+      revoked_at  timestamptz,
+      attempt_id  text
+    )`);
+    await client.query(
+      "CREATE INDEX IF NOT EXISTS academy_invites_test_idx ON academy_invites (test_id, created_at DESC)",
+    );
     await client.query(
       "CREATE INDEX IF NOT EXISTS academy_attempts_user_idx ON academy_attempts (user_id, finished_at DESC)",
     );
@@ -150,6 +171,7 @@ type TestRow = {
   kind: string;
   questions: QuestionDef[];
   rules: RulesConfig | null;
+  closed: boolean;
   updated_at: string | Date;
 };
 
@@ -164,11 +186,12 @@ const toTest = (row: TestRow): AcademyTest => ({
   kind: row.kind === "rules" ? "rules" : "manual",
   questions: Array.isArray(row.questions) ? row.questions : [],
   rules: row.rules ?? null,
+  closed: row.closed === true,
   updatedAt: new Date(row.updated_at).toISOString(),
 });
 
 const TEST_COLUMNS =
-  "id, title, description, category, difficulty, duration_min, pass_percent, kind, questions, rules, updated_at";
+  "id, title, description, category, difficulty, duration_min, pass_percent, kind, questions, rules, closed, updated_at";
 
 export const listTests = () =>
   run(async () => {
@@ -189,8 +212,8 @@ export const createTest = (input: TestInput, updatedBy: string) =>
   run(async () => {
     const id = randomUUID();
     await getPool().query(
-      `INSERT INTO academy_tests (id, title, description, category, difficulty, duration_min, pass_percent, kind, questions, rules, updated_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11)`,
+      `INSERT INTO academy_tests (id, title, description, category, difficulty, duration_min, pass_percent, kind, questions, rules, updated_by, closed)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11, $12)`,
       [
         id,
         input.title,
@@ -203,6 +226,7 @@ export const createTest = (input: TestInput, updatedBy: string) =>
         JSON.stringify(withIds(input.questions)),
         input.rules ? JSON.stringify(input.rules) : null,
         updatedBy,
+        input.closed,
       ],
     );
     return id;
@@ -212,7 +236,8 @@ export const updateTest = (id: string, input: TestInput, updatedBy: string) =>
   run(async () => {
     const result = await getPool().query(
       `UPDATE academy_tests SET title = $2, description = $3, category = $4, difficulty = $5, duration_min = $6,
-         pass_percent = $7, kind = $8, questions = $9::jsonb, rules = $10::jsonb, updated_at = now(), updated_by = $11
+         pass_percent = $7, kind = $8, questions = $9::jsonb, rules = $10::jsonb, updated_at = now(), updated_by = $11,
+         closed = $12
        WHERE id = $1`,
       [
         id,
@@ -226,6 +251,7 @@ export const updateTest = (id: string, input: TestInput, updatedBy: string) =>
         JSON.stringify(withIds(input.questions)),
         input.rules ? JSON.stringify(input.rules) : null,
         updatedBy,
+        input.closed,
       ],
     );
     if (result.rowCount === 0) throw new AcademyStoreError("not_found");
@@ -237,6 +263,7 @@ export const deleteTest = (id: string) =>
     const result = await getPool().query("DELETE FROM academy_tests WHERE id = $1", [id]);
     if (result.rowCount === 0) throw new AcademyStoreError("not_found");
     await getPool().query("DELETE FROM academy_attempts WHERE test_id = $1 AND status = 'in_progress'", [id]);
+    await getPool().query("DELETE FROM academy_invites WHERE test_id = $1 AND used_at IS NULL", [id]);
   });
 
 /* Прохождение */
@@ -542,4 +569,151 @@ export const getOverview = () =>
         }),
       ),
     };
+  });
+
+/* Одноразовые ссылки на закрытые тесты */
+
+const GUEST_PREFIX = "guest:";
+const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
+const validToken = (token: unknown): token is string =>
+  typeof token === "string" && /^[A-Za-z0-9_-]{20,80}$/.test(token);
+
+type InviteRow = {
+  id: string;
+  token_hash: string;
+  test_id: string;
+  label: string;
+  created_at: string | Date;
+  expires_at: string | Date;
+  used_at: string | Date | null;
+  revoked_at: string | Date | null;
+};
+
+function inviteStatus(row: Pick<InviteRow, "used_at" | "revoked_at" | "expires_at">): InviteStatus {
+  if (row.revoked_at) return "revoked";
+  if (row.used_at) return "started";
+  return new Date(row.expires_at).getTime() <= Date.now() ? "expired" : "pending";
+}
+
+/** Создаёт ссылку на закрытый тест. Возвращает сам токен: больше его получить нельзя. */
+export const createInvite = (testId: string, label: string, createdBy: string) =>
+  run(async () => {
+    const test = await getTest(testId);
+    if (!test) throw new AcademyStoreError("not_found");
+    if (!test.closed) throw new AcademyStoreError("invalid", "Ссылки создаются только для закрытых тестов");
+    const token = randomBytes(24).toString("base64url");
+    await getPool().query(
+      `INSERT INTO academy_invites (id, token_hash, test_id, label, created_by, expires_at)
+       VALUES ($1, $2, $3, $4, $5, now() + ($6 * interval '1 day'))`,
+      [
+        randomUUID(),
+        hashToken(token),
+        testId,
+        label.trim().slice(0, INVITE_LIMITS.label),
+        createdBy,
+        INVITE_LIMITS.ttlDays,
+      ],
+    );
+    return token;
+  });
+
+export const listInvites = (testId: string) =>
+  run(async (): Promise<InviteSummary[]> => {
+    const { rows } = await getPool().query<InviteRow>(
+      `SELECT id, token_hash, test_id, label, created_at, expires_at, used_at, revoked_at
+       FROM academy_invites WHERE test_id = $1 ORDER BY created_at DESC LIMIT 30`,
+      [testId],
+    );
+    return rows.map((row) => ({
+      id: row.id,
+      label: row.label,
+      status: inviteStatus(row),
+      createdAt: iso(row.created_at),
+      expiresAt: iso(row.expires_at),
+      usedAt: row.used_at ? iso(row.used_at) : null,
+    }));
+  });
+
+/** Отзывает ещё не использованную ссылку. */
+export const revokeInvite = (id: string, testId: string) =>
+  run(async () => {
+    const result = await getPool().query(
+      "UPDATE academy_invites SET revoked_at = now() WHERE id = $1 AND test_id = $2 AND used_at IS NULL AND revoked_at IS NULL",
+      [id, testId],
+    );
+    if (result.rowCount === 0) throw new AcademyStoreError("not_found");
+  });
+
+/** Что показать человеку, открывшему ссылку. Ссылка при этом не тратится. */
+export const getInviteLanding = (token: string) =>
+  run(async (): Promise<InviteLanding> => {
+    if (!validToken(token)) return { ok: false, reason: "invalid" };
+    const { rows } = await getPool().query<InviteRow>(
+      "SELECT id, token_hash, test_id, label, created_at, expires_at, used_at, revoked_at FROM academy_invites WHERE token_hash = $1",
+      [hashToken(token)],
+    );
+    const row = rows[0];
+    if (!row) return { ok: false, reason: "invalid" };
+    const status = inviteStatus(row);
+    if (status === "revoked") return { ok: false, reason: "revoked" };
+    if (status === "started") return { ok: false, reason: "used" };
+    if (status === "expired") return { ok: false, reason: "expired" };
+    const test = await getTest(row.test_id);
+    if (!test?.closed) return { ok: false, reason: "invalid" };
+    return {
+      ok: true,
+      test: {
+        title: test.title,
+        description: test.description,
+        category: test.category,
+        difficulty: test.difficulty,
+        durationMin: test.durationMin,
+        passPercent: test.passPercent,
+        kind: test.kind,
+        questionCount: test.kind === "rules" ? (test.rules?.questionCount ?? 0) : test.questions.length,
+      },
+    };
+  });
+
+/**
+ * Начинает прохождение по ссылке и тратит её: второй раз та же ссылка уже не откроется.
+ * Если вопросы собрать не удалось, ссылка возвращается, чтобы человек мог попробовать снова.
+ */
+export const startGuestAttempt = (token: string, guestName: string) =>
+  run(async () => {
+    if (!validToken(token)) throw new AcademyStoreError("not_found");
+    const pool = getPool();
+    const claimed = await pool.query<{ id: string; test_id: string }>(
+      `UPDATE academy_invites SET used_at = now()
+       WHERE token_hash = $1 AND used_at IS NULL AND revoked_at IS NULL AND expires_at > now()
+       RETURNING id, test_id`,
+      [hashToken(token)],
+    );
+    const invite = claimed.rows[0];
+    if (!invite) throw new AcademyStoreError("not_found");
+
+    try {
+      const test = await getTest(invite.test_id);
+      if (!test?.closed) throw new AcademyStoreError("not_found");
+      const name = `${guestName.trim().slice(0, INVITE_LIMITS.guestName)} (по ссылке)`;
+      const started = await startAttempt(test, { id: `${GUEST_PREFIX}${invite.id}`, name });
+      await pool.query("UPDATE academy_invites SET attempt_id = $2 WHERE id = $1", [invite.id, started.attemptId]);
+      return { ...started, test };
+    } catch (error) {
+      await pool
+        .query("UPDATE academy_invites SET used_at = NULL WHERE id = $1 AND attempt_id IS NULL", [invite.id])
+        .catch((releaseError) => console.error("[academy] Не удалось вернуть ссылку", releaseError));
+      throw error;
+    }
+  });
+
+/** Завершает попытку, начатую по ссылке. Номер попытки известен только тому, кто её начал. */
+export const submitGuestAttempt = (attemptId: string, chosen: readonly (number | null)[]) =>
+  run(async () => {
+    const { rows } = await getPool().query<{ user_id: string }>("SELECT user_id FROM academy_attempts WHERE id = $1", [
+      attemptId,
+    ]);
+    const userId = rows[0]?.user_id;
+    if (!userId?.startsWith(GUEST_PREFIX)) throw new AcademyStoreError("not_found");
+    return submitAttempt(attemptId, userId, chosen);
   });

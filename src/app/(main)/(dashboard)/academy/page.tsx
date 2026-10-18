@@ -24,6 +24,7 @@ const toCard = (test: AcademyTest): TestCardData => ({
   passPercent: test.passPercent,
   kind: test.kind,
   questionCount: test.kind === "rules" ? (test.rules?.questionCount ?? 0) : test.questions.length,
+  closed: test.closed,
 });
 
 export default async function Page() {
@@ -42,7 +43,8 @@ export default async function Page() {
       getUserStats(admin.id, 0),
       listAttempts({ userId: admin.id, limit: 50 }),
     ]);
-    tests = loadedTests;
+    // Закрытые тесты в общем списке видят только те, кто их редактирует и выдаёт на них ссылки
+    tests = canEdit ? loadedTests : loadedTests.filter((test) => !test.closed);
     stats = loadedStats;
     myAttempts = loadedAttempts;
   } catch (error) {

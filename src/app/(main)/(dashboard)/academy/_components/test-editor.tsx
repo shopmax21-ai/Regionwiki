@@ -4,7 +4,7 @@ import { useId, useState, useTransition } from "react";
 
 import { useRouter } from "next/navigation";
 
-import { Pencil, Plus, Trash2, Wand2, X } from "lucide-react";
+import { Lock, Pencil, Plus, Trash2, Wand2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { ruleGroups } from "@/app/(main)/(dashboard)/rules/_components/rules-meta";
@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   type AcademyTest,
@@ -47,6 +48,7 @@ type FormState = {
   difficulty: Difficulty;
   duration: string;
   passPercent: string;
+  closed: boolean;
   kind: TestKind;
   questions: QuestionForm[];
   questionCount: string;
@@ -73,6 +75,7 @@ const emptyForm = (): FormState => ({
   difficulty: "Средний",
   duration: "10",
   passPercent: String(DEFAULT_PASS_PERCENT),
+  closed: false,
   kind: "manual",
   questions: [emptyQuestion()],
   questionCount: "10",
@@ -87,6 +90,7 @@ const formFromTest = (test: AcademyTest): FormState => ({
   difficulty: test.difficulty,
   duration: String(test.durationMin),
   passPercent: String(test.passPercent),
+  closed: test.closed,
   kind: test.kind,
   questions:
     test.questions.length > 0
@@ -127,6 +131,7 @@ function buildPayload(form: FormState): Built {
     difficulty: form.difficulty,
     durationMin,
     passPercent,
+    closed: form.closed,
   };
 
   if (form.kind === "rules") {
@@ -323,6 +328,27 @@ export function TestEditor(props: TestEditorProps) {
             />
           </div>
         </div>
+
+        <Label
+          htmlFor={id("closed")}
+          className="flex cursor-pointer items-start justify-between gap-4 rounded-lg border p-3 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/5"
+        >
+          <span className="flex flex-col gap-0.5">
+            <span className="flex items-center gap-1.5 font-medium text-sm">
+              <Lock className="size-3.5" aria-hidden="true" />
+              Закрытый тест
+            </span>
+            <span className="font-normal text-muted-foreground text-xs">
+              Скрыт из общего списка. Пройти его можно только по одноразовой ссылке, которую вы создадите на карточке
+              теста.
+            </span>
+          </span>
+          <Switch
+            id={id("closed")}
+            checked={form.closed}
+            onCheckedChange={(checked) => set("closed", checked === true)}
+          />
+        </Label>
 
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-2 font-medium text-sm">Вопросы</legend>

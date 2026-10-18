@@ -5,7 +5,7 @@ import { type ReactNode, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { ArrowRight, ClipboardCheck, Clock3, GraduationCap, Trash2, Wand2 } from "lucide-react";
+import { ArrowRight, ClipboardCheck, Clock3, GraduationCap, Lock, Trash2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import { startAttemptAction } from "../_actions";
 import { QuizRunner } from "./quiz-runner";
 import { TestDeleteDialog } from "./test-delete-dialog";
 import { TestEditor } from "./test-editor";
+import { TestInviteDialog } from "./test-invite-dialog";
 
 export type QuizKpis = { attempts: number; averagePercent: number; bestPercent: number };
 
@@ -152,8 +153,15 @@ export function QuizCenter({ cards, editable, kpis, canSeeResults, problem, chil
                     {card.kind === "rules" ? <Wand2 /> : <GraduationCap />}
                   </div>
                   <div className="flex items-center gap-1">
+                    {card.closed && (
+                      <Badge variant="secondary" className="gap-1">
+                        <Lock className="size-3" aria-hidden="true" />
+                        Закрытый
+                      </Badge>
+                    )}
                     {card.kind === "rules" && <Badge variant="secondary">Автогенерация</Badge>}
                     <Badge variant="outline">{card.difficulty}</Badge>
+                    {canEdit && card.closed && <TestInviteDialog testId={card.id} title={card.title} />}
                     {canEdit && full && <TestEditor mode="edit" test={full} />}
                     {canEdit && (
                       <Button

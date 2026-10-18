@@ -250,6 +250,7 @@ function buildSidebarItems(jobLinks: readonly JobNavLink[]): NavGroup[] {
           title: "Оверлей для игры",
           url: "/overlay",
           icon: OverlayIcon,
+          badge: "soon",
         },
       ],
     },

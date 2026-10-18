@@ -18,15 +18,26 @@ type QuizRunnerProps = {
   test: TestCardData;
   attemptId: string;
   questions: PublicQuestion[];
-  restarting: boolean;
-  onRestart: () => void;
-  onExit: () => void;
+  restarting?: boolean;
+  /** Без onRestart и onExit (прохождение по ссылке) кнопок «Пройти ещё раз» и «К списку» нет */
+  onRestart?: () => void;
+  onExit?: () => void;
+  /** Как отправить ответы: по умолчанию для администратора в Академии, для ссылки передаётся своя проверка */
+  submit?: (attemptId: string, answers: (number | null)[]) => Promise<SubmitAttemptResult>;
 };
 
 type Finished = Extract<SubmitAttemptResult, { ok: true }>;
 
 /** Прохождение теста. Правильные ответы сюда не приходят: проверка идёт на сервере. */
-export function QuizRunner({ test, attemptId, questions, restarting, onRestart, onExit }: QuizRunnerProps) {
+export function QuizRunner({
+  test,
+  attemptId,
+  questions,
+  restarting = false,
+  onRestart,
+  onExit,
+  submit = submitAttemptAction,
+}: QuizRunnerProps) {
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>(() => questions.map(() => null));
   const [result, setResult] = useState<Finished | null>(null);
@@ -44,7 +55,7 @@ export function QuizRunner({ test, attemptId, questions, restarting, onRestart, 
   const finish = () => {
     startTransition(async () => {
       try {
-        const response = await submitAttemptAction(attemptId, answers);
+        const response = await submit(attemptId, answers);
         if (!response.ok) {
           toast.error(response.error);
           return;
@@ -74,15 +85,19 @@ export function QuizRunner({ test, attemptId, questions, restarting, onRestart, 
                 {test.passPercent}%.
               </p>
             </div>
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button onClick={onRestart} disabled={restarting}>
-                <RotateCcw data-icon="inline-start" />
-                {restarting ? "Подготовка..." : "Пройти ещё раз"}
-              </Button>
-              <Button variant="outline" onClick={onExit}>
-                К списку тестов
-              </Button>
-            </div>
+            {onRestart && onExit ? (
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button onClick={onRestart} disabled={restarting}>
+                  <RotateCcw data-icon="inline-start" />
+                  {restarting ? "Подготовка..." : "Пройти ещё раз"}
+                </Button>
+                <Button variant="outline" onClick={onExit}>
+                  К списку тестов
+                </Button>
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm">Результат сохранён. Эту страницу можно закрыть.</p>
+            )}
           </CardContent>
         </Card>
 
@@ -108,10 +123,14 @@ export function QuizRunner({ test, attemptId, questions, restarting, onRestart, 
     <Card>
       <CardHeader className="gap-4">
         <div className="flex items-center justify-between gap-3">
-          <Button variant="ghost" size="sm" onClick={onExit} disabled={pending}>
-            <ArrowLeft data-icon="inline-start" />
-            Все тесты
-          </Button>
+          {onExit ? (
+            <Button variant="ghost" size="sm" onClick={onExit} disabled={pending}>
+              <ArrowLeft data-icon="inline-start" />
+              Все тесты
+            </Button>
+          ) : (
+            <span className="font-medium text-sm">{test.title}</span>
+          )}
           <div className="flex items-center gap-2">
             {question.source && <Badge variant="outline">{question.source}</Badge>}
             <Badge variant="secondary">

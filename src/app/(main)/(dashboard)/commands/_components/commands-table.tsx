@@ -3,12 +3,14 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "cn";
-import { ArrowDownWideNarrow, ArrowUpNarrowWide, Search, X } from "lucide-react";
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, Check, Copy, Search, X } from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
+import { copyText } from "../../replies/_components/copy-text";
 import { levelLabel, type ServerCommand } from "../_data/commands";
 import { CommandActions } from "./command-actions";
 import { CommandEditor } from "./command-editor";
@@ -26,8 +28,7 @@ const LEVEL_TONES = [
 const toneFor = (level: number) => LEVEL_TONES[(Math.max(level, 1) - 1) % LEVEL_TONES.length];
 
 const GRID = "md:grid md:grid-cols-[5.5rem_minmax(0,14rem)_minmax(0,1fr)_minmax(0,1.4fr)] md:gap-x-4";
-const GRID_EDITABLE =
-  "md:grid md:grid-cols-[5.5rem_minmax(0,14rem)_minmax(0,1fr)_minmax(0,1.4fr)_5rem] md:gap-x-4";
+const GRID_EDITABLE = "md:grid md:grid-cols-[5.5rem_minmax(0,14rem)_minmax(0,1fr)_minmax(0,1.4fr)_5rem] md:gap-x-4";
 
 export type EditorState = "on" | "off" | "unavailable";
 
@@ -47,6 +48,49 @@ function Highlight({ text, query }: { text: string; query: string }) {
       </mark>
       {text.slice(index + needle.length)}
     </Fragment>
+  );
+}
+
+/** Название команды: по клику в буфер обмена попадает только сама команда, без аргументов. */
+function CopyCommand({ command, query }: { command: string; query: string }) {
+  const [copied, setCopied] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => (timer.current ? clearTimeout(timer.current) : undefined), []);
+
+  const copy = async () => {
+    if (!(await copyText(command))) {
+      toast.error("Не удалось скопировать, выделите команду вручную");
+      return;
+    }
+    setCopied(true);
+    toast.success(`Скопировано: ${command}`);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setCopied(false), 1500);
+  };
+
+  const Icon = copied ? Check : Copy;
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      title="Скопировать команду"
+      aria-label={`Скопировать команду ${command}`}
+      className="group/copy inline-flex max-w-full items-center gap-1.5 rounded-md text-left outline-none transition-colors hover:text-primary focus-visible:ring-2 focus-visible:ring-ring/50"
+    >
+      <code className="break-all font-mono font-semibold text-sm">
+        <Highlight text={command} query={query} />
+      </code>
+      <Icon
+        className={cn(
+          "size-3.5 shrink-0 transition-opacity",
+          copied
+            ? "text-emerald-500 opacity-100"
+            : "text-muted-foreground opacity-0 group-hover/copy:opacity-100 group-focus-visible/copy:opacity-100 max-md:opacity-60",
+        )}
+        aria-hidden="true"
+      />
+    </button>
   );
 }
 
@@ -96,15 +140,17 @@ export function CommandsTable({
       .filter((item) => {
         if (selected.length > 0 && !selected.includes(item.level)) return false;
         if (!needle) return true;
-        return normalize(`${levelLabel(item.level)} ${item.command} ${item.argument} ${item.description}`).includes(needle);
+        return normalize(`${levelLabel(item.level)} ${item.command} ${item.argument} ${item.description}`).includes(
+          needle,
+        );
       })
-      .sort(
-        (a, b) => (descending ? b.level - a.level : a.level - b.level) || a.command.localeCompare(b.command, "ru"),
-      );
+      .sort((a, b) => (descending ? b.level - a.level : a.level - b.level) || a.command.localeCompare(b.command, "ru"));
   }, [commands, query, selected, descending]);
 
   const toggle = (level: number) =>
-    setSelected((current) => (current.includes(level) ? current.filter((item) => item !== level) : [...current, level]));
+    setSelected((current) =>
+      current.includes(level) ? current.filter((item) => item !== level) : [...current, level],
+    );
 
   const filtering = query.trim() !== "" || selected.length > 0;
   const SortIcon = descending ? ArrowDownWideNarrow : ArrowUpNarrowWide;
@@ -120,7 +166,7 @@ export function CommandsTable({
         <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
           <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Команды сервера</h1>
           <p className="mt-3 max-w-xl text-muted-foreground">
-            Команды сгруппированы по уровню доступа. Цвет уровня одинаков в таблице и в фильтре.
+            Команды сгруппированы по уровню доступа. Нажмите на команду, чтобы скопировать её без аргументов.
           </p>
 
           <div className="relative mt-7 w-full">
@@ -175,7 +221,11 @@ export function CommandsTable({
                   onClick={() => toggle(level)}
                   className={cn(
                     "rounded-md outline-none transition focus-visible:ring-2 focus-visible:ring-ring/50",
-                    active ? "ring-2 ring-ring" : selected.length > 0 ? "opacity-50 hover:opacity-100" : "hover:opacity-80",
+                    active
+                      ? "ring-2 ring-ring"
+                      : selected.length > 0
+                        ? "opacity-50 hover:opacity-100"
+                        : "hover:opacity-80",
                   )}
                 >
                   <LevelBadge level={level} className="h-7 cursor-pointer px-3 text-xs" />
@@ -247,9 +297,9 @@ export function CommandsTable({
                   <div>
                     <LevelBadge level={item.level} />
                   </div>
-                  <code className="break-all font-mono font-semibold text-sm">
-                    <Highlight text={item.command} query={query} />
-                  </code>
+                  <div>
+                    <CopyCommand command={item.command} query={query} />
+                  </div>
                   <code className="break-words font-mono text-muted-foreground text-xs">
                     {item.argument ? <Highlight text={item.argument} query={query} /> : "—"}
                   </code>

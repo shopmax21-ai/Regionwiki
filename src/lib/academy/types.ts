@@ -70,6 +70,8 @@ export type AcademyTest = {
   questions: QuestionDef[];
   /** Для kind = "rules" */
   rules: RulesConfig | null;
+  /** Закрытый тест: в общем списке его нет, пройти можно только по одноразовой ссылке */
+  closed: boolean;
   updatedAt: string;
 };
 
@@ -84,6 +86,7 @@ export type TestCardData = {
   passPercent: number;
   kind: TestKind;
   questionCount: number;
+  closed: boolean;
 };
 
 /** Вопрос так, как он показывается проходящему: без правильного ответа и разбора. */
@@ -136,3 +139,22 @@ export type SubmitAttemptResult =
   | { ok: false; error: string };
 
 export const percentOf = (score: number, total: number) => (total === 0 ? 0 : Math.round((score / total) * 100));
+
+/** Одноразовая ссылка на закрытый тест. Сама ссылка хранится только в виде хеша и показывается один раз при создании. */
+export type InviteStatus = "pending" | "started" | "expired" | "revoked";
+
+export type InviteSummary = {
+  id: string;
+  label: string;
+  status: InviteStatus;
+  createdAt: string;
+  expiresAt: string;
+  usedAt: string | null;
+};
+
+export const INVITE_LIMITS = { label: 80, guestName: 60, minGuestName: 2, ttlDays: 7 } as const;
+
+/** Что видит человек, открывший ссылку: сведения о тесте без вопросов. */
+export type InviteLanding =
+  | { ok: true; test: Omit<TestCardData, "closed" | "id"> }
+  | { ok: false; reason: "invalid" | "used" | "expired" | "revoked" };

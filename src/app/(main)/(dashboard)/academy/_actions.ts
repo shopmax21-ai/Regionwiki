@@ -4,17 +4,26 @@ import { revalidatePath } from "next/cache";
 
 import {
   AcademyStoreError,
+  createInvite,
   createTest,
   deleteTest,
   getTest,
+  listInvites,
+  revokeInvite,
   startAttempt,
   submitAttempt,
   updateTest,
 } from "@/lib/academy/store";
-import type { StartAttemptResult, SubmitAttemptResult } from "@/lib/academy/types";
+import {
+  INVITE_LIMITS,
+  type InviteSummary,
+  type StartAttemptResult,
+  type SubmitAttemptResult,
+} from "@/lib/academy/types";
 import { validateTest } from "@/lib/academy/validate";
 import { actorOf, recordContentChange } from "@/lib/audit/store";
 import { getAdmin, getAdminContext } from "@/lib/auth/admin";
+import { getSiteOrigin } from "@/lib/overlay/site-origin";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -102,6 +111,10 @@ export async function startAttemptAction(testId: string): Promise<StartAttemptRe
   try {
     const test = await getTest(testId);
     if (!test) return { ok: false, error: "Тест не найден, возможно, его удалили" };
+    // Закрытые тесты проходят по одноразовой ссылке; из общего списка их запускают только те, кто их редактирует
+    if (test.closed && !admin.permissions.includes("academy.edit")) {
+      return { ok: false, error: "Это закрытый тест: пройти его можно только по персональной ссылке" };
+    }
     const started = await startAttempt(test, { id: admin.id, name: admin.name });
     return { ok: true, ...started };
   } catch (error) {
@@ -137,6 +150,63 @@ export async function submitAttemptAction(attemptId: string, chosen: unknown): P
       review: admin.permissions.includes("academy.results") ? attempt.questions : null,
     };
   } catch (error) {
+    return failure(error);
+  }
+}
+
+/* Одноразовые ссылки на закрытые тесты: создают и отзывают те, кто редактирует тесты */
+
+const INVITE_DENIED = { ok: false, error: "Недостаточно прав для редактирования тестов" } as const;
+
+export type InviteCreated = { ok: true; url: string; invites: InviteSummary[] } | { ok: false; error: string };
+export type InviteList = { ok: true; invites: InviteSummary[] } | { ok: false; error: string };
+
+export async function listInvitesAction(testId: string): Promise<InviteList> {
+  const admin = await getAdmin("academy.edit");
+  if (!admin) return INVITE_DENIED;
+  if (!validId(testId)) return ID_INVALID;
+  try {
+    return { ok: true, invites: await listInvites(testId) };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+/** Создаёт ссылку. Адрес показывается один раз: в базе остаётся только его хеш. */
+export async function createInviteAction(testId: string, label: unknown): Promise<InviteCreated> {
+  const admin = await getAdmin("academy.edit");
+  if (!admin) return INVITE_DENIED;
+  if (!validId(testId)) return ID_INVALID;
+  if (typeof label !== "string" || label.length > INVITE_LIMITS.label) {
+    return { ok: false, error: "Пометка слишком длинная" };
+  }
+  const origin = await getSiteOrigin();
+  if (!origin) return { ok: false, error: "Не удалось определить адрес сайта. Задайте OVERLAY_SITE_URL на сервере" };
+
+  try {
+    const token = await createInvite(testId, label, admin.id);
+    const test = await getTest(testId).catch(() => null);
+    await recordContentChange(actorOf(admin), "test", "updated", {
+      id: testId,
+      label: `${test?.title ?? testId}: ссылка${label.trim() ? ` для «${label.trim()}»` : ""}`,
+    });
+    return { ok: true, url: `${origin}/test/${token}`, invites: await listInvites(testId) };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function revokeInviteAction(testId: string, inviteId: string): Promise<InviteList> {
+  const admin = await getAdmin("academy.edit");
+  if (!admin) return INVITE_DENIED;
+  if (!validId(testId) || !validId(inviteId)) return ID_INVALID;
+  try {
+    await revokeInvite(inviteId, testId);
+    return { ok: true, invites: await listInvites(testId) };
+  } catch (error) {
+    if (error instanceof AcademyStoreError && error.code === "not_found") {
+      return { ok: false, error: "Ссылка уже использована или отозвана" };
+    }
     return failure(error);
   }
 }

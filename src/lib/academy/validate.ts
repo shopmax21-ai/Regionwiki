@@ -48,6 +48,7 @@ const baseShape = {
     .min(1, "Проходной балл от 1%")
     .max(100, "Проходной балл до 100%")
     .default(DEFAULT_PASS_PERCENT),
+  closed: z.boolean().default(false),
 };
 
 const manualSchema = z.object({
@@ -85,6 +86,7 @@ export type TestInput = {
   kind: (typeof TEST_KINDS)[number];
   questions: Omit<QuestionDef, "id">[];
   rules: RulesConfig | null;
+  closed: boolean;
 };
 
 export function validateTest(input: unknown): { ok: true; test: TestInput } | { ok: false; error: string } {
@@ -105,6 +107,7 @@ export function validateTest(input: unknown): { ok: true; test: TestInput } | { 
     difficulty: data.difficulty,
     durationMin: data.durationMin,
     passPercent: data.passPercent,
+    closed: data.closed,
   };
   if (data.kind === "manual") {
     return { ok: true, test: { ...common, kind: "manual", questions: data.questions, rules: null } };
