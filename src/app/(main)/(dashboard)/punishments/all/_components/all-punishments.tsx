@@ -9,7 +9,6 @@ import { toast } from "sonner";
 
 import { PersonName } from "@/components/person-name";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -266,7 +265,7 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
         </div>
       </div>
 
-      <Card className="gap-0 py-0">{body}</Card>
+      <div>{body}</div>
 
       <Dialog open={opened !== null} onOpenChange={(open) => !open && setOpenId(null)}>
         {opened && (
