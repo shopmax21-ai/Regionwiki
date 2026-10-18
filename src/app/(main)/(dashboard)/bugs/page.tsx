@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import type { Metadata } from "next";
 
-import { getAdminContext } from "@/lib/auth/admin";
+import { getPageAdminContext } from "@/lib/auth/admin";
 import { getAuthConfig } from "@/lib/auth/config";
 import { listBugs } from "@/lib/bugs/store";
 import { type BugStatus, isBugStatus } from "@/lib/bugs/types";
@@ -22,7 +22,7 @@ type SearchParams = Promise<{ status?: string | string[] }>;
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
   if (!getAuthConfig()) redirect("/");
 
-  const admin = await getAdminContext();
+  const admin = await getPageAdminContext();
   if (!admin?.permissions.includes("bugs.view")) redirect("/unauthorized");
 
   const raw = (await searchParams).status;

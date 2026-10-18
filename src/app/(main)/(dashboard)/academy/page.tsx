@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { listTests } from "@/lib/academy/store";
 import type { AcademyTest, TestCardData } from "@/lib/academy/types";
-import { requireAdmin } from "@/lib/auth/admin";
+import { requirePageAdmin } from "@/lib/auth/admin";
 
 import { QuizCenter } from "./_components/quiz-center";
 
@@ -27,7 +27,7 @@ const toCard = (test: AcademyTest): TestCardData => ({
 });
 
 export default async function Page() {
-  const admin = await requireAdmin();
+  const admin = await requirePageAdmin();
   const canEdit = admin.permissions.includes("academy.edit");
   const canSeeResults = admin.permissions.includes("academy.results");
 

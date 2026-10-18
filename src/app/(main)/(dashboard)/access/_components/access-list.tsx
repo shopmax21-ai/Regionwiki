@@ -153,9 +153,6 @@ export function AccessList({ users }: { users: DbUser[] }) {
     <div className="flex w-full flex-col gap-6 md:gap-8">
       <header className="flex flex-col gap-1">
         <h1 className="font-semibold text-2xl tracking-tight">Заявки на доступ</h1>
-        <p className="max-w-2xl text-muted-foreground text-sm">
-          Решайте, кто получит доступ к панели. Мы напишем в Telegram, когда придёт новая заявка.
-        </p>
       </header>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">

@@ -15,7 +15,6 @@ export function MyRequests({ requests }: { requests: PunishmentRequest[] }) {
     <Card className="gap-0 py-0">
       <CardHeader className="border-b py-4">
         <CardTitle>Мои заявки</CardTitle>
-        <CardDescription>Статус обновляется сам, перезагружать страницу не нужно.</CardDescription>
       </CardHeader>
       {requests.length === 0 ? (
         <p className="px-4 py-8 text-center text-muted-foreground text-sm">Вы ещё не подавали заявок.</p>

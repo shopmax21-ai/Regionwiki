@@ -60,11 +60,15 @@ function OverlayMock() {
       <div className="flex items-center gap-3 border-white/8 border-b bg-[#0f0f10] px-3.5 py-3">
         <MiniMark />
         <span className="min-w-0 flex-1 truncate text-[15px]">
-          огра<span className="ml-px inline-block h-4 w-px translate-y-0.5 bg-[#e63f3f]" />
+          огра
+          <span className="ml-px inline-block h-4 w-px translate-y-0.5 bg-[#e63f3f]" />
         </span>
         <span className="flex rounded-full border border-white/8 bg-[#1b1b1d] p-0.5 text-[10px]">
           {["Всё", "Правила", "Ответы"].map((tab, i) => (
-            <span key={tab} className={`rounded-full px-2 py-0.5 ${i === 0 ? "bg-[#2b2b2e] text-white" : "text-white/45"}`}>
+            <span
+              key={tab}
+              className={`rounded-full px-2 py-0.5 ${i === 0 ? "bg-[#2b2b2e] text-white" : "text-white/45"}`}
+            >
               {tab}
             </span>
           ))}
@@ -247,7 +251,7 @@ export function OverlayPanel({ files, externalUrl }: Props) {
 
       {/* Установка: это действительно последовательность шагов */}
       <section className="space-y-6">
-        <h2 className="font-semibold text-xl">Установка за три шага</h2>
+        <h2 className="font-semibold text-1xl">Установка за три шага</h2>
 
         <ol className="relative space-y-8 border-l pl-8">
           <li className="relative">
@@ -292,7 +296,7 @@ export function OverlayPanel({ files, externalUrl }: Props) {
 
       {/* Горячие клавиши */}
       <section className="space-y-4">
-        <h2 className="font-semibold text-xl">Горячие клавиши</h2>
+        <h2 className="font-semibold text-1xl">Горячие клавиши</h2>
         <div className="divide-y rounded-xl border">
           {HOTKEYS.map(({ keys, label }) => (
             <div key={label} className="flex items-center justify-between gap-4 px-4 py-3">

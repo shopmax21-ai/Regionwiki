@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import type { Metadata } from "next";
 
-import { getAdminContext } from "@/lib/auth/admin";
+import { getPageAdminContext } from "@/lib/auth/admin";
 import { getAuthConfig } from "@/lib/auth/config";
 import { listReplies } from "@/lib/replies/store";
 
@@ -19,7 +19,7 @@ export default async function Page() {
   // Без настроенной авторизации раздел закрыть нечем, поэтому он недоступен
   if (!getAuthConfig()) redirect("/");
 
-  const admin = await getAdminContext();
+  const admin = await getPageAdminContext();
   if (!admin?.permissions.includes("replies.view")) redirect("/unauthorized");
 
   const { replies, editable, problem } = await listReplies();

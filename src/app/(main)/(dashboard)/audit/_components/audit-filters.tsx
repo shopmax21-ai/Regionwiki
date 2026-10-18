@@ -58,11 +58,7 @@ export function AuditFilters({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h1 className="font-semibold text-xl leading-none">Аудит действий администрации</h1>
-        <p className="text-muted-foreground text-sm">
-          Журнал значимых изменений: доступ, группы и права, правки и удаление контента, решения по наказаниям. Записи
-          нельзя изменить или удалить. Всего записей: {total}.
-        </p>
+        <h1 className="font-semibold text-2xl leading-none">Аудит действий администрации</h1>
       </div>
 
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center" aria-busy={pending}>
@@ -77,7 +73,8 @@ export function AuditFilters({
             placeholder="Поиск по действию, объекту или имени"
             className="pl-9"
             maxLength={80}
-            aria-label="Поиск по журналу" data-section-search
+            aria-label="Поиск по журналу"
+            data-section-search
           />
         </div>
 

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import type { Metadata } from "next";
 
-import { getAdminContext } from "@/lib/auth/admin";
+import { getPageAdminContext } from "@/lib/auth/admin";
 import { getAuthConfig } from "@/lib/auth/config";
 import { getMediaPrInfo, listMediaPrEntries } from "@/lib/mediapr/store";
 
@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 export default async function Page() {
   if (!getAuthConfig()) redirect("/");
 
-  const admin = await getAdminContext();
+  const admin = await getPageAdminContext();
   if (!admin?.permissions.includes("mediapr.view")) redirect("/unauthorized");
 
   try {

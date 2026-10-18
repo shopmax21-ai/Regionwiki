@@ -132,7 +132,7 @@ function Notice({ title, text }: { title: string; text: string }) {
         <div className="flex size-14 items-center justify-center rounded-md bg-destructive/10 text-destructive">
           <ShieldAlert className="size-7" aria-hidden="true" />
         </div>
-        <h1 className="font-semibold text-xl">{title}</h1>
+        <h1 className="font-semibold text-2xl">{title}</h1>
         <p className="max-w-md text-muted-foreground text-sm">{text}</p>
       </CardContent>
     </Card>

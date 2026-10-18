@@ -100,13 +100,7 @@ export function BugsBoard({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="font-semibold text-xl tracking-tight">Баг-репорты</h1>
-        <p className="text-muted-foreground text-sm">
-          Сообщения участников об ошибках на сайте.{" "}
-          {canManage
-            ? "Возьмите репорт в работу, чтобы остальные видели, что им занимаются, и отметьте выполненным, когда ошибка исправлена."
-            : "Менять статусы могут только администраторы с правом обработки."}
-        </p>
+        <h1 className="font-semibold text-2xl tracking-tight">Баг-репорты</h1>
       </div>
 
       <nav aria-label="Статус баг-репортов" className="flex flex-wrap gap-2">

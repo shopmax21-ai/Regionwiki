@@ -94,7 +94,7 @@ export function QuizCenter({ cards, editable, canSeeResults, problem }: QuizCent
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h2 className="font-semibold text-xl">Выберите тест</h2>
+          <h2 className="font-semibold text-2xl">Выберите тест</h2>
         </div>
         <div className="flex flex-wrap gap-2">
           {canSeeResults && (

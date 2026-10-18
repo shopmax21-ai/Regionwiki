@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateTime } from "@/lib/academy/format";
 import { getOverview, listAttempts } from "@/lib/academy/store";
-import { getAdmin } from "@/lib/auth/admin";
+import { getPageAdmin } from "@/lib/auth/admin";
 import { getAuthConfig } from "@/lib/auth/config";
 import { personLabel } from "@/lib/auth/person";
 
@@ -42,7 +42,7 @@ const href = (params: { user?: string; test?: string }) => {
 /** Раздел для Гл.Администраторов: результаты всех администраторов с правильностью ответов и разбором. */
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
   if (!getAuthConfig()) redirect("/");
-  if (!(await getAdmin("academy.results"))) redirect("/unauthorized");
+  if (!(await getPageAdmin("academy.results"))) redirect("/unauthorized");
 
   const params = await searchParams;
   const userId = single(params.user);
@@ -75,11 +75,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="font-semibold text-xl">Результаты тестов</h1>
-          <p className="text-muted-foreground text-sm">
-            Правильность ответов и подробный разбор по каждому пройденному тесту. Раздел виден только Главным
-            администраторам.
-          </p>
+          <h1 className="font-semibold text-2xl">Результаты тестов</h1>
         </div>
         <Link href="/academy" prefetch={false} className={buttonVariants({ variant: "outline" })}>
           <ArrowLeft data-icon="inline-start" />К тестам

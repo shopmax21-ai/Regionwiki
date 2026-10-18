@@ -237,11 +237,11 @@ function EntryDialog({
       <DialogContent
         className="max-h-[90dvh] overflow-y-auto sm:max-w-lg"
         onKeyDown={(event) => {
-            if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-              event.preventDefault();
-              if (!pending) onSave();
-            }
-          }}
+          if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+            event.preventDefault();
+            if (!pending) onSave();
+          }
+        }}
       >
         {draft && (
           <form onSubmit={submit} className="flex flex-col gap-4">
@@ -495,8 +495,7 @@ export function MediaPrSection({
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 pb-10 md:gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="font-semibold text-xl">Медиа PR</h1>
-        <p className="text-muted-foreground text-sm">Справка и таблица медиа, с которыми работает проект.</p>
+        <h1 className="font-semibold text-2xl">Медиа PR</h1>
       </div>
 
       <InfoCard info={info} canEdit={canEdit} />
@@ -631,9 +630,7 @@ export function MediaPrSection({
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex min-w-0 flex-col gap-1">
                           {nameCell(entry)}
-                          <span className="text-muted-foreground text-xs">
-                            {mediaPrPlatformLabels[entry.platform]}
-                          </span>
+                          <span className="text-muted-foreground text-xs">{mediaPrPlatformLabels[entry.platform]}</span>
                         </div>
                         <StatusBadge status={entry.status} />
                       </div>

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import type { Metadata } from "next";
 
-import { getAdminContext } from "@/lib/auth/admin";
+import { getPageAdminContext } from "@/lib/auth/admin";
 import { warmAvatars } from "@/lib/auth/avatar";
 import { getAuthConfig } from "@/lib/auth/config";
 import { checkDatabase, getGroupPermissions, listUserOverrides, listUsers } from "@/lib/auth/db";
@@ -25,7 +25,7 @@ export default async function Page() {
   const config = getAuthConfig();
   if (!config) redirect("/");
 
-  const admin = await getAdminContext();
+  const admin = await getPageAdminContext();
   if (!admin?.permissions.includes("users.view")) {
     // Если проблема в базе, а не в правах, говорим об этом честно
     try {

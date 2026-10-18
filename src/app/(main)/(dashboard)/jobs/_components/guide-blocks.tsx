@@ -344,7 +344,7 @@ export function GuideSections({ sections }: { sections: GuideSectionView[] }) {
     <>
       {sections.map((section) => (
         <section key={section.id} id={section.id} className="flex scroll-mt-24 flex-col gap-3">
-          {section.title && <h2 className="font-semibold text-xl tracking-tight">{section.title}</h2>}
+          {section.title && <h2 className="font-semibold text-1xl tracking-tight">{section.title}</h2>}
           {section.blocks.length > 0 ? (
             <div className="flex min-w-0 flex-col gap-4 break-words rounded-xl border bg-card p-4 text-sm leading-6 shadow-xs md:p-5">
               {section.blocks.map((block, index) => (

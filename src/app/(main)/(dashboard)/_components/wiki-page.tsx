@@ -167,9 +167,7 @@ function SectionCard({ section, index }: { section: Section; index: number }) {
       style={{ animationDelay: `${index * 45}ms` }}
       className={cn(
         "wk-rise hv-reg group relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl border p-5 transition-all",
-        soon
-          ? "border-dashed bg-muted/30"
-          : "bg-card hover:-translate-y-0.5",
+        soon ? "border-dashed bg-muted/30" : "bg-card hover:-translate-y-0.5",
       )}
     >
       <div className="flex items-start justify-between">
@@ -368,7 +366,7 @@ export function WikiPage({
       {showResults ? (
         <section aria-live="polite" className="flex min-w-0 flex-col gap-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="font-semibold text-xl tracking-tight">Результаты поиска</h2>
+            <h2 className="font-semibold text-2xl tracking-tight">Результаты поиска</h2>
             <span className="text-muted-foreground text-sm">{statusText}</span>
           </div>
 
@@ -395,7 +393,7 @@ export function WikiPage({
         <>
           <section className="flex flex-col gap-4">
             <div className="flex items-baseline justify-between gap-4">
-              <h2 className="font-semibold text-xl tracking-tight">Разделы</h2>
+              <h2 className="font-semibold text-1xl tracking-tight">Разделы</h2>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {sections.map((section, index) => (

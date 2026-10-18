@@ -151,7 +151,7 @@ export function QuizRunner({
               <Icon className="size-8" />
             </div>
             <div className="flex flex-col gap-1">
-              <h2 className="font-semibold text-xl">{result.passed ? "Тест сдан" : "Тест не сдан"}</h2>
+              <h2 className="font-semibold text-1xl">{result.passed ? "Тест сдан" : "Тест не сдан"}</h2>
               <p className="text-muted-foreground text-sm">
                 {test.title}: {result.score} из {result.total} правильных ответов ({result.percent}%). Проходной балл:{" "}
                 {test.passPercent}%.
@@ -254,7 +254,9 @@ export function QuizRunner({
           </p>
         ) : (
           previousTimed && (
-            <p className="text-muted-foreground text-xs">К предыдущему вопросу вернуться нельзя: у него было своё время.</p>
+            <p className="text-muted-foreground text-xs">
+              К предыдущему вопросу вернуться нельзя: у него было своё время.
+            </p>
           )
         )}
       </CardContent>

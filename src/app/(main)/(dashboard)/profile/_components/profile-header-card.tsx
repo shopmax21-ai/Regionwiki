@@ -75,7 +75,7 @@ export function ProfileHeaderCard({
       <CardContent className="relative z-10 flex flex-wrap items-center gap-4">
         <ProfileAvatar name={person.name} userId={avatarUserId} />
         <div className="min-w-0 flex-1">
-          <h1 className="truncate font-semibold text-xl">
+          <h1 className="truncate font-semibold text-2xl">
             <PersonName person={person} className="[&>span.truncate]:font-semibold" />
           </h1>
           <p className="truncate text-muted-foreground text-sm">

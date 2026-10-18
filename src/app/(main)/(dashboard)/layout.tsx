@@ -8,7 +8,8 @@ import { AppSidebar } from "@/app/(main)/(dashboard)/_components/sidebar/app-sid
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { accessKey } from "@/lib/auth/access-key";
-import { getViewerAccess } from "@/lib/auth/admin";
+import { getPagePreviewGroup, getViewerAccess } from "@/lib/auth/admin";
+import { getAuthConfig } from "@/lib/auth/config";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getPeopleSafe, shouldGreetBirthday } from "@/lib/auth/db";
 import { birthdayKeysFor, mskDateParts } from "@/lib/birthdays/types";
@@ -18,6 +19,7 @@ import { getPreference } from "@/server/server-actions";
 import { AccessSync } from "./_components/access-sync";
 import { BirthdayFireworks } from "./_components/birthday-fireworks";
 import { BugReportButton } from "./_components/header/bug-report-button";
+import { RolePreviewSwitcher } from "./_components/header/role-preview-switcher";
 import { SearchDialog } from "./_components/header/search-dialog";
 import { ThemeSwitcher } from "./_components/header/theme-switcher";
 import { SectionSearchShortcut } from "./_components/section-search-shortcut";
@@ -33,7 +35,9 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
   ]);
   const jobLinks = jobs.map((job) => ({ slug: job.slug, title: job.title }));
   const authorized = session?.status === "approved";
+  const previewEnabled = authorized && (getAuthConfig()?.adminIds.includes(session.id) ?? false);
   const { isAdmin, permissions } = authorized ? await getViewerAccess() : { isAdmin: false, permissions: [] };
+  const previewGroup = previewEnabled ? await getPagePreviewGroup() : null;
   // Группа, Никнейм и Static ID берутся из базы: в сессии только имя из Telegram
   const me = session ? (await getPeopleSafe([session.id])).get(session.id) : undefined;
   const user = session
@@ -44,7 +48,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
         role: session.role,
         nickname: me?.nickname ?? null,
         staticId: me?.staticId ?? null,
-        group: me?.group ?? null,
+        group: previewGroup ?? (previewEnabled ? "chief" : (me?.group ?? null)),
         background: me?.background ?? null,
       }
     : null;
@@ -114,6 +118,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
               <SearchDialog authorized={authorized} isAdmin={isAdmin} permissions={permissions} jobs={jobLinks} />
             </div>
             <div className="flex items-center gap-2">
+              {previewEnabled && <RolePreviewSwitcher actualGroup="chief" previewGroup={previewGroup} />}
               <BugReportButton />
               <ThemeSwitcher />
             </div>

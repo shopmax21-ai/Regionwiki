@@ -15,7 +15,7 @@ type Section = { id: string; title: string };
 function Block({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
     <section id={id} className="flex scroll-mt-24 flex-col gap-3">
-      <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+      <h2 className="text-1xl font-semibold tracking-tight">{title}</h2>
       <div className="min-w-0 break-words rounded-xl border bg-card p-4 text-sm leading-6 shadow-xs md:p-5">
         {children}
       </div>

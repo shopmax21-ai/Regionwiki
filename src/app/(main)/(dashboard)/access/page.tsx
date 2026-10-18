@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import type { Metadata } from "next";
 
-import { getAdmin } from "@/lib/auth/admin";
+import { getPageAdmin } from "@/lib/auth/admin";
 import { warmAvatars } from "@/lib/auth/avatar";
 import { getAuthConfig } from "@/lib/auth/config";
 import { listUsers } from "@/lib/auth/db";
@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 export default async function Page() {
   if (!getAuthConfig()) redirect("/");
 
-  const admin = await getAdmin("access.decide");
+  const admin = await getPageAdmin("access.decide");
   if (!admin) redirect("/unauthorized");
 
   const users = await listUsers();

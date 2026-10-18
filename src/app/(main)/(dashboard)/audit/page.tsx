@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 import { countAudit, listAudit, listAuditActors } from "@/lib/audit/store";
 import { type AuditCategory, type AuditSeverity, isAuditCategory, isAuditSeverity, PAGE_SIZE } from "@/lib/audit/types";
-import { getAdmin } from "@/lib/auth/admin";
+import { getPageAdmin } from "@/lib/auth/admin";
 import { getAuthConfig } from "@/lib/auth/config";
 
 import { AuditFilters } from "./_components/audit-filters";
@@ -30,7 +30,7 @@ const single = (value: string | string[] | undefined) => (Array.isArray(value) ?
 /** Раздел только для Гл.Администратора: журнал значимых изменений, которые вносила администрация. */
 export default async function Page({ searchParams }: { searchParams: SearchParams }) {
   if (!getAuthConfig()) redirect("/");
-  if (!(await getAdmin("audit.view"))) redirect("/unauthorized");
+  if (!(await getPageAdmin("audit.view"))) redirect("/unauthorized");
 
   const params = await searchParams;
   const rawCategory = single(params.category);

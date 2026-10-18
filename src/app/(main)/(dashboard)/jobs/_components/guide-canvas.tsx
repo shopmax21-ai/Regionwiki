@@ -363,7 +363,7 @@ function BlockContent({ block, actions }: { block: EditorBlock; actions: BlockAc
   switch (block.type) {
     case "heading":
       return (
-        <h2 className="font-semibold text-xl tracking-tight">
+        <h2 className="font-semibold text-1xl tracking-tight">
           <InlineField
             singleLine
             value={block.text}

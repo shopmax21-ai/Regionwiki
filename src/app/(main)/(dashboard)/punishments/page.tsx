@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import type { Metadata } from "next";
 
-import { getAdmin } from "@/lib/auth/admin";
+import { getPageAdmin } from "@/lib/auth/admin";
 import { getAuthConfig } from "@/lib/auth/config";
 import { listMine } from "@/lib/punishments/store";
 import type { PunishmentRequest } from "@/lib/punishments/types";
@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 /** Раздел хелпера: подать заявку на наказание и следить за её статусом. */
 export default async function Page() {
   if (!getAuthConfig()) redirect("/");
-  const user = await getAdmin("punishments.request");
+  const user = await getPageAdmin("punishments.request");
   if (!user) redirect("/unauthorized");
 
   let requests: PunishmentRequest[] = [];
@@ -37,10 +37,7 @@ export default async function Page() {
     <div className="flex flex-col gap-6">
       <AutoRefresh />
       <div className="flex flex-col gap-1">
-        <h1 className="font-semibold text-xl">Заявка на наказание</h1>
-        <p className="text-muted-foreground text-sm">
-          Заполните данные нарушителя. Администратор рассмотрит заявку и выдаст наказание.
-        </p>
+        <h1 className="font-semibold text-2xl">Заявка на наказание</h1>
       </div>
       {problem && (
         <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">

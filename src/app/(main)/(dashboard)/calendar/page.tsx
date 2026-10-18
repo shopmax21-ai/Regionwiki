@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { requireAdmin } from "@/lib/auth/admin";
+import { requirePageAdmin } from "@/lib/auth/admin";
 import { getUser, listBirthdays } from "@/lib/auth/db";
 import { personPlainText } from "@/lib/auth/person";
 import type { CalendarBirthday } from "@/lib/birthdays/types";
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  const admin = await requireAdmin();
+  const admin = await requirePageAdmin();
 
   let events: CalendarEvent[] = [];
   let problem: string | null = null;

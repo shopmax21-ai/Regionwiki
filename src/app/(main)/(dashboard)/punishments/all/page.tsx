@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getAdmin } from "@/lib/auth/admin";
+import { getPageAdmin } from "@/lib/auth/admin";
 import { getAuthConfig } from "@/lib/auth/config";
 import { countByStatus, listAll, listEvents } from "@/lib/punishments/store";
 import type { PunishmentEvent, PunishmentRequest } from "@/lib/punishments/types";
@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 /** Раздел Гл.Администратора: все наказания (на рассмотрении, выданные, отклонённые) и история всех действий. */
 export default async function Page() {
   if (!getAuthConfig()) redirect("/");
-  if (!(await getAdmin("punishments.all"))) redirect("/unauthorized");
+  if (!(await getPageAdmin("punishments.all"))) redirect("/unauthorized");
 
   let requests: PunishmentRequest[] = [];
   let events: PunishmentEvent[] = [];
@@ -48,11 +48,7 @@ export default async function Page() {
     <div className="flex flex-col gap-6">
       <AutoRefresh />
       <div className="flex flex-col gap-1">
-        <h1 className="font-semibold text-xl">Все наказания</h1>
-        <p className="text-muted-foreground text-sm">
-          Заявки на рассмотрении, выданные и отклонённые наказания и история всех действий. Раздел виден только Главным
-          администраторам.
-        </p>
+        <h1 className="font-semibold text-2xl">Все наказания</h1>
       </div>
       {problem && (
         <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">

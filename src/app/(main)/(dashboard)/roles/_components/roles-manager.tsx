@@ -72,11 +72,6 @@ export function RolesManager({
       <Card>
         <CardHeader>
           <CardTitle>Роли и права</CardTitle>
-          <CardDescription>
-            Четыре группы администраторов. Старшая группа может назначать младшие, а Гл.Администратор настраивает, что
-            доступно каждой из них.
-            {!canEdit && " Сейчас вы можете только смотреть: менять права может Гл.Администратор."}
-          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
           {adminGroups.map((group) => {

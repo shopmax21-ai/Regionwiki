@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import type { Metadata } from "next";
 
-import { getAdminContext } from "@/lib/auth/admin";
+import { getPageAdminContext } from "@/lib/auth/admin";
 import { getAuthConfig } from "@/lib/auth/config";
 import { checkDatabase, getGroupPermissions } from "@/lib/auth/db";
 
@@ -22,7 +22,7 @@ function Notice({ children }: { children: React.ReactNode }) {
 export default async function Page() {
   if (!getAuthConfig()) redirect("/");
 
-  const admin = await getAdminContext();
+  const admin = await getPageAdminContext();
   if (!admin?.permissions.includes("permissions.view")) {
     try {
       await checkDatabase();

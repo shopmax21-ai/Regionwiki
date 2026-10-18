@@ -165,9 +165,7 @@ export function CommandsTable({
         )}
         <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
           <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Команды сервера</h1>
-          <p className="mt-3 max-w-xl text-muted-foreground">
-            Команды сгруппированы по уровню доступа. Нажмите на команду, чтобы скопировать её без аргументов.
-          </p>
+          <p className="mt-3 max-w-xl text-muted-foreground">Команды сгруппированы по уровню доступа.</p>
 
           <div className="relative mt-7 w-full">
             <Search

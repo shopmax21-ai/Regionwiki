@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { requireAdmin } from "@/lib/auth/admin";
+import { requirePageAdmin } from "@/lib/auth/admin";
 import { listCommands } from "@/lib/commands/store";
 
 import { CommandsTable } from "./_components/commands-table";
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  const admin = await requireAdmin();
+  const admin = await requirePageAdmin();
   const { commands, editable, problem } = await listCommands();
 
   let editor: "on" | "off" | "unavailable" = "off";

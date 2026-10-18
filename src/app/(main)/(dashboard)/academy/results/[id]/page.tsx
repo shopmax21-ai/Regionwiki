@@ -9,7 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDateTime, formatSpent } from "@/lib/academy/format";
 import { getAttempt } from "@/lib/academy/store";
-import { getAdmin } from "@/lib/auth/admin";
+import { getPageAdmin } from "@/lib/auth/admin";
 import { getAuthConfig } from "@/lib/auth/config";
 
 import { AttemptReview } from "../../_components/attempt-review";
@@ -25,7 +25,7 @@ export const dynamic = "force-dynamic";
 /** Одна попытка целиком: по каждому вопросу видно ответ администратора, правильный ответ и разбор. */
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   if (!getAuthConfig()) redirect("/");
-  if (!(await getAdmin("academy.results"))) redirect("/unauthorized");
+  if (!(await getPageAdmin("academy.results"))) redirect("/unauthorized");
 
   const { id } = await params;
   if (id.length > 64) notFound();
@@ -45,8 +45,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="font-semibold text-xl">{attempt.testTitle}</h1>
-          <p className="text-muted-foreground text-sm">Разбор попытки: ответы, правильные варианты и пояснения.</p>
+          <h1 className="font-semibold text-2xl">{attempt.testTitle}</h1>
         </div>
         <Link href="/academy/results" prefetch={false} className={buttonVariants({ variant: "outline" })}>
           <ArrowLeft data-icon="inline-start" />К результатам

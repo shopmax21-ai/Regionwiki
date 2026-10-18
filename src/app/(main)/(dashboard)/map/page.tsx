@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { isInsideWorld } from "@/app/(main)/(dashboard)/map/_components/map-data";
 import { type LinkedPlace, MapSection } from "@/app/(main)/(dashboard)/map/_components/map-section";
-import { getAdminContext } from "@/lib/auth/admin";
+import { getPageAdminContext } from "@/lib/auth/admin";
 import { listMapPlaces, listMapZones } from "@/lib/map/store";
 
 export const metadata: Metadata = {
@@ -31,7 +31,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const [{ places, editable, problem }, zones, admin, params] = await Promise.all([
     listMapPlaces(),
     listMapZones(),
-    getAdminContext(),
+    getPageAdminContext(),
     searchParams,
   ]);
 

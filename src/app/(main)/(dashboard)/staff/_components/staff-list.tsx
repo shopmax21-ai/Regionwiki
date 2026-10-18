@@ -70,10 +70,7 @@ export function StaffList({ members, meId }: { members: StaffMember[]; meId: str
   return (
     <div className="flex w-full flex-col gap-4 md:gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="font-semibold text-xl">Администрация</h1>
-        <p className="text-muted-foreground text-sm">
-          Нажмите на карточку, чтобы открыть профиль и статистику администратора.
-        </p>
+        <h1 className="font-semibold text-2xl">Администрация</h1>
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center">

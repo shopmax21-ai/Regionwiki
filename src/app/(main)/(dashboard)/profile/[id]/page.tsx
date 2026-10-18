@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 import { getUserStats, type UserStats } from "@/lib/academy/store";
-import { getAdminContext } from "@/lib/auth/admin";
+import { getPageAdminContext } from "@/lib/auth/admin";
 import { LOGIN_PATH } from "@/lib/auth/config";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getUser, groupOfUser } from "@/lib/auth/db";
@@ -29,7 +29,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const session = await getCurrentUser();
   if (!session) redirect(`${LOGIN_PATH}?next=/profile/${encodeURIComponent(id)}`);
 
-  const admin = await getAdminContext();
+  const admin = await getPageAdminContext();
   if (!admin) redirect("/unauthorized");
 
   // Свой профиль открывается на обычной странице: там настройки и история входов

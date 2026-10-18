@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
 
+import { Inbox } from "lucide-react";
 import type { Metadata } from "next";
 
-import { Inbox } from "lucide-react";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getAdmin } from "@/lib/auth/admin";
+import { getPageAdmin } from "@/lib/auth/admin";
 import { getAuthConfig } from "@/lib/auth/config";
 import { listAssigned, listClosedBy, listQueue } from "@/lib/punishments/store";
 import type { PunishmentRequest, QueueItem } from "@/lib/punishments/types";
@@ -25,7 +24,7 @@ export const dynamic = "force-dynamic";
 /** Раздел администратора: очередь заявок хелперов, его заявки в работе и таблица выданных им наказаний. */
 export default async function Page() {
   if (!getAuthConfig()) redirect("/");
-  const admin = await getAdmin("punishments.review");
+  const admin = await getPageAdmin("punishments.review");
   if (!admin) redirect("/unauthorized");
 
   let queue: QueueItem[] = [];
@@ -52,7 +51,7 @@ export default async function Page() {
     <div className="flex flex-col gap-6">
       <AutoRefresh />
       <div className="flex flex-col gap-1">
-        <h1 className="font-semibold text-xl">Рассмотрение наказаний</h1>
+        <h1 className="font-semibold text-2xl">Рассмотрение наказаний</h1>
       </div>
 
       {problem && (

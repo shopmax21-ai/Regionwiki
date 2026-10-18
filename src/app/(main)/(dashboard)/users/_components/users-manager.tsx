@@ -298,10 +298,6 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
       <Card>
         <CardHeader>
           <CardTitle>Пользователи</CardTitle>
-          <CardDescription>
-            Все, кто входил через Telegram: статус доступа, роль и активность. Решения по заявкам тоже можно принимать
-            здесь.
-          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <div className="relative min-w-0">
@@ -313,7 +309,8 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Поиск по имени, нику или @username"
-              aria-label="Поиск пользователя" data-section-search
+              aria-label="Поиск пользователя"
+              data-section-search
               className="h-10 pl-9"
             />
           </div>
@@ -410,7 +407,10 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-auto min-w-56">
-                          <DropdownMenuItem className="whitespace-nowrap" onSelect={() => setSheetUserId(user.telegramId)}>
+                          <DropdownMenuItem
+                            className="whitespace-nowrap"
+                            onSelect={() => setSheetUserId(user.telegramId)}
+                          >
                             <KeyRound /> Права и роль
                           </DropdownMenuItem>
                           {actions.map(({ action, label, icon: Icon }) => (

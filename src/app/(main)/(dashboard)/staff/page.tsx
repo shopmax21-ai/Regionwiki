@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { requireAdmin } from "@/lib/auth/admin";
+import { requirePageAdmin } from "@/lib/auth/admin";
 import { warmAvatars } from "@/lib/auth/avatar";
 import { type DbUser, listAdmins, toPerson } from "@/lib/auth/db";
 import { groupLevel } from "@/lib/auth/groups";
@@ -20,7 +20,7 @@ function Notice({ children }: { children: React.ReactNode }) {
 }
 
 export default async function Page() {
-  const me = await requireAdmin();
+  const me = await requirePageAdmin();
 
   let admins: DbUser[];
   try {
