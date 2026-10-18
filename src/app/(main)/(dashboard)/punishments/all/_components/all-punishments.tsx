@@ -145,7 +145,12 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
           </TableHeader>
           <TableBody className="[&_tr]:border-0 [&_tr>td]:bg-card/80 [&_tr>td:first-child]:rounded-l-lg [&_tr>td:last-child]:rounded-r-lg">
             {feed.map((event) => (
-              <TableRow key={event.id} className="cursor-pointer" onClick={() => setOpenId(event.requestId)}>
+              <TableRow
+                key={event.id}
+                banner={event.actor.background}
+                className="cursor-pointer"
+                onClick={() => setOpenId(event.requestId)}
+              >
                 <TableCell className="whitespace-nowrap pl-4 text-muted-foreground text-xs tabular-nums">
                   {formatFull(event.at)}
                 </TableCell>
@@ -186,7 +191,12 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
           </TableHeader>
           <TableBody className="[&_tr]:border-0 [&_tr>td]:bg-card/80 [&_tr>td:first-child]:rounded-l-lg [&_tr>td:last-child]:rounded-r-lg">
             {rows.map((request) => (
-              <TableRow key={request.id} className="cursor-pointer" onClick={() => setOpenId(request.id)}>
+              <TableRow
+                key={request.id}
+                banner={request.requester.background}
+                className="cursor-pointer"
+                onClick={() => setOpenId(request.id)}
+              >
                 <TableCell className="font-medium font-mono tabular-nums">
                   {request.staticId}
                   {request.evidence.length > 0 && (

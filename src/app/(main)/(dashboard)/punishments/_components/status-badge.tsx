@@ -28,7 +28,7 @@ export function PunishmentKindBadge({
 }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <Badge variant="outline" className={`font-mono ${PUNISHMENT_KIND_COLORS[kind]}`}>
+      <Badge variant="outline" className={`rounded-md font-mono ${PUNISHMENT_KIND_COLORS[kind]}`}>
         /{kind}
       </Badge>
       {kind === "mute" && muteChannel && (

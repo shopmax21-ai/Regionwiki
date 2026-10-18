@@ -69,6 +69,7 @@ function TableRow({
       data-slot="table-row"
       className={cn(
         "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
+        banner && "rounded-lg [clip-path:inset(0_round_0.5rem)]",
         banner && ROW_BANNER_CLASS,
         className
       )}
