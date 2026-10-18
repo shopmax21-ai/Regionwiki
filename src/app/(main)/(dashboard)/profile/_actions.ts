@@ -11,12 +11,14 @@ import {
   groupOfUser,
   revokeSessions,
   setNotifyRequests,
+  setUserBirthday,
   setUserIdentity,
   setUserIdentityOnce,
 } from "@/lib/auth/db";
 import { groupLevel } from "@/lib/auth/groups";
 import { identityLocked, validateFirstIdentity, validateIdentity } from "@/lib/auth/identity";
 import { forgetRevocation } from "@/lib/auth/revocation";
+import { parseBirthday } from "@/lib/birthdays/types";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -34,6 +36,24 @@ export async function setRequestNotifications(enabled: boolean): Promise<ActionR
   }
 
   revalidatePath("/profile");
+  return { ok: true };
+}
+
+/** Указать свой день рождения («ММ-ДД», без года) или убрать его (null). */
+export async function saveBirthday(value: unknown): Promise<ActionResult> {
+  const session = await getCurrentUser();
+  if (!session) return { ok: false, error: "Войдите заново" };
+  if (value !== null && !parseBirthday(value)) return { ok: false, error: "Выберите существующую дату" };
+
+  try {
+    await setUserBirthday(session.id, value === null ? null : (value as string));
+  } catch (error) {
+    console.error("[profile] Не удалось сохранить день рождения", error);
+    return { ok: false, error: "База данных недоступна, попробуйте позже" };
+  }
+
+  revalidatePath("/profile");
+  revalidatePath("/calendar");
   return { ok: true };
 }
 

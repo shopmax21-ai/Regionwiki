@@ -594,10 +594,9 @@ export function MediaPrSection({
                   <TableRow>
                     <TableHead>Медиа</TableHead>
                     <TableHead>Площадка</TableHead>
-                    <TableHead className="text-right">Аудитория</TableHead>
                     <TableHead className="text-center">Статус</TableHead>
                     <TableHead>Контакты</TableHead>
-                    <TableHead>Заметка</TableHead>
+                    <TableHead className="text-center">Заметка</TableHead>
                     <TableHead>Изменено</TableHead>
                     {canEdit && <TableHead className="w-20" />}
                   </TableRow>
@@ -607,14 +606,11 @@ export function MediaPrSection({
                     <TableRow key={entry.id}>
                       <TableCell className="max-w-56">{nameCell(entry)}</TableCell>
                       <TableCell>{mediaPrPlatformLabels[entry.platform]}</TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {entry.audience === null ? "—" : numberFormat.format(entry.audience)}
-                      </TableCell>
                       <TableCell className="text-center">
                         <StatusBadge status={entry.status} compact />
                       </TableCell>
                       <TableCell className="max-w-44 whitespace-normal break-words">{entry.contact || "—"}</TableCell>
-                      <TableCell className="max-w-64 whitespace-normal break-words text-muted-foreground">
+                      <TableCell className="max-w-64 whitespace-normal break-words text-center text-muted-foreground">
                         {entry.note || "—"}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-muted-foreground text-xs">
@@ -637,7 +633,6 @@ export function MediaPrSection({
                           {nameCell(entry)}
                           <span className="text-muted-foreground text-xs">
                             {mediaPrPlatformLabels[entry.platform]}
-                            {entry.audience !== null && ` · ${numberFormat.format(entry.audience)}`}
                           </span>
                         </div>
                         <StatusBadge status={entry.status} />

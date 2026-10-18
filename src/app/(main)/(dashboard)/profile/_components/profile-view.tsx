@@ -7,6 +7,7 @@ import { identityLocked } from "@/lib/auth/identity";
 
 import { OverlayKeyCard, type OverlayKeyInfo } from "../../overlay/_components/overlay-key-card";
 import { AcademyStatsCard } from "./academy-stats-card";
+import { BirthdayCard } from "./birthday-card";
 import { IdentityCard } from "./identity-card";
 import { LoginHistory } from "./login-history";
 import { NotificationsCard } from "./notifications-card";
@@ -84,6 +85,8 @@ export function ProfileView({
 
       {/* Запасной вариант: анкета первой авторизации обычно уже заполнена, тогда карточки здесь нет */}
       {group && !identityLocked(person) && <IdentityCard person={person} mode="self" />}
+
+      <BirthdayCard initial={user.birthday} />
 
       {academy && <AcademyStatsCard stats={academy} />}
 

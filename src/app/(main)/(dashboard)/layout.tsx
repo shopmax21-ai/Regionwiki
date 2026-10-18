@@ -10,11 +10,13 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { accessKey } from "@/lib/auth/access-key";
 import { getViewerAccess } from "@/lib/auth/admin";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getPeopleSafe } from "@/lib/auth/db";
+import { getPeopleSafe, shouldGreetBirthday } from "@/lib/auth/db";
+import { birthdayKeysFor, mskDateParts } from "@/lib/birthdays/types";
 import { listJobs } from "@/lib/jobs/store";
 import { getPreference } from "@/server/server-actions";
 
 import { AccessSync } from "./_components/access-sync";
+import { BirthdayFireworks } from "./_components/birthday-fireworks";
 import { BugReportButton } from "./_components/header/bug-report-button";
 import { SearchDialog } from "./_components/header/search-dialog";
 import { ThemeSwitcher } from "./_components/header/theme-switcher";
@@ -47,6 +49,19 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
       }
     : null;
 
+  // День рождения: фейерверк при первом входе в этот день. Сбой базы не должен мешать открыть страницу.
+  let greetName: string | null = null;
+  if (session && authorized) {
+    try {
+      const today = mskDateParts();
+      if (await shouldGreetBirthday(session.id, birthdayKeysFor(today), today.key)) {
+        greetName = me?.nickname ?? session.name;
+      }
+    } catch (error) {
+      console.error("[birthday] Не удалось проверить день рождения", error);
+    }
+  }
+
   // Отпечаток доступа: клиент сверяет его с сервером и сам перерисовывает страницу при изменении роли или прав
   const currentAccessKey = session
     ? accessKey({ status: session.status, role: session.role, group: me?.group ?? null, permissions })
@@ -62,6 +77,7 @@ export default async function Layout({ children }: Readonly<{ children: ReactNod
       }
     >
       {currentAccessKey !== null && <AccessSync accessKey={currentAccessKey} />}
+      {greetName !== null && <BirthdayFireworks name={greetName} />}
       <AppSidebar
         variant={variant}
         collapsible={collapsible}

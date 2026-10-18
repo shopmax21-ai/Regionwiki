@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 
 import { requireAdmin } from "@/lib/auth/admin";
-import { getUser } from "@/lib/auth/db";
+import { getUser, listBirthdays } from "@/lib/auth/db";
+import { personPlainText } from "@/lib/auth/person";
+import type { CalendarBirthday } from "@/lib/birthdays/types";
 import { listEvents } from "@/lib/calendar/store";
 import type { CalendarEvent } from "@/lib/calendar/types";
 import { listMediaPrEntries } from "@/lib/mediapr/store";
@@ -28,6 +30,18 @@ export default async function Page() {
     problem = "база данных недоступна";
   }
 
+  // Дни рождения администраторов: если база не ответила, календарь всё равно открывается
+  const birthdays: CalendarBirthday[] = await listBirthdays()
+    .then((users) =>
+      users.flatMap((user) =>
+        user.birthday ? [{ id: user.telegramId, label: personPlainText(user), birthday: user.birthday }] : [],
+      ),
+    )
+    .catch((error) => {
+      console.error("[calendar] Не удалось загрузить дни рождения", error);
+      return [];
+    });
+
   // Настройка слежения в Telegram: если база не ответила, показываем «выключено», а сам календарь остаётся рабочим
   const tracking = await getUser(admin.id)
     .then((user) => user?.notifyCalendar ?? false)
@@ -52,6 +66,7 @@ export default async function Page() {
   return (
     <Calendar
       events={events}
+      birthdays={birthdays}
       serverNow={Date.now()}
       me={{ id: admin.id, canManageAll: admin.permissions.includes("calendar.manage"), canMedia }}
       mediaEntries={mediaEntries}

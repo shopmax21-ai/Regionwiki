@@ -1,5 +1,8 @@
 import { getAuthConfig } from "@/lib/auth/config";
+import { claimBirthdayReminders, listCalendarSubscribers } from "@/lib/auth/db";
+import { personFromName, personPlainText } from "@/lib/auth/person";
 import { sendMessage } from "@/lib/auth/telegram";
+import { birthdayKeysFor, formatBirthday, mskDateParts } from "@/lib/birthdays/types";
 
 import {
   claimDueReminders,
@@ -47,6 +50,46 @@ export function reminderText(event: DueReminder, now: number = Date.now(), track
   return lines.join("\n");
 }
 
+/** С какого часа (МСК) накануне дня рождения уходит напоминание: утром, а не в полночь */
+const BIRTHDAY_REMINDER_HOUR = 10;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Напоминание за день до дня рождения: придёт тем, кто следит за календарём (кроме самого именинника).
+ * Отметка «напомнили» ставится в базе до отправки, поэтому повторов нет.
+ */
+async function sendBirthdayReminders(config: NonNullable<ReturnType<typeof getAuthConfig>>): Promise<number> {
+  const now = Date.now();
+  if (mskDateParts(now).hour < BIRTHDAY_REMINDER_HOUR) return 0;
+
+  const tomorrow = mskDateParts(now + DAY_MS);
+  const celebrants = await claimBirthdayReminders(birthdayKeysFor(tomorrow), tomorrow.year);
+  if (celebrants.length === 0) return 0;
+
+  const subscribers = await listCalendarSubscribers();
+  let sent = 0;
+  for (const celebrant of celebrants) {
+    const label = personPlainText({
+      ...personFromName(celebrant.name),
+      nickname: celebrant.nickname,
+      staticId: celebrant.staticId,
+    });
+    const text = [
+      "🎂 <b>Завтра день рождения</b>",
+      "",
+      `<b>${escapeHtml(label)}</b>`,
+      `📅 ${celebrant.birthday ? formatBirthday(celebrant.birthday) : ""}`,
+      "",
+      "Не забудьте поздравить! Вы следите за календарём: выключить это можно в разделе «Календарь» на сайте.",
+    ].join("\n");
+    for (const user of subscribers) {
+      if (user.telegramId === celebrant.telegramId) continue;
+      if (await sendMessage(config, user.telegramId, text).catch(() => false)) sent++;
+    }
+  }
+  return sent;
+}
+
 /** Одна проверка: забирает созревшие напоминания и отправляет их авторам. Возвращает, сколько ушло. */
 export async function sendDueReminders(): Promise<number> {
   const config = getAuthConfig();
@@ -78,6 +121,12 @@ export async function sendDueReminders(): Promise<number> {
     }
   } catch (error) {
     console.error("[calendar] Сбой напоминаний подписчикам", error);
+  }
+
+  try {
+    sent += await sendBirthdayReminders(config);
+  } catch (error) {
+    console.error("[calendar] Сбой напоминаний о днях рождения", error);
   }
   return sent;
 }

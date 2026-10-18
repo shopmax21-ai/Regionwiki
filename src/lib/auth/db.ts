@@ -1,3 +1,4 @@
+import { parseBirthday } from "@/lib/birthdays/types";
 import { getPool } from "@/lib/db/pool";
 
 import { getAuthConfig } from "./config";
@@ -95,6 +96,11 @@ function ensureSchema(): Promise<void> {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS requested_group text`;
     // Фон блока профиля: адрес загруженной картинки (/api/jobs/images/<хеш>)
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_background text`;
+    // День рождения «ММ-ДД» (без года). greeted_on: день («ГГГГ-ММ-ДД»), когда человека уже поздравили на сайте;
+    // reminded_year: год, в котором коллегам уже отправили напоминание накануне.
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday text`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday_greeted_on text`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday_reminded_year integer`;
     // Администраторы, назначенные до появления групп, становятся Гл.Администраторами
     await sql`UPDATE users SET admin_group = 'chief' WHERE role = 'admin' AND admin_group IS NULL`;
     await sql`CREATE TABLE IF NOT EXISTS group_permissions (
@@ -149,6 +155,8 @@ export type DbUser = {
   requestedGroup: AdminGroup | null;
   /** Фон блока профиля: адрес картинки или null */
   profileBackground: string | null;
+  /** День рождения «ММ-ДД» (без года) или null */
+  birthday: string | null;
   createdAt: Date;
   decidedAt: Date | null;
   lastLoginAt: Date | null;
@@ -169,6 +177,7 @@ type UserRow = {
   static_id: string | null;
   requested_group: string | null;
   profile_background: string | null;
+  birthday: string | null;
   created_at: string;
   decided_at: string | null;
   last_login_at: string | null;
@@ -195,6 +204,7 @@ const toUser = (row: UserRow): DbUser => ({
   staticId: row.static_id ?? null,
   requestedGroup: isAdminGroup(row.requested_group) ? row.requested_group : null,
   profileBackground: safeBackground(row.profile_background),
+  birthday: parseBirthday(row.birthday) ? row.birthday : null,
   createdAt: new Date(row.created_at),
   decidedAt: row.decided_at ? new Date(row.decided_at) : null,
   lastLoginAt: row.last_login_at ? new Date(row.last_login_at) : null,
@@ -564,6 +574,51 @@ export async function setUserBackground(telegramId: string, url: string | null):
   if (url !== null && !PROFILE_BACKGROUND_PATTERN.test(url)) throw new Error("Недопустимый адрес фона");
   await ensureSchema();
   await sql`UPDATE users SET profile_background = ${url} WHERE telegram_id = ${telegramId}`;
+}
+
+/* Дни рождения */
+
+/** Сохранить день рождения «ММ-ДД». null очищает. Новая дата снова поздравляется и напоминается в этом году. */
+export async function setUserBirthday(telegramId: string, birthday: string | null): Promise<void> {
+  if (birthday !== null && !parseBirthday(birthday)) throw new Error("Недопустимая дата рождения");
+  await ensureSchema();
+  await sql`UPDATE users SET birthday = ${birthday}, birthday_greeted_on = NULL, birthday_reminded_year = NULL
+    WHERE telegram_id = ${telegramId}`;
+}
+
+/** Одобренные администраторы с указанным днём рождения: для календаря. */
+export async function listBirthdays(): Promise<DbUser[]> {
+  await ensureSchema();
+  const rows = await sql`SELECT * FROM users WHERE role = 'admin' AND status = 'approved' AND birthday IS NOT NULL`;
+  return (rows as UserRow[]).map(toUser);
+}
+
+/** Пора ли поздравить человека на сайте: сегодня его день рождения (keys), а сегодня его ещё не поздравляли. */
+export async function shouldGreetBirthday(telegramId: string, keys: readonly string[], today: string): Promise<boolean> {
+  await ensureSchema();
+  const rows = await sql`SELECT 1 AS ok FROM users
+    WHERE telegram_id = ${telegramId} AND status = 'approved' AND birthday = ANY(${[...keys]}::text[])
+      AND birthday_greeted_on IS DISTINCT FROM ${today}`;
+  return rows.length > 0;
+}
+
+/** Отметить, что сегодня человека уже поздравили: повторный вход в этот день фейерверк не запускает. */
+export async function markBirthdayGreeted(telegramId: string, today: string): Promise<void> {
+  await ensureSchema();
+  await sql`UPDATE users SET birthday_greeted_on = ${today} WHERE telegram_id = ${telegramId}`;
+}
+
+/**
+ * Забирает именинников, у которых день рождения завтра (keys), и которым в этом году ещё не напоминали.
+ * Отметка ставится в самом запросе, поэтому при нескольких копиях сайта напоминание уйдёт один раз.
+ */
+export async function claimBirthdayReminders(keys: readonly string[], year: number): Promise<DbUser[]> {
+  await ensureSchema();
+  const rows = await sql`UPDATE users SET birthday_reminded_year = ${year}
+    WHERE role = 'admin' AND status = 'approved' AND birthday = ANY(${[...keys]}::text[])
+      AND birthday_reminded_year IS DISTINCT FROM ${year}
+    RETURNING *`;
+  return (rows as UserRow[]).map(toUser);
 }
 
 /** Группа человека с учётом TELEGRAM_ADMIN_IDS: оттуда всегда Гл.Администраторы, как и при проверке прав. */

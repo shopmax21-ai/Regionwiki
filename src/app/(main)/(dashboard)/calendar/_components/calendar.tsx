@@ -13,13 +13,14 @@ import multiMonthPlugin from "@fullcalendar/react/multimonth";
 import timeGridPlugin from "@fullcalendar/react/timegrid";
 import { differenceInCalendarDays, endOfMonth, format, startOfMonth } from "date-fns";
 import { ru } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Filter, Plus, Radio, XIcon } from "lucide-react";
+import { Cake, ChevronLeft, ChevronRight, Filter, Plus, Radio, XIcon } from "lucide-react";
 
 import { EventCalendarViews } from "@/components/calendar/event-calendar-views";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { pluralize } from "@/lib/academy/format";
+import { birthdayInYear, type CalendarBirthday, mskDateParts } from "@/lib/birthdays/types";
 import {
   type CalendarEvent,
   type EventStatus,
@@ -51,6 +52,8 @@ type StatusFilter = "all" | EventStatus;
 
 type CalendarProps = {
   events: CalendarEvent[];
+  /** Дни рождения администраторов: повторяются каждый год */
+  birthdays: CalendarBirthday[];
   /** Момент загрузки страницы на сервере: от него считаются статусы до первого тика, чтобы разметка совпала */
   serverNow: number;
   me: { id: string; canManageAll: boolean; canMedia: boolean };
@@ -74,8 +77,13 @@ function useNow(initial: number, intervalMs = 30_000) {
   return now;
 }
 
+const BIRTHDAY_COLOR = "#ec4899";
+const BIRTHDAY_ID = "birthday:";
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export function Calendar({
   events: initialEvents,
+  birthdays,
   serverNow,
   me,
   tracking,
@@ -126,9 +134,42 @@ export function Calendar({
     [events, activeMode, ownerFilter, statusFilter, me.id, now],
   );
 
+  // Дни рождения видны в общем календаре без фильтров: за год до и после текущего, чтобы листать без перезагрузки
+  const birthdayEvents = React.useMemo(() => {
+    if (activeMode !== "general" || ownerFilter !== "all" || statusFilter !== "all") return [];
+    const year = mskDateParts(now).year;
+    return birthdays.flatMap((person) =>
+      [year - 1, year, year + 1].flatMap((y) => {
+        const date = birthdayInYear(person.birthday, y);
+        return date
+          ? [
+              {
+                id: `${BIRTHDAY_ID}${person.id}:${y}`,
+                title: `🎂 ${person.label}`,
+                start: date,
+                allDay: true,
+                color: BIRTHDAY_COLOR,
+                textColor: "#ffffff",
+              },
+            ]
+          : [];
+      }),
+    );
+  }, [birthdays, activeMode, ownerFilter, statusFilter, now]);
+
+  // Сегодня и завтра: подсказка над календарём, чтобы не пропустить
+  const upcomingBirthdays = React.useMemo(() => {
+    const today = mskDateParts(now);
+    const tomorrow = mskDateParts(now + DAY_MS);
+    const on = (parts: typeof today) =>
+      birthdays.filter((person) => birthdayInYear(person.birthday, parts.year) === parts.key).map((p) => p.label);
+    return { today: on(today), tomorrow: on(tomorrow) };
+  }, [birthdays, now]);
+
   const calendarEvents = React.useMemo(
-    () =>
-      visible.map((event) => ({
+    () => [
+      ...birthdayEvents,
+      ...visible.map((event) => ({
         id: event.id,
         title: event.title,
         start: event.startsAt,
@@ -138,7 +179,8 @@ export function Calendar({
         textColor: readableTextOn(event.color),
         classNames: statusOf(event, now) === "finished" ? ["opacity-60"] : [],
       })),
-    [visible, now],
+    ],
+    [visible, birthdayEvents, now],
   );
 
   const inRange = visible.filter((event) => {
@@ -163,6 +205,27 @@ export function Calendar({
         <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">
           Не удалось загрузить мероприятия: {problem}
         </p>
+      )}
+
+      {(upcomingBirthdays.today.length > 0 || upcomingBirthdays.tomorrow.length > 0) && (
+        <div className="flex flex-col gap-1.5 rounded-lg border border-pink-500/30 bg-pink-500/5 px-4 py-3 text-sm">
+          {upcomingBirthdays.today.length > 0 && (
+            <p className="flex items-start gap-2">
+              <Cake className="mt-0.5 size-4 shrink-0 text-pink-500" aria-hidden="true" />
+              <span>
+                <b>Сегодня день рождения:</b> {upcomingBirthdays.today.join(", ")}
+              </span>
+            </p>
+          )}
+          {upcomingBirthdays.tomorrow.length > 0 && (
+            <p className="flex items-start gap-2 text-muted-foreground">
+              <Cake className="mt-0.5 size-4 shrink-0 text-pink-500/70" aria-hidden="true" />
+              <span>
+                Завтра день рождения: <span className="text-foreground">{upcomingBirthdays.tomorrow.join(", ")}</span>
+              </span>
+            </p>
+          )}
+        </div>
       )}
 
       <TrackingSwitch initialEnabled={tracking} />
@@ -272,7 +335,10 @@ export function Calendar({
           popoverCloseContent={() => <XIcon className="size-5 text-muted-foreground group-hover:text-foreground" />}
           events={calendarEvents}
           nowIndicator
-          eventClick={(info) => setOpenId(info.event.id)}
+          eventClick={(info) => {
+            // День рождения — не мероприятие: подробностей и правки у него нет
+            if (!info.event.id.startsWith(BIRTHDAY_ID)) setOpenId(info.event.id);
+          }}
           dateClick={(info) => {
             // Клик по дню: регистрация с подставленной датой. Для всего дня берём 12:00 по Москве.
             const iso = info.allDay ? `${info.dateStr.slice(0, 10)}T12:00:00+03:00` : info.date.toISOString();
