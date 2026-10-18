@@ -3,6 +3,8 @@
 import * as React from "react"
 import { cn } from "cn"
 
+import { ROW_BANNER_CLASS, rowBannerStyle } from "@/lib/row-banner"
+
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div
@@ -53,7 +55,8 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
 
 /**
  * banner: адрес баннера профиля. Он показывается у левого края строки на четверть её ширины
- * и плавно исчезает слева направо с 75% непрозрачности до 0.
+ * и плавно исчезает слева направо с 75% непрозрачности до 0. Рисуется фоном самой строки (см. lib/row-banner),
+ * чтобы не добавлять в таблицу лишних элементов: псевдоэлемент в строке создаёт пустую ячейку и сдвигает столбцы.
  */
 function TableRow({
   className,
@@ -66,11 +69,10 @@ function TableRow({
       data-slot="table-row"
       className={cn(
         "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
-        banner &&
-          "relative before:pointer-events-none before:absolute before:inset-y-0 before:left-0 before:w-1/4 before:bg-[image:var(--row-banner)] before:bg-cover before:bg-center before:content-[''] before:[mask-image:linear-gradient(to_right,rgba(0,0,0,0.75),transparent)] [&>td]:relative",
+        banner && ROW_BANNER_CLASS,
         className
       )}
-      style={banner ? ({ ...style, "--row-banner": `url(${JSON.stringify(banner)})` } as React.CSSProperties) : style}
+      style={banner ? { ...style, ...rowBannerStyle(banner) } : style}
       {...props}
     />
   )

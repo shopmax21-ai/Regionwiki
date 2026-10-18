@@ -124,7 +124,7 @@ export function MembersList({ rows }: { rows: MemberRow[] }) {
                 style={rowBannerStyle(row.background)}
                 className={cn(
                   "flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 transition-colors hover:bg-muted/40 md:grid md:grid-cols-[minmax(0,1fr)_11rem_4rem_9.5rem] md:items-center md:gap-x-4",
-                  row.background && ROW_BANNER_CLASS,
+                  row.background && `${ROW_BANNER_CLASS} hover:[--row-bg:color-mix(in_oklab,var(--card),var(--muted)_40%)]`,
                 )}
               >
                 <div className="flex min-w-0 flex-1 items-center gap-3 md:flex-none">

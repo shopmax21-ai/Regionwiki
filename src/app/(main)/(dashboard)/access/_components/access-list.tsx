@@ -64,7 +64,7 @@ function PendingCard({ user, now }: { user: DbUser; now: number }) {
       <CardContent className="flex h-full flex-col gap-4 pt-2">
         <div
           style={rowBannerStyle(user.profileBackground)}
-          className={cn("-mx-4 flex items-center gap-3 px-4 py-2", user.profileBackground && ROW_BANNER_CLASS)}
+          className={cn("-mx-4 flex items-center gap-3 px-4", user.profileBackground && ROW_BANNER_CLASS)}
         >
           <AccessAvatar id={user.telegramId} name={user.name} admin={user.adminGroup !== null} className="size-14" />
           <div className="min-w-0 leading-tight">
