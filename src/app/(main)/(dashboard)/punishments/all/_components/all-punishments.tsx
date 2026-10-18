@@ -133,7 +133,7 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
   } else if (tab === "history") {
     body = (
       <div className="overflow-x-auto">
-        <Table className="min-w-[640px]">
+        <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow>
               <TableHead className="pl-4">Время</TableHead>
@@ -151,7 +151,7 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
                 </TableCell>
                 <TableCell className="font-medium">{EVENT_LABELS[event.type]}</TableCell>
                 <TableCell className="whitespace-nowrap font-mono tabular-nums">
-                  №{event.number} · {event.staticId}
+                  {event.staticId}
                 </TableCell>
                 <TableCell className="max-w-56">
                   <PersonName person={event.actor} avatar />
@@ -170,11 +170,10 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
   } else {
     body = (
       <div className="overflow-x-auto">
-        <Table className="min-w-[980px]">
+        <Table className="min-w-[920px]">
           <TableHeader>
             <TableRow>
-              <TableHead className="pl-4">№</TableHead>
-              <TableHead>Статик</TableHead>
+              <TableHead className="pl-4">Статик</TableHead>
               <TableHead>Наказание</TableHead>
               <TableHead>Срок</TableHead>
               <TableHead>Пункты</TableHead>
@@ -188,7 +187,6 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
           <TableBody>
             {rows.map((request) => (
               <TableRow key={request.id} className="cursor-pointer" onClick={() => setOpenId(request.id)}>
-                <TableCell className="pl-4 text-muted-foreground font-mono tabular-nums">{request.number}</TableCell>
                 <TableCell className="font-medium font-mono tabular-nums">
                   {request.staticId}
                   {request.evidence.length > 0 && (

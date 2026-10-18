@@ -21,11 +21,10 @@ export function MyRequests({ requests }: { requests: PunishmentRequest[] }) {
         <p className="px-4 py-8 text-center text-muted-foreground text-sm">Вы ещё не подавали заявок.</p>
       ) : (
         <div className="overflow-x-auto">
-          <Table className="min-w-[760px]">
+          <Table className="min-w-[700px]">
             <TableHeader>
               <TableRow>
-                <TableHead className="pl-4">№</TableHead>
-                <TableHead>Статик</TableHead>
+                <TableHead className="pl-4">Статик</TableHead>
                 <TableHead>Наказание</TableHead>
                 <TableHead>Срок</TableHead>
                 <TableHead>Пункты</TableHead>
@@ -36,7 +35,6 @@ export function MyRequests({ requests }: { requests: PunishmentRequest[] }) {
             <TableBody>
               {requests.map((request) => (
                 <TableRow key={request.id}>
-                  <TableCell className="pl-4 text-muted-foreground font-mono tabular-nums">{request.number}</TableCell>
                   <TableCell className="font-medium font-mono tabular-nums">
                     {request.staticId}
                     {request.evidence.length > 0 && (

@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 
 import type { Metadata } from "next";
 
+import { Inbox } from "lucide-react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAdmin } from "@/lib/auth/admin";
 import { getAuthConfig } from "@/lib/auth/config";
@@ -80,9 +82,13 @@ export default async function Page() {
       <section className="flex flex-col gap-3" aria-label="Заявки в работе у меня">
         <h2 className="font-semibold text-lg">В работе у меня</h2>
         {assigned.length === 0 ? (
-          <p className="rounded-xl border border-dashed px-4 py-8 text-center text-muted-foreground text-sm">
-            У вас нет заявок в работе. Возьмите заявку из очереди ниже.
-          </p>
+          <div className="mx-auto flex w-full max-w-2xl flex-col items-center rounded-xl border border-dashed px-6 py-8 text-center">
+            <div className="mb-3 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Inbox className="size-7" aria-hidden="true" />
+            </div>
+            <h3 className="font-semibold">У вас нет заявок в работе</h3>
+            <p className="mt-1 text-muted-foreground text-sm">Возьмите заявку из очереди ниже.</p>
+          </div>
         ) : (
           assigned.map((request) => <AssignedBlock key={request.id} request={request} now={now} />)
         )}
