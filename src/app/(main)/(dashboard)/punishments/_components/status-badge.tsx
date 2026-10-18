@@ -1,11 +1,18 @@
 import { Ban, CheckCircle2, Clock3, Hourglass, ShieldCheck } from "lucide-react";
 
+import { StatusIcon } from "@/components/status-icon";
 import { Badge } from "@/components/ui/badge";
 import { helperStatus, type PunishmentStatus, STATUS_LABELS } from "@/lib/punishments/types";
 
 /** Статус глазами хелпера: «Ожидает администратора / На рассмотрении / Выдано / Отклонено». */
-export function HelperStatusBadge({ status }: { status: PunishmentStatus }) {
+export function HelperStatusBadge({ status, compact = false }: { status: PunishmentStatus; compact?: boolean }) {
   const { label, tone } = helperStatus({ status });
+  if (compact) {
+    if (tone === "done") return <StatusIcon icon={CheckCircle2} label={label} tone="green" />;
+    if (tone === "rejected") return <StatusIcon icon={Ban} label={label} tone="red" />;
+    if (tone === "progress") return <StatusIcon icon={Hourglass} label={label} tone="blue" />;
+    return <StatusIcon icon={Clock3} label={label} tone="muted" />;
+  }
   if (tone === "done") {
     return (
       <Badge variant="outline" className="border-green-500/40 text-green-600 dark:text-green-400">
@@ -39,7 +46,15 @@ export function HelperStatusBadge({ status }: { status: PunishmentStatus }) {
 }
 
 /** Точный статус для администраторов: «Ожидает / В работе / Одобрена / Выдано / Отклонено». */
-export function AdminStatusBadge({ status }: { status: PunishmentStatus }) {
+export function AdminStatusBadge({ status, compact = false }: { status: PunishmentStatus; compact?: boolean }) {
+  if (compact) {
+    const label = STATUS_LABELS[status];
+    if (status === "issued") return <StatusIcon icon={ShieldCheck} label={label} tone="green" />;
+    if (status === "rejected") return <StatusIcon icon={Ban} label={label} tone="red" />;
+    if (status === "pending") return <StatusIcon icon={Clock3} label={label} tone="muted" />;
+    if (status === "approved") return <StatusIcon icon={CheckCircle2} label={label} tone="blue" />;
+    return <StatusIcon icon={Hourglass} label={label} tone="blue" />;
+  }
   if (status === "issued") {
     return (
       <Badge variant="outline" className="border-green-500/40 text-green-600 dark:text-green-400">

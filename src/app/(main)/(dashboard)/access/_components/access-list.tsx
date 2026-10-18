@@ -140,7 +140,6 @@ export function AccessList({ users }: { users: DbUser[] }) {
     status: user.status === "approved" ? "approved" : "rejected",
     admin: user.role === "admin",
     lastLogin: user.lastLoginAt ? dateFormat.format(user.lastLoginAt) : "Не входил(а)",
-    loginCount: user.loginCount,
   }));
 
   return (

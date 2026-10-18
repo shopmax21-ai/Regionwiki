@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { cn } from "cn";
 import { Ban, CheckCircle2, Search, ShieldCheck, Users } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { StatusIcon } from "@/components/status-icon";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
@@ -20,7 +20,6 @@ export type MemberRow = {
   admin: boolean;
   /** Уже отформатированная дата последнего входа: форматирование на сервере, чтобы не расходилось с браузером */
   lastLogin: string;
-  loginCount: number;
 };
 
 type Filter = "all" | "approved" | "rejected" | "admins";
@@ -57,7 +56,7 @@ export function MembersList({ rows }: { rows: MemberRow[] }) {
     <section className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h2 className="font-semibold text-lg">Все участники</h2>
-        <p className="text-muted-foreground text-sm">Статус, последний вход и число входов. Решение можно изменить.</p>
+        <p className="text-muted-foreground text-sm">Статус и последний вход. Решение можно изменить.</p>
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -105,11 +104,10 @@ export function MembersList({ rows }: { rows: MemberRow[] }) {
         <Card className="gap-0 overflow-hidden py-0">
           <div
             aria-hidden="true"
-            className="hidden border-b bg-muted/40 px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wide md:grid md:grid-cols-[minmax(0,1fr)_11rem_6rem_8.5rem_9.5rem] md:items-center md:gap-x-4"
+            className="hidden border-b bg-muted/40 px-4 py-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wide md:grid md:grid-cols-[minmax(0,1fr)_11rem_4rem_9.5rem] md:items-center md:gap-x-4"
           >
             <span>Участник</span>
             <span>Последний вход</span>
-            <span>Входов</span>
             <span>Статус</span>
             <span className="text-right">Решение</span>
           </div>
@@ -117,7 +115,7 @@ export function MembersList({ rows }: { rows: MemberRow[] }) {
             {visible.map((row) => (
               <li
                 key={row.telegramId}
-                className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 transition-colors hover:bg-muted/40 md:grid md:grid-cols-[minmax(0,1fr)_11rem_6rem_8.5rem_9.5rem] md:items-center md:gap-x-4"
+                className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 transition-colors hover:bg-muted/40 md:grid md:grid-cols-[minmax(0,1fr)_11rem_4rem_9.5rem] md:items-center md:gap-x-4"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-3 md:flex-none">
                   <AccessAvatar id={row.telegramId} name={row.name} admin={row.admin} />
@@ -135,26 +133,13 @@ export function MembersList({ rows }: { rows: MemberRow[] }) {
                 </div>
 
                 <p className="hidden truncate text-muted-foreground text-sm md:block">{row.lastLogin}</p>
-                <p className="hidden text-muted-foreground text-sm tabular-nums md:block">{row.loginCount}</p>
 
                 <div>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "gap-1.5",
-                      row.status === "approved"
-                        ? "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400"
-                        : "border-destructive/30 bg-destructive/10 text-destructive",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "size-1.5 rounded-full",
-                        row.status === "approved" ? "bg-green-500" : "bg-destructive",
-                      )}
-                    />
-                    {row.status === "approved" ? "Одобрен" : "Отклонён"}
-                  </Badge>
+                  {row.status === "approved" ? (
+                    <StatusIcon icon={CheckCircle2} label="Одобрен" tone="green" />
+                  ) : (
+                    <StatusIcon icon={Ban} label="Отклонён" tone="red" />
+                  )}
                 </div>
 
                 <div className="flex justify-end">

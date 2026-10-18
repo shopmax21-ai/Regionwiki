@@ -48,7 +48,7 @@ export function ClosedTable({ requests }: { requests: PunishmentRequest[] }) {
                     <PersonName person={request.requester} avatar />
                   </TableCell>
                   <TableCell>
-                    <AdminStatusBadge status={request.status} />
+                    <AdminStatusBadge status={request.status} compact />
                   </TableCell>
                   <TableCell className="whitespace-nowrap pr-4 text-muted-foreground text-xs tabular-nums">
                     {formatFull(request.issuedAt ?? request.createdAt)}

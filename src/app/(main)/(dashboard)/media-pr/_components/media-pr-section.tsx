@@ -4,10 +4,24 @@ import { type FormEvent, useMemo, useState, useTransition } from "react";
 
 import { useRouter } from "next/navigation";
 
-import { ExternalLink, Funnel, Megaphone, Pencil, Plus, RotateCcw, Search, Trash2, X } from "lucide-react";
+import {
+  CheckCircle2,
+  ExternalLink,
+  Funnel,
+  Megaphone,
+  MessagesSquare,
+  Pause,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { FilterDropdown } from "@/app/(main)/(dashboard)/_components/filter-dropdown";
+import { StatusIcon } from "@/components/status-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -69,7 +83,17 @@ const STATUS_BADGE: Record<MediaPrStatus, string> = {
 
 const normalize = (value: string) => value.toLowerCase().replaceAll("ё", "е").trim();
 
-function StatusBadge({ status }: { status: MediaPrStatus }) {
+const STATUS_ICON = {
+  active: { icon: CheckCircle2, tone: "green" },
+  talks: { icon: MessagesSquare, tone: "amber" },
+  paused: { icon: Pause, tone: "muted" },
+} as const;
+
+function StatusBadge({ status, compact = false }: { status: MediaPrStatus; compact?: boolean }) {
+  if (compact) {
+    const { icon, tone } = STATUS_ICON[status];
+    return <StatusIcon icon={icon} label={mediaPrStatusLabels[status]} tone={tone} />;
+  }
   return (
     <Badge variant="outline" className={STATUS_BADGE[status]}>
       {mediaPrStatusLabels[status]}
@@ -587,7 +611,7 @@ export function MediaPrSection({
                         {entry.audience === null ? "—" : numberFormat.format(entry.audience)}
                       </TableCell>
                       <TableCell>
-                        <StatusBadge status={entry.status} />
+                        <StatusBadge status={entry.status} compact />
                       </TableCell>
                       <TableCell className="max-w-44 whitespace-normal break-words">{entry.contact || "—"}</TableCell>
                       <TableCell className="max-w-64 whitespace-normal break-words text-muted-foreground">

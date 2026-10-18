@@ -4,9 +4,7 @@ import type { Metadata } from "next";
 
 import { getAdminContext } from "@/lib/auth/admin";
 import { getAuthConfig } from "@/lib/auth/config";
-import { checkDatabase, getGroupPermissions, listUsers, toPerson } from "@/lib/auth/db";
-import { type AdminGroup, adminGroups } from "@/lib/auth/groups";
-import type { Person } from "@/lib/auth/person";
+import { checkDatabase, getGroupPermissions } from "@/lib/auth/db";
 
 import { RolesManager } from "./_components/roles-manager";
 
@@ -35,20 +33,11 @@ export default async function Page() {
   }
 
   try {
-    const [permissions, users] = await Promise.all([getGroupPermissions(), listUsers()]);
-
-    const members = Object.fromEntries(adminGroups.map((group) => [group, []])) as unknown as Record<
-      AdminGroup,
-      Person[]
-    >;
-    for (const user of users) {
-      if (user.adminGroup) members[user.adminGroup].push({ ...toPerson(user), group: user.adminGroup });
-    }
+    const permissions = await getGroupPermissions();
 
     return (
       <RolesManager
         permissions={permissions}
-        members={members}
         canEdit={admin.permissions.includes("permissions.edit")}
         myGroup={admin.group}
       />

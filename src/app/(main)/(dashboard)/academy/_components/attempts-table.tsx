@@ -1,15 +1,23 @@
 import Link from "next/link";
 
-import { ChevronRight } from "lucide-react";
+import { CheckCircle2, ChevronRight, XCircle } from "lucide-react";
 
 import { PersonName } from "@/components/person-name";
+import { StatusIcon } from "@/components/status-icon";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateTime } from "@/lib/academy/format";
 import type { AttemptSummary } from "@/lib/academy/types";
 import { personLabel } from "@/lib/auth/person";
 
-export function PassBadge({ passed }: { passed: boolean }) {
+export function PassBadge({ passed, compact = false }: { passed: boolean; compact?: boolean }) {
+  if (compact) {
+    return passed ? (
+      <StatusIcon icon={CheckCircle2} label="Сдан" tone="green" />
+    ) : (
+      <StatusIcon icon={XCircle} label="Не сдан" tone="red" />
+    );
+  }
   return passed ? (
     <Badge variant="outline" className="border-green-500/40 text-green-600 dark:text-green-400">
       Сдан
@@ -63,7 +71,7 @@ export function AttemptsTable({ attempts, showUser = false, detailsHref, emptyTe
                 {attempt.score} из {attempt.total} · {attempt.percent}%
               </TableCell>
               <TableCell className="text-center">
-                <PassBadge passed={attempt.passed} />
+                <PassBadge passed={attempt.passed} compact />
               </TableCell>
               {detailsHref && (
                 <TableCell>

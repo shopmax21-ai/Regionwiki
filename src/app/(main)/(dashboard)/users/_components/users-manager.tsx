@@ -2,12 +2,13 @@
 
 import { useMemo, useState } from "react";
 
-import { Check, KeyRound, MoreHorizontal, Search, ShieldOff, X } from "lucide-react";
+import { Check, CheckCircle2, Clock3, KeyRound, MoreHorizontal, Search, ShieldOff, X, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { PersonAvatar } from "@/components/person-avatar";
 import { PersonName } from "@/components/person-name";
 import { groupIconComponent, RoleIcon } from "@/components/role-icon";
+import { StatusIcon } from "@/components/status-icon";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +20,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -63,7 +63,8 @@ const filters: { id: Filter; label: string }[] = [
 ];
 
 const statusLabel = { pending: "Ожидает", approved: "Одобрен", rejected: "Отклонён" } as const;
-const statusVariant = { pending: "secondary", approved: "default", rejected: "destructive" } as const;
+const statusIcon = { pending: Clock3, approved: CheckCircle2, rejected: XCircle } as const;
+const statusTone = { pending: "amber", approved: "green", rejected: "red" } as const;
 
 const dateFormat = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
 
@@ -346,7 +347,6 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
               <TableHead>Группа</TableHead>
               <TableHead className="hidden md:table-cell">Регистрация</TableHead>
               <TableHead className="hidden sm:table-cell">Последний вход</TableHead>
-              <TableHead className="hidden lg:table-cell text-right">Входов</TableHead>
               <TableHead className="w-12 pr-4 text-right">
                 <span className="sr-only">Действия</span>
               </TableHead>
@@ -355,7 +355,7 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
           <TableBody>
             {visible.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                   {items.length === 0 ? "Пока никто не входил." : "Никого не найдено. Измените запрос или фильтр."}
                 </TableCell>
               </TableRow>
@@ -372,7 +372,7 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
                     <UserIdentity user={user} />
                   </TableCell>
                   <TableCell>
-                    <Badge variant={statusVariant[user.status]}>{statusLabel[user.status]}</Badge>
+                    <StatusIcon icon={statusIcon[user.status]} label={statusLabel[user.status]} tone={statusTone[user.status]} />
                   </TableCell>
                   <TableCell>
                     <RoleIcon group={user.adminGroup} className="size-5" />
@@ -391,9 +391,6 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
                     ) : (
                       "Не входил"
                     )}
-                  </TableCell>
-                  <TableCell className="hidden text-right text-muted-foreground text-sm lg:table-cell">
-                    {user.loginCount}
                   </TableCell>
                   <TableCell className="pr-4 text-right">
                     {user.telegramId === me.id ? (

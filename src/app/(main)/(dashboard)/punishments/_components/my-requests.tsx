@@ -59,7 +59,7 @@ export function MyRequests({ requests }: { requests: PunishmentRequest[] }) {
                   </TableCell>
                   <TableCell className="pr-4">
                     <div className="flex flex-col items-start gap-1">
-                      <HelperStatusBadge status={request.status} />
+                      <HelperStatusBadge status={request.status} compact />
                       {(request.status === "claimed" || request.status === "approved") && request.assigneeName && (
                         <span className="flex items-center gap-1 text-muted-foreground text-xs">
                           Рассматривает:{" "}

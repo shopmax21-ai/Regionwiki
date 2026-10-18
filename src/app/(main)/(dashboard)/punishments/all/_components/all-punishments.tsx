@@ -213,7 +213,7 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
                   {request.assignee ? <PersonName person={request.assignee} avatar /> : "—"}
                 </TableCell>
                 <TableCell>
-                  <AdminStatusBadge status={request.status} />
+                  <AdminStatusBadge status={request.status} compact />
                 </TableCell>
                 <TableCell className="whitespace-nowrap pr-4 text-muted-foreground text-xs tabular-nums">
                   {formatShort(request.issuedAt ?? request.createdAt)}

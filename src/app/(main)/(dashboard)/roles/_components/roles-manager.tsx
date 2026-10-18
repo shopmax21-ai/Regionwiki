@@ -2,10 +2,9 @@
 
 import { Fragment, useState } from "react";
 
-import { Check, Lock, Minus, Users } from "lucide-react";
+import { Check, Lock, Minus } from "lucide-react";
 import { toast } from "sonner";
 
-import { PersonName } from "@/components/person-name";
 import { RoleIcon } from "@/components/role-icon";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,22 +18,17 @@ import {
   type Permission,
   permissionDefs,
 } from "@/lib/auth/groups";
-import type { Person } from "@/lib/auth/person";
 
 import { setGroupPermissionAction } from "../_actions";
-
-type Member = Person;
 
 const categories = Array.from(new Set(permissionDefs.map((def) => def.category)));
 
 export function RolesManager({
   permissions,
-  members,
   canEdit,
   myGroup,
 }: {
   permissions: Record<AdminGroup, Permission[]>;
-  members: Record<AdminGroup, Member[]>;
   canEdit: boolean;
   myGroup: AdminGroup;
 }) {
@@ -84,44 +78,30 @@ export function RolesManager({
             {!canEdit && " Сейчас вы можете только смотреть: менять права может Гл.Администратор."}
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <CardContent className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
           {adminGroups.map((group) => {
             const info = groupInfo[group];
-            const list = members[group];
             return (
               <div
                 key={group}
-                className={`flex flex-col gap-3 rounded-xl border p-4 ${group === myGroup ? "border-primary/60 bg-primary/5" : ""}`}
+                className={`flex flex-col gap-2 rounded-lg border p-3 ${group === myGroup ? "border-primary/60 bg-primary/5" : ""}`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2">
-                    <RoleIcon group={group} className="mt-0.5 size-5" />
+                    <RoleIcon group={group} className="mt-0.5 size-4" />
                     <div>
-                      <h2 className="font-semibold leading-tight">{info.label}</h2>
+                      <h2 className="font-semibold text-sm leading-tight">{info.label}</h2>
                       <p className="text-muted-foreground text-xs">Уровень {info.level}</p>
                     </div>
                   </div>
                   {group === myGroup && <Badge variant="secondary">Ваша группа</Badge>}
                 </div>
-                <p className="text-muted-foreground text-sm">{info.description}</p>
-                <div className="mt-auto flex flex-col gap-2 text-sm">
+                <p className="text-muted-foreground text-xs">{info.description}</p>
+                <div className="mt-auto text-xs">
                   <p className="text-muted-foreground">
                     Прав: <span className="font-medium text-foreground">{matrix[group].length}</span> из{" "}
                     {permissionDefs.length}
                   </p>
-                  <p className="flex items-center gap-1.5 text-muted-foreground">
-                    <Users className="size-4" aria-hidden="true" />В группе:{" "}
-                    <span className="font-medium text-foreground">{list.length}</span>
-                  </p>
-                  {list.length > 0 && (
-                    <ul className="flex flex-col gap-1 text-xs" aria-label={`Состав: ${info.label}`}>
-                      {list.map((member) => (
-                        <li key={member.id} className="min-w-0">
-                          <PersonName person={member} avatar />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
                 </div>
               </div>
             );
