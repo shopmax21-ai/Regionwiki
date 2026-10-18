@@ -44,7 +44,7 @@ export default async function Page() {
   const issued = closed.filter((request) => request.status === "issued").length;
   const tiles = [
     { title: "В очереди", value: queue.length, note: "ждут администратора" },
-    { title: "В работе у меня", value: assigned.length, note: "взяты вами" },
+    { title: "В работе", value: assigned.length, note: "взяты вами" },
     { title: "Выдано мной", value: issued, note: "закреплено за вами" },
   ];
 
@@ -53,10 +53,6 @@ export default async function Page() {
       <AutoRefresh />
       <div className="flex flex-col gap-1">
         <h1 className="font-semibold text-xl">Рассмотрение наказаний</h1>
-        <p className="text-muted-foreground text-sm">
-          Заявки хелперов. Взятая в работу заявка видна только вам: команда для выдачи наказания и кнопки решения
-          находятся в её блоке.
-        </p>
       </div>
 
       {problem && (
