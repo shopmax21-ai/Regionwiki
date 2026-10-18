@@ -133,8 +133,8 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
   } else if (tab === "history") {
     body = (
       <div className="overflow-x-auto">
-        <Table className="min-w-[600px]">
-          <TableHeader>
+        <Table className="min-w-[600px] border-separate border-spacing-y-2">
+          <TableHeader className="[&_tr]:border-0 [&_tr>th]:bg-muted [&_tr>th:first-child]:rounded-l-lg [&_tr>th:last-child]:rounded-r-lg">
             <TableRow>
               <TableHead className="pl-4">Время</TableHead>
               <TableHead>Действие</TableHead>
@@ -143,7 +143,7 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
               <TableHead className="pr-4">Комментарий</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="[&_tr]:border-0 [&_tr>td]:bg-card/80 [&_tr>td:first-child]:rounded-l-lg [&_tr>td:last-child]:rounded-r-lg">
             {feed.map((event) => (
               <TableRow key={event.id} className="cursor-pointer" onClick={() => setOpenId(event.requestId)}>
                 <TableCell className="whitespace-nowrap pl-4 text-muted-foreground text-xs tabular-nums">
@@ -170,8 +170,8 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
   } else {
     body = (
       <div className="overflow-x-auto">
-        <Table className="min-w-[920px]">
-          <TableHeader>
+        <Table className="min-w-[920px] border-separate border-spacing-y-2">
+          <TableHeader className="[&_tr]:border-0 [&_tr>th]:bg-muted [&_tr>th:first-child]:rounded-l-lg [&_tr>th:last-child]:rounded-r-lg">
             <TableRow>
               <TableHead className="pl-4">Статик</TableHead>
               <TableHead>Наказание</TableHead>
@@ -184,7 +184,7 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
               <TableHead className="pr-4">Дата</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="[&_tr]:border-0 [&_tr>td]:bg-card/80 [&_tr>td:first-child]:rounded-l-lg [&_tr>td:last-child]:rounded-r-lg">
             {rows.map((request) => (
               <TableRow key={request.id} className="cursor-pointer" onClick={() => setOpenId(request.id)}>
                 <TableCell className="font-medium font-mono tabular-nums">

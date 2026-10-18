@@ -87,7 +87,7 @@ export default async function Page() {
               <Inbox className="size-7" aria-hidden="true" />
             </div>
             <h3 className="font-semibold">У вас нет заявок в работе</h3>
-            <p className="mt-1 text-muted-foreground text-sm">Возьмите заявку из очереди ниже.</p>
+            <p className="mt-1 text-muted-foreground text-sm">Возьмите заявку в работу.</p>
           </div>
         ) : (
           assigned.map((request) => <AssignedBlock key={request.id} request={request} now={now} />)

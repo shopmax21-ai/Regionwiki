@@ -51,8 +51,8 @@ export function QueueList({ items, now }: { items: QueueItem[]; now: number }) {
           <p className="px-4 py-8 text-center text-muted-foreground text-sm">Новых заявок нет.</p>
         ) : (
           <div className="overflow-x-auto">
-            <Table className="min-w-[720px]">
-              <TableHeader>
+            <Table className="min-w-[720px] border-separate border-spacing-y-2">
+              <TableHeader className="[&_tr]:border-0 [&_tr>th]:bg-muted [&_tr>th:first-child]:rounded-l-lg [&_tr>th:last-child]:rounded-r-lg">
                 <TableRow>
                   <TableHead className="pl-4">Хелпер</TableHead>
                   <TableHead>Статик</TableHead>
@@ -63,7 +63,7 @@ export function QueueList({ items, now }: { items: QueueItem[]; now: number }) {
                   <TableHead className="pr-4 text-right" />
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="[&_tr]:border-0 [&_tr>td]:bg-card/80 [&_tr>td:first-child]:rounded-l-lg [&_tr>td:last-child]:rounded-r-lg">
                 {items.map((item) => (
                   <TableRow key={item.id} banner={item.requester.background}>
                     <TableCell className="max-w-56">

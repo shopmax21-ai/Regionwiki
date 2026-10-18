@@ -21,8 +21,8 @@ export function MyRequests({ requests }: { requests: PunishmentRequest[] }) {
         <p className="px-4 py-8 text-center text-muted-foreground text-sm">Вы ещё не подавали заявок.</p>
       ) : (
         <div className="overflow-x-auto">
-          <Table className="min-w-[700px]">
-            <TableHeader>
+          <Table className="min-w-[700px] border-separate border-spacing-y-2">
+            <TableHeader className="[&_tr]:border-0 [&_tr>th]:bg-muted [&_tr>th:first-child]:rounded-l-lg [&_tr>th:last-child]:rounded-r-lg">
               <TableRow>
                 <TableHead className="pl-4">Статик</TableHead>
                 <TableHead>Наказание</TableHead>
@@ -32,7 +32,7 @@ export function MyRequests({ requests }: { requests: PunishmentRequest[] }) {
                 <TableHead className="pr-4 text-center">Статус</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="[&_tr]:border-0 [&_tr>td]:bg-card/80 [&_tr>td:first-child]:rounded-l-lg [&_tr>td:last-child]:rounded-r-lg">
               {requests.map((request) => (
                 <TableRow key={request.id}>
                   <TableCell className="font-medium font-mono tabular-nums">
