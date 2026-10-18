@@ -1,8 +1,13 @@
-const { app, BrowserWindow, globalShortcut, ipcMain, clipboard, screen, Tray, Menu, nativeImage, shell } = require("electron");
+const { app, BrowserWindow, globalShortcut, ipcMain, clipboard, screen, Tray, Menu, nativeImage, shell, dialog, safeStorage } = require("electron");
 const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
-const { createPunishments } = require("./punishments");
+const { createPunishments, quickTargets } = require("./punishments");
+const { createUpdater } = require("./updater");
+const { buildBackup, parseBackup } = require("./backup");
+const { createActionLog } = require("./actlog");
+const { normalizeOrigin, originFromKey, findKey, isHostTrusted } = require("./site-key");
+const { MASK, seal, unseal, publicSettings, sanitizePatch } = require("./secure-settings");
 
 const DEFAULT_SETTINGS = {
   serverUrl: "",
@@ -11,6 +16,16 @@ const DEFAULT_SETTINGS = {
   searchHotkey: "Alt+S",
   userToken: "",
   notifyPunishments: true,
+  punClaimHotkey: "Alt+Q",
+  punCopyHotkey: "Alt+W",
+  punIssueHotkey: "Alt+E",
+  punOpenHotkey: "Alt+P",
+  autoUpdate: true,
+  notifyMuted: false,
+  notifySound: true,
+  notifyVolume: 0.6,
+  notifyMode: "overlay",
+  notifyCorner: "top-right",
   opacity: 0.96,
   alwaysOnTop: true,
   hideOnCopy: false,
@@ -22,6 +37,9 @@ const DEFAULT_SETTINGS = {
   hudCorner: "top-left",
   hudScale: 1,
   hudOpacity: 0.85,
+  hudBg: true,
+  density: "comfortable",
+  hudBlockOpacity: 1,
   hudHotkey: "Alt+H",
   hudLocked: true,
   hudPos: null,
@@ -30,12 +48,20 @@ const DEFAULT_SETTINGS = {
   compactBounds: null,
 };
 
-const COMPACT_WIDTH = 720;
-const COMPACT_HEIGHT = 58;
+const COMPACT_WIDTH = 760;
+// 8 (отступ сверху) + 64 (строка) + 24 (место под тень)
+const COMPACT_HEIGHT = 96;
 
 let win = null;
 let hud = null;
+let notifyWin = null;
+let notifyReady = false;
+let notifyPending = [];
+let notifyHeight = 120;
 let punishments = null;
+let updater = null;
+let actionLog = null;
+const updateAnnounced = new Set();
 let hudSize = { width: 260, height: 40 };
 let hudSaveTimer = null;
 let tray = null;
@@ -43,6 +69,11 @@ let settings = { ...DEFAULT_SETTINGS };
 let binds = [];
 let bindRunning = false;
 let quitting = false;
+
+/** Настройки на диск: ключ доступа шифруется системой (DPAPI), в открытом виде в settings.json его нет. */
+function writeSettings() {
+  writeJson(userFile("settings.json"), seal(settings, safeStorage));
+}
 
 const userFile = (name) => path.join(app.getPath("userData"), name);
 
@@ -78,13 +109,14 @@ function createWindow() {
   win = new BrowserWindow({
     ...start,
     minWidth: settings.compact ? 360 : 380,
-    minHeight: settings.compact ? 40 : 360,
+    minHeight: settings.compact ? 60 : 360,
     frame: false,
-    transparent: false,
-    backgroundColor: "#131314",
+    transparent: true,
+    hasShadow: false,
+    backgroundColor: "#00000000",
     show: false,
     skipTaskbar: true,
-    resizable: true,
+    resizable: false,
     fullscreenable: false,
     autoHideMenuBar: true,
     title: "REGION Overlay",
@@ -96,6 +128,7 @@ function createWindow() {
     },
   });
   win.setMenu(null);
+  win.webContents.setVisualZoomLevelLimits(1, 1);
   applyWindowSettings();
   win.loadFile(path.join(__dirname, "src", "index.html"));
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -111,7 +144,7 @@ function createWindow() {
     if (!win || win.isDestroyed() || win.isMinimized()) return;
     if (settings.compact) settings.compactBounds = win.getBounds();
     else settings.bounds = win.getBounds();
-    writeJson(userFile("settings.json"), settings);
+    writeSettings();
   };
   let timer = null;
   const debounced = () => {
@@ -140,7 +173,7 @@ function setMode(compact) {
   if (compact) {
     settings.bounds = win.getBounds();
     settings.compact = true;
-    win.setMinimumSize(360, 40);
+    win.setMinimumSize(360, 60);
     win.setBounds(compactTarget());
   } else {
     settings.compact = false;
@@ -154,7 +187,7 @@ function setMode(compact) {
       height: saved?.height ?? Math.min(700, area.height - 80),
     });
   }
-  writeJson(userFile("settings.json"), settings);
+  writeSettings();
   return settings;
 }
 
@@ -165,13 +198,13 @@ function applyWindowSettings() {
   win.setAlwaysOnTop(Boolean(settings.alwaysOnTop), "screen-saver");
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.setMovable(!settings.lockWindow);
-  win.setResizable(!settings.lockWindow);
+  win.setResizable(false);
 }
 
 function showWindow() {
   if (!win) return;
   applyWindowSettings();
-  if (!settings.userToken) connectFromClipboard(true);
+  if (!settings.userToken) connectFromClipboard(true).catch(() => undefined);
   win.show();
   win.focus();
   win.webContents.send("overlay:shown");
@@ -183,35 +216,78 @@ function showWindow() {
 
 const KEY_PATTERN = /rgo_[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{20,}/;
 
-/** Адрес сайта зашит в ключ (rgo_<адрес в base64url>.<секрет>), поэтому вводить ссылку не нужно. */
-function originFromKey(key) {
-  const match = /^rgo_([A-Za-z0-9_-]+)\.[A-Za-z0-9_-]{20,}$/.exec(String(key || "").trim());
-  if (!match) return "";
+/** Адрес всегда берётся из ключа (и только https); без ключа остаётся лишь безопасный адрес из старых настроек. */
+function withDerivedUrl(next) {
+  const origin = originFromKey(next.userToken);
+  return { ...next, serverUrl: origin || normalizeOrigin(next.serverUrl) };
+}
+
+/** Сайты, к которым разрешено подключаться. Пустой список: любой https-адрес, но с подтверждением пользователя. */
+const trustedHosts = (() => {
+  const list = readJson(path.join(__dirname, "trusted-hosts.json"), {}).hosts;
+  return Array.isArray(list) ? list.filter((host) => typeof host === "string") : [];
+})();
+
+/** Открытый ключ проверки подписи обновлений. Нет файла: обновления отключены. */
+const updatePublicKey = (() => {
   try {
-    const url = new URL(Buffer.from(match[1], "base64url").toString("utf8"));
-    return /^https?:$/.test(url.protocol) ? url.origin : "";
+    return fs.readFileSync(path.join(__dirname, "update-key.pub"), "utf8").trim() || null;
   } catch {
-    return "";
+    return null;
+  }
+})();
+
+let connecting = false;
+
+/**
+ * Подключение по ключу. Ключ из буфера обмена мог положить кто угодно, а сайт из ключа получает доступ к данным и
+ * обновлениям программы, поэтому новый сайт всегда подтверждается пользователем.
+ */
+async function applyKey(key, { auto = false } = {}) {
+  const origin = originFromKey(key);
+  if (!origin) return { ok: false, error: "Ключ не подошёл: адрес сайта в нём должен начинаться с https://" };
+  const host = new URL(origin).host;
+  if (!isHostTrusted(origin, trustedHosts)) return { ok: false, error: `Сайт ${host} не входит в список разрешённых для этой сборки` };
+  if (connecting) return { ok: false, canceled: true };
+  connecting = true;
+  try {
+    if (origin !== settings.serverUrl) {
+      const parent = win && !win.isDestroyed() && win.isVisible() ? win : undefined;
+      const answer = await dialog.showMessageBox(parent, {
+        type: "question",
+        title: "Подключение оверлея",
+        message: `Подключить оверлей к сайту ${host}?`,
+        detail: `${auto ? "Ключ найден в буфере обмена. " : ""}С этого сайта программа будет получать правила, ответы, заявки и обновления. Подключайтесь только к адресу вашего сайта.`,
+        buttons: ["Подключить", "Отмена"],
+        defaultId: 1,
+        cancelId: 1,
+        noLink: true,
+      });
+      if (answer.response !== 0) return { ok: false, canceled: true };
+    }
+    settings = { ...settings, userToken: String(key).trim(), serverUrl: origin, token: "" };
+    writeSettings();
+    punishments?.restart();
+    win?.webContents.send("settings:changed", publicSettings(settings));
+    win?.webContents.send("overlay:connected");
+    return { ok: true };
+  } finally {
+    connecting = false;
   }
 }
 
-/** Адрес всегда берётся из ключа; без ключа остаются настройки старых версий. */
-function withDerivedUrl(next) {
-  const origin = originFromKey(next.userToken);
-  return origin ? { ...next, serverUrl: origin } : next;
+function disconnectSite() {
+  settings = { ...settings, userToken: "", serverUrl: "", token: "" };
+  writeSettings();
+  punishments?.restart();
 }
 
-/** auto: ключ из буфера обмена применяется сам, только если ключа ещё нет. */
-function connectFromClipboard(auto = false) {
-  const found = KEY_PATTERN.exec(clipboard.readText() || "");
-  if (!found || !originFromKey(found[0])) return { ok: false };
+/** auto: ключ из буфера обмена предлагается сам, только если ключа ещё нет. */
+async function connectFromClipboard(auto = false) {
+  const found = findKey(clipboard.readText());
+  if (!found || !originFromKey(found)) return { ok: false };
   if (auto && settings.userToken) return { ok: false };
-  settings = withDerivedUrl({ ...settings, userToken: found[0] });
-  writeJson(userFile("settings.json"), settings);
-  punishments?.restart();
-  win?.webContents.send("settings:changed", settings);
-  win?.webContents.send("overlay:connected");
-  return { ok: true };
+  return applyKey(found, { auto });
 }
 
 function hideWindow() {
@@ -264,7 +340,7 @@ function createHud() {
       if (!hud || hud.isDestroyed()) return;
       const { x, y } = hud.getBounds();
       settings.hudPos = { x, y };
-      writeJson(userFile("settings.json"), settings);
+      writeSettings();
     }, 250);
   });
   hud.on("closed", () => {
@@ -307,6 +383,8 @@ function updateHud() {
     items,
     scale: Number(settings.hudScale) || 1,
     opacity: Number(settings.hudOpacity) || 0.85,
+    bg: settings.hudBg !== false,
+    blockOpacity: Math.min(1, Math.max(0.2, Number(settings.hudBlockOpacity) || 1)),
     align: String(settings.hudCorner).endsWith("right") ? "right" : "left",
     locked: Boolean(settings.hudLocked),
   });
@@ -319,9 +397,101 @@ function updateHud() {
 
 function toggleHud() {
   settings.hud = !settings.hud;
-  writeJson(userFile("settings.json"), settings);
+  writeSettings();
   updateHud();
-  win?.webContents.send("settings:changed", settings);
+  win?.webContents.send("settings:changed", publicSettings(settings));
+}
+
+/* ---------- интерактивные уведомления о наказаниях ---------- */
+
+const NOTIFY_WIDTH = 412;
+
+function createNotify() {
+  notifyReady = false;
+  notifyWin = new BrowserWindow({
+    width: NOTIFY_WIDTH,
+    height: notifyHeight,
+    frame: false,
+    transparent: true,
+    hasShadow: false,
+    show: false,
+    skipTaskbar: true,
+    focusable: false,
+    resizable: false,
+    alwaysOnTop: true,
+    webPreferences: { preload: path.join(__dirname, "preload-notify.js"), contextIsolation: true, nodeIntegration: false, sandbox: true, autoplayPolicy: "no-user-gesture-required" },
+  });
+  notifyWin.setAlwaysOnTop(true, "screen-saver");
+  notifyWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  notifyWin.loadFile(path.join(__dirname, "src", "notify.html"));
+  notifyWin.webContents.on("did-finish-load", () => {
+    notifyReady = true;
+    for (const event of notifyPending.splice(0)) notifyWin?.webContents.send("notify:push", event);
+  });
+  notifyWin.on("closed", () => {
+    notifyWin = null;
+    notifyReady = false;
+  });
+}
+
+function placeNotify(height) {
+  if (!notifyWin || notifyWin.isDestroyed()) return;
+  notifyHeight = Math.max(40, Math.min(900, Math.round(height)));
+  const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+  const margin = 10;
+  const [vertical, horizontal] = String(settings.notifyCorner || "top-right").split("-");
+  const x = horizontal === "left" ? area.x + margin : area.x + area.width - NOTIFY_WIDTH - margin;
+  const y = vertical === "bottom" ? area.y + area.height - notifyHeight - margin : area.y + margin;
+  notifyWin.setBounds({ x, y, width: NOTIFY_WIDTH, height: notifyHeight });
+}
+
+function pushNotify(event) {
+  if (!notifyWin) createNotify();
+  // Скрытое окно не рисует кадры и не пришлёт размер, поэтому показываем его сразу
+  if (!notifyWin.isVisible()) {
+    placeNotify(notifyHeight);
+    notifyWin.showInactive();
+  }
+  // Свой мотив для каждого события; подтверждения быстрых клавиш (quiet) молчат
+  const sound = event.quiet || settings.notifySound === false ? null : event.kind === "mine" ? (event.tone === "ok" ? "ok" : event.tone === "bad" ? "bad" : "info") : "new";
+  const payload = { ...event, sound, volume: Number.isFinite(Number(settings.notifyVolume)) ? Number(settings.notifyVolume) : 0.6 };
+  if (notifyReady) notifyWin.webContents.send("notify:push", payload);
+  else notifyPending.push(payload);
+}
+
+/** Карточка об обновлении: «готово к установке» или (если автозагрузка выключена) «доступна версия». */
+function announceUpdate(state) {
+  const key = `${state.latest}:${state.status}`;
+  if (updateAnnounced.has(key)) return;
+  updateAnnounced.add(key);
+  const ready = state.status === "ready";
+  pushNotify({
+    id: `upd-${key}`, kind: "update", action: ready ? "install" : "download", quiet: true,
+    title: ready ? `Обновление ${state.latest} готово` : `Доступна версия ${state.latest}`,
+    body: state.notes || (ready ? "Установится после перезапуска. Можно сделать это сейчас." : "Скачайте обновление, чтобы установить его."),
+  });
+}
+
+function resolveNotify(ids) {
+  if (notifyWin && notifyReady) notifyWin.webContents.send("notify:resolve", ids);
+}
+
+/** Пробная карточка: имитирует цепочку шагов без обращения к сайту. */
+let demoStep = 0;
+function demoAssigned(action, note) {
+  if (action === "claim") { demoStep = 0; return { id: "__test", number: 0, needsDecision: true, command: null, copied: false }; }
+  if (action === "reject") return null;
+  if (action === "approve") { demoStep = 1; return { id: "__test", number: 0, needsDecision: false, command: "/jail 5476 60 ОП 1.19", copied: false }; }
+  if (action === "copycmd") { demoStep = 2; return { id: "__test", number: 0, needsDecision: false, command: "/jail 5476 60 ОП 1.19", copied: true }; }
+  return null;
+}
+
+function testNotify() {
+  pushNotify({
+    id: `test-${Date.now()}`, kind: "queue", canClaim: true,
+    title: "Заявка на наказание №0",
+    item: { id: "__test", number: 0, kind: "Деморган", duration: "60 мин", staticId: "5476", requester: "Проверка", rules: ["ОП 1.19", "ОП 3.11"], evidenceCount: 2, repeats: 2, createdAt: new Date().toISOString() },
+  });
 }
 
 /* ---------- горячие клавиши ---------- */
@@ -353,26 +523,96 @@ function registerHotkeys() {
     }
     register(bind.id, bind.hotkey, () => runBind(bind.id));
   }
+  const taken = new Set([settings.hotkey, settings.searchHotkey, settings.hudHotkey, ...binds.map((bind) => bind.hotkey)].filter(Boolean));
+  for (const [id, key, handler] of [
+    ["punClaim", settings.punClaimHotkey, hotkeyClaim],
+    ["punCopy", settings.punCopyHotkey, hotkeyCopy],
+    ["punIssue", settings.punIssueHotkey, hotkeyIssue],
+    ["punOpen", settings.punOpenHotkey, hotkeyOpenPunishments],
+  ]) {
+    if (!key) continue;
+    if (taken.has(key)) { hotkeyError[id] = "совпадает с другой клавишей оверлея"; continue; }
+    taken.add(key);
+    register(id, key, handler);
+  }
   win?.webContents.send("hotkeys:errors", hotkeyError);
+}
+
+/* ---------- быстрые клавиши наказаний (работают в игре, ответ приходит карточкой) ---------- */
+
+function quickSay(title, body, tone = "info") {
+  pushNotify({ id: `h-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, kind: "mine", tone, title, body, quiet: true });
+}
+
+async function hotkeyClaim() {
+  await punishments?.poll(); // решение принимается по свежим данным, а не по опросу 15-секундной давности
+  const target = quickTargets(punishments?.getState().data);
+  if (!punishments?.getState().configured) return quickSay("Наказания не подключены", "Подключите ключ в настройках оверлея", "bad");
+  if (!target.review) return quickSay("Нет доступа", "У вашей роли нет права рассматривать заявки", "bad");
+  if (!target.claim) return quickSay("Очередь пуста", "Новых заявок нет");
+  const item = target.claim;
+  const result = await punishments.act({ id: item.id, action: "claim" });
+  if (!result.ok) return quickSay("Не удалось взять заявку", result.error || "", "bad");
+  clipboard.writeText(String(item.staticId));
+  quickSay(`Заявка №${item.number} ваша`, `${item.kind}, ${item.duration}. Static ID ${item.staticId} скопирован`, "ok");
+}
+
+async function hotkeyCopy() {
+  await punishments?.poll();
+  const target = quickTargets(punishments?.getState().data);
+  if (!target.copy) {
+    return target.waiting
+      ? quickSay("Команды ещё нет", `Заявка №${target.waiting.number} ждёт решения: одобрите её в оверлее`, "bad")
+      : quickSay("Нет заявок в работе", "Возьмите заявку из очереди");
+  }
+  const item = target.copy;
+  clipboard.writeText(String(item.command));
+  if (!item.copied) await punishments.act({ id: item.id, action: "copied" });
+  quickSay(`Команда скопирована (№${item.number})`, item.command, "ok");
+}
+
+async function hotkeyIssue() {
+  await punishments?.poll();
+  const target = quickTargets(punishments?.getState().data);
+  if (!target.issue) {
+    return target.unissued
+      ? quickSay("Сначала скопируйте команду", `Заявка №${target.unissued.number}`, "bad")
+      : quickSay("Нечего отмечать", "Нет заявки с готовой командой");
+  }
+  const item = target.issue;
+  const result = await punishments.act({ id: item.id, action: "issue" });
+  if (result.ok) quickSay(`Наказание выдано (№${item.number})`, `${item.kind}, ID ${item.staticId}`, "ok");
+  else quickSay("Не удалось отметить", result.error || "", "bad");
+}
+
+function hotkeyOpenPunishments() {
+  showWindow();
+  win?.webContents.send("overlay:goto", "punishments");
 }
 
 /* ---------- отправка текста в игру (Windows) ---------- */
 
-function sendKeysWindows(lines, { openKey, delay }) {
+function sendKeysWindows(lines, { openKey, delay, autoEnter = true }) {
   return new Promise((resolve) => {
-    const payload = Buffer.from(JSON.stringify({ lines, openKey, delay }), "utf8").toString("base64");
+    const payload = Buffer.from(JSON.stringify({ lines, openKey, delay, autoEnter }), "utf8").toString("base64");
     const script = `
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
 $p = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${payload}')) | ConvertFrom-Json
 if (-not $p.lines -or @($p.lines).Count -eq 0) { [System.Windows.Forms.SendKeys]::SendWait('^v') }
+$total = @($p.lines).Count
+$done = 0
 foreach ($line in $p.lines) {
+  $done++
   [System.Windows.Forms.Clipboard]::SetText([string]$line)
   if ($p.openKey) { [System.Windows.Forms.SendKeys]::SendWait($p.openKey); Start-Sleep -Milliseconds 150 }
   [System.Windows.Forms.SendKeys]::SendWait('^v')
   Start-Sleep -Milliseconds 120
-  [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
-  Start-Sleep -Milliseconds ([int]$p.delay)
+  # Без автоввода Enter нажимается только между строками, последняя остаётся в поле чата
+  if ($p.autoEnter -or $done -lt $total) {
+    [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
+    Start-Sleep -Milliseconds ([int]$p.delay)
+  }
 }`;
     const encoded = Buffer.from(script, "utf16le").toString("base64");
     const child = spawn(
@@ -425,7 +665,7 @@ async function runBind(id) {
     await new Promise((resolve) => setTimeout(resolve, 120));
     const openKey = toSendKeys(bind.openKey ?? settings.openChatKey);
     const delay = Math.max(200, Number(bind.delay ?? settings.lineDelay) || 700);
-    return await sendKeysWindows(lines, { openKey, delay });
+    return await sendKeysWindows(lines, { openKey, delay, autoEnter: bind.autoEnter !== false });
   } finally {
     bindRunning = false;
   }
@@ -440,9 +680,9 @@ function emptyData() {
 }
 
 async function fetchData() {
-  const base = String(settings.serverUrl || "").trim().replace(/\/+$/, "");
+  const base = normalizeOrigin(settings.serverUrl);
   if (!base) return { ok: false, error: "Оверлей не подключён: вставьте ключ из профиля на сайте (вкладка «Настройки»)" };
-  const url = /^https?:\/\//i.test(base) ? base : `https://${base}`;
+  const url = base;
   try {
     const headers = { Accept: "application/json" };
     // Личный ключ открывает данные по правам администратора; общий токен остаётся для старых настроек
@@ -470,22 +710,69 @@ function loadCached() {
 /* ---------- IPC ---------- */
 
 function registerIpc() {
-  ipcMain.handle("settings:get", () => settings);
+  ipcMain.handle("settings:get", () => publicSettings(settings));
   ipcMain.handle("connection:me", () => punishments.me());
   ipcMain.handle("punishments:state", () => punishments.getState());
   ipcMain.handle("punishments:refresh", () => punishments.poll());
   ipcMain.handle("punishments:act", (_event, payload) => punishments.act(payload));
+  ipcMain.handle("punishments:log", () => actionLog.list());
+  ipcMain.handle("punishments:log-clear", () => { actionLog.clear(); return true; });
   ipcMain.handle("punishments:create", (_event, payload) => punishments.create(payload));
   ipcMain.handle("punishments:upload", (_event, bytes, type, name) => punishments.upload(bytes, type, name));
-  ipcMain.handle("settings:set", (_event, patch) => {
-    const connectionChanged = ["serverUrl", "userToken"].some((key) => key in patch && patch[key] !== settings[key]);
-    settings = withDerivedUrl({ ...settings, ...patch });
-    if (connectionChanged) punishments.restart();
-    writeJson(userFile("settings.json"), settings);
+  ipcMain.handle("settings:set", async (_event, patch) => {
+    const input = patch && typeof patch === "object" && !Array.isArray(patch) ? patch : {};
+    let error = null;
+    // Подключение меняется только здесь и только через проверку ключа; окну достаточно маски вместо настоящего ключа
+    if ("userToken" in input) {
+      const value = String(input.userToken ?? "").trim();
+      if (value === "") disconnectSite();
+      else if (value !== MASK) {
+        const result = await applyKey(value);
+        if (!result.ok && !result.canceled) error = result.error;
+      }
+    }
+    settings = { ...settings, ...sanitizePatch(input, DEFAULT_SETTINGS) };
+    writeSettings();
     applyWindowSettings();
     registerHotkeys();
     updateHud();
-    return { settings, errors: hotkeyError };
+    if (notifyWin?.isVisible()) placeNotify(notifyHeight);
+    return { settings: publicSettings(settings), errors: hotkeyError, error };
+  });
+  ipcMain.handle("backup:export", async () => {
+    const stamp = new Date().toISOString().slice(0, 10);
+    const target = await dialog.showSaveDialog(win, { title: "Сохранить настройки", defaultPath: `region-overlay-${stamp}.json`, filters: [{ name: "JSON", extensions: ["json"] }] });
+    if (target.canceled || !target.filePath) return { ok: false, canceled: true };
+    try {
+      fs.writeFileSync(target.filePath, JSON.stringify(buildBackup(settings, binds, app.getVersion()), null, 2));
+      return { ok: true, path: target.filePath };
+    } catch (error) {
+      return { ok: false, error: `Не удалось записать файл: ${error.message}` };
+    }
+  });
+  ipcMain.handle("backup:import", async () => {
+    const source = await dialog.showOpenDialog(win, { title: "Загрузить настройки", properties: ["openFile"], filters: [{ name: "JSON", extensions: ["json"] }] });
+    if (source.canceled || !source.filePaths[0]) return { ok: false, canceled: true };
+    let text;
+    try {
+      const stat = fs.statSync(source.filePaths[0]);
+      if (stat.size > 2 * 1024 * 1024) return { ok: false, error: "Файл слишком большой для копии настроек" };
+      text = fs.readFileSync(source.filePaths[0], "utf8");
+    } catch (error) {
+      return { ok: false, error: `Не удалось прочитать файл: ${error.message}` };
+    }
+    const parsed = parseBackup(text, DEFAULT_SETTINGS);
+    if (!parsed.ok) return parsed;
+    settings = withDerivedUrl({ ...settings, ...sanitizePatch(parsed.settings, DEFAULT_SETTINGS) });
+    writeSettings();
+    if (parsed.binds) {
+      binds = parsed.binds;
+      writeJson(userFile("binds.json"), binds);
+    }
+    applyWindowSettings();
+    registerHotkeys();
+    updateHud();
+    return { ok: true, settings: publicSettings(settings), errors: hotkeyError, binds: parsed.binds ? parsed.binds.length : null, skipped: parsed.skipped };
   });
   ipcMain.handle("data:cached", () => loadCached());
   ipcMain.handle("data:refresh", async () => {
@@ -519,6 +806,62 @@ function registerIpc() {
     const bounds = win.getBounds();
     if (bounds.height !== height) win.setBounds({ ...bounds, height });
   });
+  // Окно уведомлений не берёт фокус, но для ввода причины отказа его нужно включить, а после ввода вернуть обратно
+  ipcMain.on("notify:focusable", (_event, on) => {
+    if (!notifyWin || notifyWin.isDestroyed()) return;
+    notifyWin.setFocusable(Boolean(on));
+    if (on) notifyWin.focus();
+  });
+  ipcMain.on("notify:size", (_event, { height }) => {
+    if (!notifyWin || notifyWin.isDestroyed()) return;
+    if (!height) { notifyWin.hide(); return; }
+    placeNotify(height);
+    if (!notifyWin.isVisible()) notifyWin.showInactive();
+  });
+  ipcMain.handle("notify:action", async (_event, { action, item, note } = {}) => {
+    const id = typeof item?.id === "string" ? item.id : "";
+    // Шаги решения прямо из карточки: взять → одобрить/отклонить → скопировать команду → «Выдал».
+    // После каждого шага возвращаем свежую заявку «в работе», чтобы карточка показала следующую кнопку.
+    const assignedNow = () => (punishments.getState().data?.assigned || []).find((entry) => entry.id === id) || null;
+    if (["claim", "approve", "reject", "issue", "copycmd"].includes(action)) {
+      if (!id) return { ok: false, error: "Нет заявки" };
+      if (id === "__test") return { ok: true, assigned: demoAssigned(action, note) };
+      if (action === "copycmd") {
+        const current = assignedNow();
+        if (!current?.command) return { ok: false, error: "Команды ещё нет" };
+        clipboard.writeText(String(current.command));
+        if (!current.copied) await punishments.act({ id, action: "copied" });
+        return { ok: true, assigned: assignedNow() };
+      }
+      const result = await punishments.act({ id, action, ...(action === "reject" ? { note: String(note || "").slice(0, 300) } : {}) });
+      return result.ok ? { ok: true, assigned: assignedNow() } : result;
+    }
+    if (action === "copy") {
+      if (item?.staticId) clipboard.writeText(String(item.staticId));
+      return { ok: true };
+    }
+    if (action === "update-install") {
+      const result = updater.install({ restart: true });
+      if (result.ok) { quitting = true; setTimeout(() => app.quit(), 150); }
+      return result;
+    }
+    if (action === "update-download") { updater.download(); return { ok: true }; }
+    if (action === "open") {
+      showWindow();
+      win?.webContents.send("overlay:goto", "punishments");
+      return { ok: true };
+    }
+    return { ok: false };
+  });
+  ipcMain.handle("updater:state", () => updater.getState());
+  ipcMain.handle("updater:check", () => updater.check({ manual: true }));
+  ipcMain.handle("updater:download", () => updater.download());
+  ipcMain.handle("updater:install", () => {
+    const result = updater.install({ restart: true });
+    if (result.ok) { quitting = true; setTimeout(() => app.quit(), 150); }
+    return result;
+  });
+  ipcMain.handle("notify:test", () => { testNotify(); return { ok: true }; });
   ipcMain.handle("window:hide", () => hideWindow());
   ipcMain.handle("window:quit", () => {
     quitting = true;
@@ -536,9 +879,9 @@ function registerIpc() {
   });
   ipcMain.on("hud:lock", () => {
     settings.hudLocked = true;
-    writeJson(userFile("settings.json"), settings);
+    writeSettings();
     updateHud();
-    win?.webContents.send("settings:changed", settings);
+    win?.webContents.send("settings:changed", publicSettings(settings));
   });
   ipcMain.handle("connect:clipboard", () => connectFromClipboard());
   ipcMain.handle("platform", () => process.platform);
@@ -571,28 +914,53 @@ if (!app.requestSingleInstanceLock()) {
 } else {
   app.on("second-instance", showWindow);
   app.whenReady().then(() => {
-    settings = withDerivedUrl({ ...DEFAULT_SETTINGS, ...readJson(userFile("settings.json"), {}) });
+    const loaded = unseal(readJson(userFile("settings.json"), {}), safeStorage, DEFAULT_SETTINGS);
+    settings = withDerivedUrl(loaded.settings);
+    // Открытый ключ из старой версии переписывается в зашифрованном виде
+    if (loaded.migrated) writeSettings();
     binds = readJson(userFile("binds.json"), []);
     app.setAppUserModelId("ru.region.overlay");
+    actionLog = createActionLog({ read: () => readJson(userFile("actions.json"), []), write: (list) => writeJson(userFile("actions.json"), list) });
     punishments = createPunishments({
       getSettings: () => settings,
+      log: actionLog,
       onUpdate: (payload) => win?.webContents.send("punishments:update", payload),
       onOpen: () => {
         showWindow();
         win?.webContents.send("overlay:goto", "punishments");
       },
+      onNotify: pushNotify,
+      onResolve: resolveNotify,
+    });
+    // Portable-версия сама знает путь к своему .exe; в обычной сборке (установщик) и в разработке автоустановки нет
+    const portableTarget = process.env.PORTABLE_EXECUTABLE_FILE || null;
+    updater = createUpdater({
+      publicKey: updatePublicKey,
+      getSettings: () => settings,
+      getVersion: () => app.getVersion(),
+      getTarget: () => portableTarget,
+      getDir: () => (portableTarget ? path.dirname(portableTarget) : path.join(app.getPath("userData"), "updates")),
+      canInstall: app.isPackaged && process.platform === "win32" && Boolean(portableTarget),
+      onState: (state) => {
+        win?.webContents.send("updater:state", state);
+        if (state.status === "available" && state.canInstall && settings.autoUpdate === false) announceUpdate(state);
+      },
+      onReady: (state) => announceUpdate(state),
     });
     registerIpc();
     createWindow();
     createTray();
     registerHotkeys();
     updateHud();
-    if (!settings.userToken) connectFromClipboard(true);
+    if (!settings.userToken) connectFromClipboard(true).catch(() => undefined);
     punishments.restart();
+    updater.start();
   });
   app.on("will-quit", () => {
     globalShortcut.unregisterAll();
     punishments?.stop();
+    updater?.stop();
+    updater?.applyOnQuit(); // скачанное обновление ставится при выходе
   });
   app.on("window-all-closed", () => {});
 }

@@ -31,19 +31,30 @@
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
     <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></symbol>
     <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-gavel" viewBox="0 0 24 24"><path d="m14.5 12.5-8 8a2.119 2.119 0 1 1-3-3l8-8"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
   </defs>
 </svg>
   <div class="compact-bar" id="compact">
     <svg class="logo big" viewBox="-2 -2 47 46" aria-hidden="true"><use href="#r-mark"/></svg>
-    <input id="c-q" type="search" placeholder="Номер, слова из правила, ответ или бинд…" autocomplete="off" spellcheck="false">
+    <input id="c-q" type="search" placeholder="Поиск по всему…" autocomplete="off" spellcheck="false">
     <div class="pills" role="group" aria-label="Где искать">
       <button data-scope="all" class="active">Всё</button>
       <button data-scope="rules">Правила</button>
       <button data-scope="replies">Ответы</button>
     </div>
     <span class="vsep"></span>
-    <button class="icon" id="c-menu-btn" data-menu title="Меню"><svg class="ico"><use href="#i-menu"/></svg></button>
+    <div class="mode-switch" role="group" aria-label="Режим окна">
+      <button data-mode="search" title="Только строка поиска (Ctrl+M)"><svg class="ico"><use href="#i-search"/></svg><span>Поиск</span></button>
+      <button data-mode="full" title="Полное меню (Ctrl+M)"><svg class="ico"><use href="#i-menu"/></svg><span>Меню</span></button>
+    </div>
+    <span class="vsep"></span>
+    <button class="icon" id="c-history" title="Недавние запросы"><svg class="ico"><use href="#i-history"/></svg></button>
+    <button class="icon pun-btn" id="c-pun-btn" data-go="punishments" title="Наказания (Ctrl+6)"><svg class="ico"><use href="#i-gavel"/></svg><span class="nbadge" data-pun-badge hidden></span></button>
+    <button class="icon" id="c-menu-btn" data-menu title="Меню"><svg class="ico"><use href="#i-sliders"/></svg></button>
   </div>
   <div class="list c-list" id="c-list"></div>
   <div class="menu" id="menu" hidden></div>
@@ -60,12 +71,28 @@
       <button data-scope="replies">Ответы</button>
     </div>
     <span class="vsep"></span>
+    <div class="mode-switch" role="group" aria-label="Режим окна">
+      <button data-mode="search" title="Только строка поиска (Ctrl+M)"><svg class="ico"><use href="#i-search"/></svg><span>Поиск</span></button>
+      <button data-mode="full" title="Полное меню (Ctrl+M)"><svg class="ico"><use href="#i-menu"/></svg><span>Меню</span></button>
+    </div>
+    <span class="vsep"></span>
     <div class="top-actions">
+      <button class="icon pun-btn" id="pun-btn" data-go="punishments" title="Наказания (Ctrl+6)"><svg class="ico"><use href="#i-gavel"/></svg><span class="nbadge" data-pun-badge hidden></span></button>
       <button class="icon" id="menu-btn" data-menu title="Меню"><svg class="ico"><use href="#i-menu"/></svg></button>
-      <button class="icon" id="close" title="Скрыть (Esc)"><svg class="ico"><use href="#i-x"/></svg></button>
+      <button class="icon" id="close" title="Скрыть оверлей полностью (Esc)"><svg class="ico"><use href="#i-x"/></svg></button>
     </div>
   </header>
 
+  <div class="shell" id="shell">
+  <nav class="rail" aria-label="Разделы">
+    <button class="rail-btn active" data-tab="all" data-nav="all" title="Главная (Ctrl+1)"><svg class="ico"><use href="#i-home"/></svg><span>Главная</span></button>
+    <button class="rail-btn" data-tab="rules" data-nav="rules" title="Правила (Ctrl+2)"><svg class="ico"><use href="#i-shield"/></svg><span>Правила</span></button>
+    <button class="rail-btn" data-tab="replies" data-nav="replies" title="Ответы (Ctrl+3)"><svg class="ico"><use href="#i-msg"/></svg><span>Ответы</span></button>
+    <button class="rail-btn" data-tab="binder" data-nav="binder" title="Биндер (Ctrl+4)"><svg class="ico"><use href="#i-keys"/></svg><span>Биндер</span></button>
+    <button class="rail-btn" data-tab="punishments" data-nav="punishments" title="Наказания (Ctrl+6)"><svg class="ico"><use href="#i-gavel"/></svg><span>Наказания</span><span class="nbadge" data-pun-badge hidden></span></button>
+    <span class="rail-gap"></span>
+    <button class="rail-btn" data-tab="settings" data-nav="settings" title="Настройки (Ctrl+5)"><svg class="ico"><use href="#i-sliders"/></svg><span>Настройки</span></button>
+  </nav>
   <main>
     <section id="tab-all" class="panel active">
       <div class="home" id="home"></div>
@@ -90,13 +117,14 @@
 
     <section id="tab-binder" class="panel">
       <div class="bar">
-        <span class="hint" id="binder-hint">Бинд отправляет строки в чат игры по горячей клавише.</span>
+        <div class="page-title"><h2>Биндер</h2></div>
         <button class="btn" id="bind-add">+ Бинд</button>
       </div>
       <div class="list" id="binder-list"></div>
       <form id="bind-form" class="form" hidden>
         <label>Название<input name="title" maxlength="60" required></label>
         <label class="check"><input name="hint" type="checkbox" checked> Показывать в подсказках на экране игры</label>
+        <label class="check"><input name="autoEnter" type="checkbox" checked> Нажимать Enter после ввода (иначе последняя строка останется в чате)</label>
         <label>Горячая клавиша
           <input name="hotkey" id="bind-hotkey" readonly placeholder="Нажмите сочетание…">
         </label>
@@ -120,7 +148,10 @@
     </section>
 
     <section id="tab-settings" class="panel">
-      <div class="form">
+      <div class="set-layout">
+      <nav class="set-nav" id="set-nav" aria-label="Разделы настроек"></nav>
+      <div class="form set-form">
+        <section class="set-card" id="sec-connect" data-sec="connect"><h3 class="group-title">Подключение</h3>
         <div class="connect" id="connect">
           <div class="connect-status" id="connect-status">Не подключено</div>
           <label>Ключ доступа<input id="set-user-token" type="password" placeholder="rgo_… из профиля на сайте" spellcheck="false" autocomplete="off"></label>
@@ -128,15 +159,56 @@
             <button class="btn sm" id="connect-clip" type="button">Вставить ключ из буфера</button>
             <button class="btn ghost sm" id="disconnect" type="button">Отключить</button>
           </div>
-          <p class="connect-hint">Откройте профиль на сайте, раздел «Оверлей для игры», нажмите «Создать ключ» и откройте оверлей: он сам найдёт ключ в буфере обмена. Адрес сайта вводить не нужно.</p>
+          <p class="connect-hint">Создайте ключ в профиле на сайте («Оверлей для игры»), скопируйте его и откройте оверлей.</p>
         </div>
+        </section>
+        <section class="set-card" id="sec-window" data-sec="window"><h3 class="group-title">Окно и горячие клавиши</h3>
         <label>Показать / скрыть оверлей<input id="set-hotkey" readonly></label>
         <label>Открыть / закрыть строку поиска<input id="set-search-hotkey" readonly></label>
         <label>Прозрачность окна <span id="opacity-val"></span><input id="set-opacity" type="range" min="40" max="100" step="2"></label>
         <label class="check"><input id="set-top" type="checkbox"> Держать поверх игры</label>
-        <label class="check"><input id="set-notify" type="checkbox"> Уведомлять о новых заявках на наказания (Windows)</label>
         <label class="check"><input id="set-lock" type="checkbox"> Зафиксировать окно (нельзя двигать и менять размер)</label>
-        <div class="group-title">Подсказки биндера на экране игры</div>
+        <label class="check"><input id="set-dense" type="checkbox"> Компактные списки (больше карточек на экране)</label>
+        </section>
+        <section class="set-card" id="sec-punish" data-sec="punish"><h3 class="group-title">Наказания: уведомления и клавиши</h3>
+        <label class="check"><input id="set-notify" type="checkbox"> Уведомлять о новых заявках и решениях по ним</label>
+        <label class="check"><input id="set-notify-sound" type="checkbox"> Звуковые сигналы (новая заявка, решение по вашей заявке)</label>
+        <label>Громкость <span id="notify-volume-val"></span><input id="set-notify-volume" type="range" min="0" max="100" step="5"></label>
+        <div class="sound-test">
+          <button class="btn ghost sm" id="snd-new" type="button">▶ Новая заявка</button>
+          <button class="btn ghost sm" id="snd-info" type="button">▶ Взяли в работу</button>
+          <button class="btn ghost sm" id="snd-ok" type="button">▶ Выдано</button>
+          <button class="btn ghost sm" id="snd-bad" type="button">▶ Отказ</button>
+        </div>
+        <label class="check"><input id="set-notify-muted" type="checkbox"> Не беспокоить (уведомления отключены, клавиши и список работают)</label>
+        <div class="row">
+          <label>Вид уведомлений
+            <select id="set-notify-mode">
+              <option value="overlay">Поверх игры, с кнопками</option>
+              <option value="system">Системные Windows</option>
+            </select>
+          </label>
+          <label>Угол экрана
+            <select id="set-notify-corner">
+              <option value="top-right">Справа сверху</option>
+              <option value="top-left">Слева сверху</option>
+              <option value="bottom-right">Справа снизу</option>
+              <option value="bottom-left">Слева снизу</option>
+            </select>
+          </label>
+        </div>
+        <button class="btn ghost sm" id="notify-test" type="button">Показать пробное уведомление</button>
+        <div class="sub-title">Быстрые клавиши (работают прямо в игре, ответ приходит карточкой)</div>
+        <div class="row">
+          <label>Взять старейшую заявку<input id="set-pun-claim" readonly placeholder="не задана"></label>
+          <label>Копировать команду<input id="set-pun-copy" readonly placeholder="не задана"></label>
+        </div>
+        <div class="row">
+          <label>Отметить «Выдал наказание»<input id="set-pun-issue" readonly placeholder="не задана"></label>
+          <label>Открыть «Наказания»<input id="set-pun-open" readonly placeholder="не задана"></label>
+        </div>
+        </section>
+        <section class="set-card" id="sec-hud" data-sec="hud"><h3 class="group-title">Подсказки биндера на экране игры</h3>
         <label class="check"><input id="set-hud" type="checkbox"> Показывать список биндов поверх игры</label>
         <label class="check"><input id="set-hud-lock" type="checkbox"> Зафиксировать подсказки (снимите, чтобы перетащить мышью)</label>
         <button class="btn ghost sm" id="hud-reset" type="button">Сбросить положение подсказок</button>
@@ -151,30 +223,51 @@
           </label>
           <label>Показать / скрыть<input id="set-hud-hotkey" readonly></label>
         </div>
+        <label class="check"><input id="set-hud-bg" type="checkbox"> Показывать фон подсказок (выключите, чтобы остался только текст с обводкой)</label>
         <div class="row">
-          <label>Размер <span id="hud-scale-val"></span><input id="set-hud-scale" type="range" min="70" max="200" step="10"></label>
-          <label>Непрозрачность <span id="hud-op-val"></span><input id="set-hud-op" type="range" min="20" max="100" step="5"></label>
+          <label>Размер текста <span id="hud-scale-val"></span><input id="set-hud-scale" type="range" min="60" max="250" step="10"></label>
+          <label>Прозрачность фона <span id="hud-op-val"></span><input id="set-hud-op" type="range" min="10" max="100" step="5"></label>
         </div>
-        <div class="group-title">Общее</div>
+        <div class="row">
+          <label>Прозрачность всего блока <span id="hud-block-val"></span><input id="set-hud-block" type="range" min="20" max="100" step="5"></label>
+        </div>
+        </section>
+        <section class="set-card" id="sec-updates" data-sec="updates"><h3 class="group-title">Обновления</h3>
+        <div class="upd-row"><div><div class="upd-ver" id="upd-version">Версия</div><div class="hint" id="upd-status">Проверка ещё не выполнялась</div></div>
+          <div class="upd-actions"><button class="btn ghost sm" id="upd-check" type="button">Проверить</button><button class="btn sm" id="upd-install" type="button" hidden>Обновить и перезапустить</button><button class="btn sm" id="upd-download" type="button" hidden>Скачать</button></div></div>
+        <div class="upd-bar" id="upd-bar" hidden><i id="upd-fill"></i></div>
+        <label class="check"><input id="set-autoupdate" type="checkbox"> Скачивать обновления автоматически (ставятся при перезапуске)</label>
+        </section>
+        <section class="set-card" id="sec-general" data-sec="general"><h3 class="group-title">Общее</h3>
         <label class="check"><input id="set-hide" type="checkbox"> Скрывать окно после копирования</label>
         <label class="check"><input id="set-paste" type="checkbox"> Вставлять в игру сразу после копирования (Ctrl+V, Windows)</label>
         <div class="row">
           <label>Клавиша открытия чата<input id="set-chat" maxlength="8" placeholder="например T или F6"></label>
           <label>Пауза между строками, мс<input id="set-delay" type="number" min="200" max="10000" step="50"></label>
         </div>
+        <div class="row end start">
+          <button class="btn ghost sm" id="tour-again" type="button">Показать тур по оверлею заново</button>
+          <button class="btn ghost sm" id="backup-export" type="button">Сохранить настройки в файл</button>
+          <button class="btn ghost sm" id="backup-import" type="button">Загрузить из файла</button>
+        </div>
         <div class="row end">
           <button class="btn ghost" id="export-binds">Копировать бинды</button>
           <button class="btn ghost" id="import-binds">Импорт из буфера</button>
           <button class="btn danger" id="quit">Закрыть программу</button>
         </div>
+        </section>
         <p class="hint" id="settings-msg"></p>
+      </div>
       </div>
     </section>
   </main>
+  </div>
 
-  <footer class="foot" id="foot"><span class="status" id="status"></span><span class="keys">Enter — копировать · Shift+Enter — с текстом · Ctrl+M — свернуть</span></footer>
+  <footer class="foot" id="foot"><span class="status" id="status"></span></footer>
   <div class="toast" id="toast" role="status"></div>
   <script src="search.js"></script>
+  <script src="sounds.js"></script>
+  <script src="tour.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

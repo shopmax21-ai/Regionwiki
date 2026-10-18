@@ -4,10 +4,13 @@
 
   const measure = () => window.hud.size(box.offsetWidth + 2, box.offsetHeight + 2);
 
-  window.hud.onData(({ items, scale, opacity, align, locked }) => {
+  window.hud.onData(({ items, scale, opacity, align, locked, bg, blockOpacity }) => {
     root.style.setProperty("--scale", scale);
     root.style.setProperty("--bg", opacity);
-    box.className = `box${align === "right" ? " right" : ""}${locked ? "" : " editing"}`;
+    root.style.setProperty("--block", locked ? blockOpacity ?? 1 : 1);
+    // При перетаскивании фон показывается всегда, иначе блок не схватить
+    const plain = bg === false && locked;
+    box.className = `box${align === "right" ? " right" : ""}${locked ? "" : " editing"}${plain ? " plain" : ""}`;
     box.replaceChildren();
     if (!locked) {
       const bar = document.createElement("div");

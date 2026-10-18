@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 
-import { type AdminContext, getAdminContextById } from "@/lib/auth/admin";
+import { type AdminContext, getAdminContext, getAdminContextById } from "@/lib/auth/admin";
 
 import { findUserByToken } from "./user-token";
 
@@ -14,4 +14,12 @@ export async function authenticateOverlayUser(request: NextRequest): Promise<Adm
   if (!token) return null;
   const telegramId = await findUserByToken(token);
   return telegramId ? getAdminContextById(telegramId) : null;
+}
+
+/**
+ * Доступ к файлам оверлея: либо личный ключ программы (Authorization: Bearer rgo_…), либо обычный вход
+ * администратора на сайте (cookie). Программа обновляется без сессии браузера, поэтому ключ здесь обязателен.
+ */
+export async function authenticateOverlayRequest(request: NextRequest): Promise<AdminContext | null> {
+  return (await authenticateOverlayUser(request)) ?? (await getAdminContext());
 }

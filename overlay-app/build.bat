@@ -1,61 +1,64 @@
 @echo off
-chcp 65001 >nul
 setlocal
 cd /d "%~dp0"
-title Сборка REGION Overlay
+title Build REGION Overlay
 
-rem Использование:
-rem   build.bat             - собрать portable .exe и установщик
-rem   build.bat portable    - собрать только portable .exe (один файл, без установки)
-rem   build.bat installer   - собрать только установщик
+rem Usage:
+rem   build.bat             - build portable .exe and installer
+rem   build.bat portable    - build only the portable .exe (single file, no installer)
+rem   build.bat installer   - build only the installer
 
 set TARGET=portable nsis
 if /i "%~1"=="portable" set TARGET=portable
 if /i "%~1"=="installer" set TARGET=nsis
 
 echo ============================================
-echo   Сборка REGION Overlay для Windows
+echo   Building REGION Overlay for Windows
 echo ============================================
 echo.
 
 where node >nul 2>nul
 if errorlevel 1 (
-  echo [ОШИБКА] Node.js не найден. Установите версию LTS: https://nodejs.org
-  echo После установки закройте это окно и запустите build.bat снова.
+  echo [ERROR] Node.js not found. Install the LTS version: https://nodejs.org
+  echo After installing, close this window and run build.bat again.
   goto :fail
 )
 
-echo [1/3] Установка зависимостей...
+echo [1/3] Installing dependencies...
 call npm install
 if errorlevel 1 goto :fail
 
 echo.
-echo [2/3] Проверка (тесты поиска и наказаний)...
+echo [2/3] Running checks (search, punishments, updater, backup, log)...
 call npm test
 if errorlevel 1 (
-  echo [ОШИБКА] Тесты не прошли, сборка остановлена.
+  echo [ERROR] Tests failed, build stopped.
   goto :fail
 )
 
 echo.
-echo [3/3] Сборка (%TARGET%). Первый раз может занять несколько минут...
+echo [3/3] Building (%TARGET%). The first run may take a few minutes...
 call npx electron-builder --win %TARGET%
 if errorlevel 1 (
   echo.
-  echo [ОШИБКА] Сборка не удалась.
-  echo Если в тексте выше есть "Cannot create symbolic link", запустите build.bat от имени администратора
-  echo или включите "Режим разработчика" в Параметрах Windows.
+  echo [ERROR] Build failed.
+  echo If the text above has "Cannot create symbolic link", run build.bat as administrator
+  echo or turn on Developer Mode in Windows Settings.
   goto :fail
 )
 
 echo.
 echo ============================================
-echo   Готово. Файлы в папке dist:
+echo   Done. Files are in the dist folder:
 echo ============================================
 dir /b dist\*.exe
 echo.
-echo Portable-версию ^(REGION Overlay-*.exe^) положите в папку overlay-downloads сайта,
-echo старый файл оттуда удалите: страница /overlay предложит самый свежий.
+echo Put the portable file ^(REGION Overlay-X.Y.Z.exe, without the word Setup^) into the
+echo overlay-downloads folder of the site: the /overlay page and auto-update use the newest file.
+echo The installer is named REGION Overlay-Setup-X.Y.Z.exe.
+echo.
+echo Updates must be signed: run  npm run sign -- "dist\REGION Overlay-X.Y.Z.exe"  and put the .sig file next to the .exe.
+echo (first time only: npm run keygen, then commit update-key.pub).
 echo.
 start "" explorer "%~dp0dist"
 pause

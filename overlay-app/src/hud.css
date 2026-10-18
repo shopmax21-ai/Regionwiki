@@ -4,9 +4,21 @@ html, body { margin: 0; background: transparent; overflow: hidden; user-select: 
 .row { display: flex; align-items: center; gap: 8px; padding: 1px 2px; border-radius: 4px; transition: background .2s; }
 .row.fire { background: rgba(207, 48, 48, .55); }
 .key { font-family: "JetBrains Mono", Consolas, monospace; font-size: .88em; background: rgba(255, 255, 255, .1); border-radius: 3px; padding: 0 5px; min-width: 56px; text-align: center; }
-.title { overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+.title { overflow: hidden; text-overflow: ellipsis; max-width: calc(260px * var(--scale, 1)); }
 .n { color: #9a9a9a; font-size: .85em; margin-left: auto; padding-left: 8px; }
 .box.editing { -webkit-app-region: drag; cursor: move; border-color: #e63f3f; box-shadow: 0 0 0 1px rgba(230, 63, 63, .5); }
 .grip { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 2px 2px 5px; border-bottom: 1px dashed rgba(255, 255, 255, .18); margin-bottom: 3px; font-size: .85em; color: #b5b5b5; }
 .lock { -webkit-app-region: no-drag; cursor: pointer; font: inherit; font-weight: 600; color: #fff; background: linear-gradient(135deg, #e63f3f, #ab2929); border: 0; border-radius: 5px; padding: 2px 8px; }
 .lock:hover { filter: brightness(1.15); }
+.box { opacity: var(--block, 1); }
+.box.plain { background: none; border-color: transparent; box-shadow: none; text-shadow: 0 1px 2px rgba(0, 0, 0, .95), 0 0 6px rgba(0, 0, 0, .8); }
+.box.plain .key { background: rgba(0, 0, 0, .5); }
+.box.plain .row.fire { background: rgba(207, 48, 48, .7); }
+
+/* Колонки выровнены: клавиши, названия, число строк */
+.box { display: inline-grid; grid-template-columns: max-content max-content max-content; column-gap: 8px; row-gap: 3px; align-items: center; }
+.box.right { display: grid; justify-content: end; }
+.box > .grip { grid-column: 1 / -1; }
+.box > .row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; gap: 8px; align-items: center; }
+.box .key { justify-self: stretch; }
+.box .n { margin-left: 0; padding-left: 0; text-align: right; min-width: 1.4em; }

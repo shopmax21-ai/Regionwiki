@@ -1,23 +1,54 @@
 {
   "name": "region-overlay",
   "productName": "REGION Overlay",
-  "version": "1.7.0",
+  "version": "1.13.1",
   "description": "Оверлей поверх игры: поиск по правилам, быстрые ответы, биндер",
   "main": "main.js",
   "author": "REGION",
   "license": "UNLICENSED",
   "scripts": {
     "start": "electron .",
-    "test": "node test/search.test.js && node test/punishments.test.js",
-    "dist": "electron-builder --win portable nsis"
+    "test": "node test/search.test.js && node test/punishments.test.js && node test/updater.test.js && node test/backup.test.js && node test/actlog.test.js && node test/security.test.js",
+    "dist": "electron-builder --win portable nsis",
+    "keygen": "node tools/release-keys.js keygen",
+    "sign": "node tools/release-keys.js sign"
   },
   "build": {
     "appId": "game.region.overlay",
     "productName": "REGION Overlay",
-    "files": ["main.js", "punishments.js", "preload.js", "preload-hud.js", "src/**/*", "data/**/*", "build/icon.png"],
-    "win": { "target": ["portable", "nsis"], "icon": "build/icon.png" },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
-    "artifactName": "${productName}-${version}.${ext}"
+    "files": [
+      "main.js",
+      "punishments.js",
+      "updater.js",
+      "backup.js",
+      "actlog.js",
+      "preload.js",
+      "preload-hud.js",
+      "preload-notify.js",
+      "src/**/*",
+      "data/**/*",
+      "build/icon.png",
+      "site-key.js",
+      "signing.js",
+      "secure-settings.js",
+      "trusted-hosts.json",
+      "update-key.pub"
+    ],
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}.${ext}"
+    }
   },
   "devDependencies": {
     "electron": "^44.7.0",
