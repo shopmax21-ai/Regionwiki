@@ -122,7 +122,7 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
                 </TableHeader>
                 <TableBody>
                   {overview.admins.map((row) => (
-                    <TableRow key={row.userId} banner={row.user.background} data-state={row.userId === userId ? "selected" : undefined}>
+                    <TableRow key={row.userId} data-state={row.userId === userId ? "selected" : undefined}>
                       <TableCell className="max-w-48 truncate pl-4 font-medium">
                         <Link
                           href={href({ user: row.userId, test: testId })}

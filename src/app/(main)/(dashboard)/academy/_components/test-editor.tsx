@@ -39,7 +39,15 @@ import {
 
 import { createTestAction, updateTestAction } from "../_actions";
 
-type QuestionForm = { key: string; text: string; answers: string[]; correct: number; explanation: string };
+type QuestionForm = {
+  key: string;
+  text: string;
+  answers: string[];
+  correct: number;
+  explanation: string;
+  /** Время на ответ, секунд. Пусто: действует общее время теста */
+  time: string;
+};
 
 type FormState = {
   title: string;
@@ -53,6 +61,8 @@ type FormState = {
   questions: QuestionForm[];
   questionCount: string;
   groups: RuleGroupKey[];
+  /** Время на каждый сгенерированный вопрос, секунд. Пусто: общее время теста */
+  questionTime: string;
   /** Отдельные разделы ОП (адреса статей); работают, когда ОП целиком не выбрано */
   articles: string[];
 };
@@ -66,6 +76,7 @@ const emptyQuestion = (): QuestionForm => ({
   answers: ["", "", "", ""],
   correct: 0,
   explanation: "",
+  time: "",
 });
 
 const emptyForm = (): FormState => ({
@@ -80,6 +91,7 @@ const emptyForm = (): FormState => ({
   questions: [emptyQuestion()],
   questionCount: "10",
   groups: [...RULE_GROUP_KEYS],
+  questionTime: "",
   articles: [],
 });
 
@@ -100,10 +112,12 @@ const formFromTest = (test: AcademyTest): FormState => ({
           answers: [...question.answers],
           correct: question.correct,
           explanation: question.explanation,
+          time: question.timeLimitSec ? String(question.timeLimitSec) : "",
         }))
       : [emptyQuestion()],
   questionCount: String(test.rules?.questionCount ?? 10),
   groups: test.rules?.groups ?? [...RULE_GROUP_KEYS],
+  questionTime: test.rules?.questionTimeSec ? String(test.rules.questionTimeSec) : "",
   articles: test.rules?.articles ?? [],
 });
 
@@ -115,6 +129,9 @@ function correctAfterRemoval(correct: number, removed: number): number {
 
 /** Переводит поле формы в число; пустое и нечисловое значение превращается в NaN. */
 const toInt = (value: string) => (value.trim() === "" ? Number.NaN : Number(value));
+
+/** Время на ответ: пустое поле значит «общее время теста», его сервер не хранит (null). */
+const toSeconds = (value: string) => (value.trim() === "" ? null : Number(value));
 
 type Built = { ok: true; payload: unknown } | { ok: false; error: string };
 
@@ -139,11 +156,26 @@ function buildPayload(form: FormState): Built {
     if (Number.isNaN(questionCount)) return { ok: false, error: "Укажите количество вопросов" };
     return {
       ok: true,
-      payload: { ...common, kind: "rules", rules: { questionCount, groups: form.groups, articles: form.articles } },
+      payload: {
+        ...common,
+        kind: "rules",
+        rules: {
+          questionCount,
+          groups: form.groups,
+          articles: form.articles,
+          questionTimeSec: toSeconds(form.questionTime),
+        },
+      },
     };
   }
 
-  const questions: { text: string; answers: string[]; correct: number; explanation: string }[] = [];
+  const questions: {
+    text: string;
+    answers: string[];
+    correct: number;
+    explanation: string;
+    timeLimitSec: number | null;
+  }[] = [];
   for (const [index, question] of form.questions.entries()) {
     // Пустые варианты отбрасываем, а индекс правильного пересчитываем
     const answers: string[] = [];
@@ -156,7 +188,13 @@ function buildPayload(form: FormState): Built {
     if (correct === -1) {
       return { ok: false, error: `Вопрос ${index + 1}: отметьте правильный ответ и заполните его текст` };
     }
-    questions.push({ text: question.text, answers, correct, explanation: question.explanation });
+    questions.push({
+      text: question.text,
+      answers,
+      correct,
+      explanation: question.explanation,
+      timeLimitSec: toSeconds(question.time),
+    });
   }
   return { ok: true, payload: { ...common, kind: "manual", questions } };
 }
@@ -310,7 +348,7 @@ export function TestEditor(props: TestEditorProps) {
             </NativeSelect>
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor={id("duration")}>Время, минут</Label>
+            <Label htmlFor={id("duration")}>Время на весь тест, минут</Label>
             <Input
               id={id("duration")}
               inputMode="numeric"
@@ -399,6 +437,20 @@ export function TestEditor(props: TestEditorProps) {
               />
               <p className="text-muted-foreground text-xs">
                 От {L.minRulesQuestions} до {L.maxRulesQuestions}.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:max-w-xs">
+              <Label htmlFor={id("question-time")}>Время на ответ, секунд</Label>
+              <Input
+                id={id("question-time")}
+                inputMode="numeric"
+                value={form.questionTime}
+                placeholder="Общее время теста"
+                onChange={(event) => set("questionTime", event.target.value.replace(/\D/g, "").slice(0, 4))}
+              />
+              <p className="text-muted-foreground text-xs">
+                Одинаково для каждого вопроса. Если не указано, действует общее время теста: {form.duration || "0"}{" "}
+                мин.
               </p>
             </div>
             <div className="flex flex-col gap-2">
@@ -531,6 +583,24 @@ export function TestEditor(props: TestEditorProps) {
                       Добавить вариант
                     </Button>
                   )}
+                </div>
+
+                <div className="flex flex-col gap-2 sm:max-w-xs">
+                  <Label htmlFor={`${question.key}-time`} className="text-muted-foreground text-xs">
+                    Время на ответ, секунд
+                  </Label>
+                  <Input
+                    id={`${question.key}-time`}
+                    inputMode="numeric"
+                    value={question.time}
+                    placeholder="Общее время теста"
+                    onChange={(event) =>
+                      updateQuestion(question.key, { time: event.target.value.replace(/\D/g, "").slice(0, 4) })
+                    }
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    Если не указано, у вопроса общее время теста: {form.duration || "0"} мин.
+                  </p>
                 </div>
 
                 <div className="flex flex-col gap-2">

@@ -9,6 +9,7 @@ import { PersonName } from "@/components/person-name";
 import { StatusIcon } from "@/components/status-icon";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ROW_BANNER_CLASS, rowBannerStyle } from "@/lib/row-banner";
 
 import { AccessAvatar } from "./access-avatar";
 import { DecisionButtons } from "./decision-buttons";
@@ -23,6 +24,8 @@ export type MemberRow = {
   admin: boolean;
   /** Уже отформатированная дата последнего входа: форматирование на сервере, чтобы не расходилось с браузером */
   lastLogin: string;
+  /** Баннер профиля: адрес картинки или null */
+  background: string | null;
 };
 
 type Filter = "all" | "approved" | "rejected" | "admins";
@@ -118,7 +121,11 @@ export function MembersList({ rows }: { rows: MemberRow[] }) {
             {visible.map((row) => (
               <li
                 key={row.telegramId}
-                className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 transition-colors hover:bg-muted/40 md:grid md:grid-cols-[minmax(0,1fr)_11rem_4rem_9.5rem] md:items-center md:gap-x-4"
+                style={rowBannerStyle(row.background)}
+                className={cn(
+                  "flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 transition-colors hover:bg-muted/40 md:grid md:grid-cols-[minmax(0,1fr)_11rem_4rem_9.5rem] md:items-center md:gap-x-4",
+                  row.background && ROW_BANNER_CLASS,
+                )}
               >
                 <div className="flex min-w-0 flex-1 items-center gap-3 md:flex-none">
                   <AccessAvatar id={row.telegramId} name={row.name} admin={row.admin} />

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { DbUser } from "@/lib/auth/db";
 import { groupInfo } from "@/lib/auth/groups";
+import { ROW_BANNER_CLASS, rowBannerStyle } from "@/lib/row-banner";
 
 import { AccessAvatar } from "./access-avatar";
 import { DecisionButtons } from "./decision-buttons";
@@ -61,7 +62,10 @@ function PendingCard({ user, now }: { user: DbUser; now: number }) {
         className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500"
       />
       <CardContent className="flex h-full flex-col gap-4 pt-2">
-        <div className="flex items-center gap-3">
+        <div
+          style={rowBannerStyle(user.profileBackground)}
+          className={cn("-mx-4 flex items-center gap-3 px-4 py-2", user.profileBackground && ROW_BANNER_CLASS)}
+        >
           <AccessAvatar id={user.telegramId} name={user.name} admin={user.adminGroup !== null} className="size-14" />
           <div className="min-w-0 leading-tight">
             <p className="truncate font-semibold text-base">{user.name}</p>
@@ -142,6 +146,7 @@ export function AccessList({ users }: { users: DbUser[] }) {
     status: user.status === "approved" ? "approved" : "rejected",
     admin: user.role === "admin",
     lastLogin: user.lastLoginAt ? dateFormat.format(user.lastLoginAt) : "Не входил(а)",
+    background: user.profileBackground,
   }));
 
   return (

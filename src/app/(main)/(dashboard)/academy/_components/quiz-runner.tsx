@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
-import { ArrowLeft, ArrowRight, CheckCircle2, RotateCcw, XCircle } from "lucide-react";
+import { cn } from "cn";
+import { ArrowLeft, ArrowRight, CheckCircle2, Clock3, RotateCcw, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,31 @@ type QuizRunnerProps = {
 
 type Finished = Extract<SubmitAttemptResult, { ok: true }>;
 
+/** Как часто обновляются часы. Остаток считается по меткам времени, поэтому вкладка в фоне время не «замораживает». */
+const TICK_MS = 250;
+/** За сколько до конца таймер краснеет */
+const WARN_MS = 10_000;
+
+/** «12:05»: остаток округляется вверх, чтобы 0:00 показывалось только тогда, когда время действительно вышло. */
+function formatClock(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+}
+
+function TimerBadge({ ms, label }: { ms: number; label: string }) {
+  return (
+    <Badge
+      variant="outline"
+      title={label}
+      className={cn("gap-1 tabular-nums", ms <= WARN_MS && "border-destructive/40 text-destructive")}
+    >
+      <Clock3 className="size-3" aria-hidden="true" />
+      <span className="sr-only">{label}: </span>
+      {formatClock(ms)}
+    </Badge>
+  );
+}
+
 /** Прохождение теста. Правильные ответы сюда не приходят: проверка идёт на сервере. */
 export function QuizRunner({
   test,
@@ -43,14 +69,46 @@ export function QuizRunner({
   const [result, setResult] = useState<Finished | null>(null);
   const [pending, startTransition] = useTransition();
 
+  // Время. Общее время теста идёт с начала прохождения. Время на вопрос идёт, пока вопрос открыт, и копится по вопросам:
+  // у вопроса без своего времени отдельного таймера нет, он живёт по общему времени теста.
+  const totalMs = test.durationMin * 60_000;
+  const [startedAt] = useState(() => Date.now());
+  const [now, setNow] = useState(startedAt);
+  const [enteredAt, setEnteredAt] = useState(startedAt);
+  const [spent, setSpent] = useState<number[]>(() => questions.map(() => 0));
+  /** Автоотправка по концу времени сработала: повторно её не запускаем, дальше только кнопка */
+  const autoFinished = useRef(false);
+
   const question = questions[index];
   const selected = answers[index];
   const isLast = index === questions.length - 1;
+  const limitMs = question.timeLimitSec ? question.timeLimitSec * 1000 : null;
+  const questionLeft = limitMs === null ? null : limitMs - (spent[index] + (now - enteredAt));
+  const totalLeft = totalMs - (now - startedAt);
+  const timeUp = totalLeft <= 0;
+  const questionExpired = questionLeft !== null && questionLeft <= 0;
+  // К вопросу со своим временем не возвращаемся: иначе ограничение теряет смысл
+  const previousTimed = index > 0 && Boolean(questions[index - 1].timeLimitSec);
   let nextLabel = "Следующий вопрос";
-  if (isLast) nextLabel = pending ? "Проверка..." : "Завершить тест";
+  if (timeUp) nextLabel = pending ? "Проверка..." : "Отправить ответы";
+  else if (isLast) nextLabel = pending ? "Проверка..." : "Завершить тест";
 
   const choose = (answerIndex: number) =>
     setAnswers((current) => current.map((value, i) => (i === index ? answerIndex : value)));
+
+  const goTo = (next: number) => {
+    const moment = Date.now();
+    setSpent((current) => current.map((value, i) => (i === index ? value + (moment - enteredAt) : value)));
+    setEnteredAt(moment);
+    setNow(moment);
+    setIndex(next);
+  };
+
+  useEffect(() => {
+    if (result) return;
+    const timer = setInterval(() => setNow(Date.now()), TICK_MS);
+    return () => clearInterval(timer);
+  }, [result]);
 
   const finish = () => {
     startTransition(async () => {
@@ -66,6 +124,20 @@ export function QuizRunner({
       }
     });
   };
+
+  // Время вышло: время теста заканчивает прохождение, время вопроса переводит к следующему вопросу (на последнем
+  // тоже заканчивает). Неотвеченные вопросы уходят пустыми, выбранные ответы сохраняются.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: реагируем только на момент, когда время вышло
+  useEffect(() => {
+    if (result || pending) return;
+    if (timeUp || (questionExpired && isLast)) {
+      if (autoFinished.current) return;
+      autoFinished.current = true;
+      finish();
+      return;
+    }
+    if (questionExpired) goTo(index + 1);
+  }, [timeUp, questionExpired, isLast, index, result, pending]);
 
   if (result) {
     const Icon = result.passed ? CheckCircle2 : XCircle;
@@ -133,6 +205,8 @@ export function QuizRunner({
           )}
           <div className="flex items-center gap-2">
             {question.source && <Badge variant="outline">{question.source}</Badge>}
+            {questionLeft !== null && <TimerBadge ms={Math.min(questionLeft, totalLeft)} label="Осталось на вопрос" />}
+            <TimerBadge ms={totalLeft} label="Осталось на весь тест" />
             <Badge variant="secondary">
               {index + 1} / {questions.length}
             </Badge>
@@ -149,7 +223,8 @@ export function QuizRunner({
               // biome-ignore lint/suspicious/noArrayIndexKey: порядок вариантов фиксирован на время попытки
               key={answerIndex}
               onClick={() => choose(answerIndex)}
-              className={`rounded-lg border p-4 text-left text-sm transition-colors hover:bg-muted ${selected === answerIndex ? "border-primary bg-primary/10" : "border-border"}`}
+              disabled={questionExpired || timeUp || pending}
+              className={`rounded-lg border p-4 text-left text-sm transition-colors hover:bg-muted ${selected === answerIndex ? "border-primary bg-primary/10" : "border-border"} disabled:pointer-events-none disabled:opacity-60`}
               aria-pressed={selected === answerIndex}
             >
               {String.fromCharCode(65 + answerIndex)}. {answer}
@@ -159,20 +234,29 @@ export function QuizRunner({
         <div className="flex items-center justify-between gap-2 pt-3">
           <Button
             variant="outline"
-            disabled={index === 0 || pending}
-            onClick={() => setIndex((current) => current - 1)}
+            disabled={index === 0 || pending || previousTimed || timeUp}
+            onClick={() => goTo(index - 1)}
           >
             <ArrowLeft data-icon="inline-start" />
             Назад
           </Button>
           <Button
-            disabled={selected === null || pending}
-            onClick={() => (isLast ? finish() : setIndex((current) => current + 1))}
+            disabled={(selected === null && !timeUp && !questionExpired) || pending}
+            onClick={() => (isLast || timeUp ? finish() : goTo(index + 1))}
           >
             {nextLabel}
             <ArrowRight data-icon="inline-end" />
           </Button>
         </div>
+        {timeUp ? (
+          <p role="alert" className="text-destructive text-sm">
+            {pending ? "Время вышло, ответы отправляются." : "Время вышло. Отправьте ответы кнопкой выше."}
+          </p>
+        ) : (
+          previousTimed && (
+            <p className="text-muted-foreground text-xs">К предыдущему вопросу вернуться нельзя: у него было своё время.</p>
+          )
+        )}
       </CardContent>
     </Card>
   );

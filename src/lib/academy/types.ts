@@ -28,6 +28,9 @@ export const ACADEMY_LIMITS = {
   maxAnswers: 6,
   minDuration: 1,
   maxDuration: 180,
+  /** Время на один вопрос в секундах; пусто — вопрос укладывается в общее время теста */
+  minQuestionSec: 5,
+  maxQuestionSec: 3600,
   minRulesQuestions: 3,
   maxRulesQuestions: 30,
 } as const;
@@ -43,6 +46,8 @@ export type QuestionDef = {
   correct: number;
   /** Разбор: почему именно этот ответ верный */
   explanation: string;
+  /** Время на ответ в секундах. Не задано: у вопроса то же время, что и на весь тест (durationMin) */
+  timeLimitSec?: number | null;
 };
 
 /** Настройки автогенерации: сколько вопросов и из каких правил. */
@@ -55,6 +60,8 @@ export type RulesConfig = {
    * Вопросы берутся и из них, если ОП целиком не выбрано. У старых тестов поля нет.
    */
   articles?: string[];
+  /** Время на ответ для каждого сгенерированного вопроса, секунд. Не задано: общее время теста */
+  questionTimeSec?: number | null;
 };
 
 export type AcademyTest = {
@@ -96,6 +103,8 @@ export type PublicQuestion = {
   answers: string[];
   /** Откуда вопрос (для тестов по правилам: «ОП 1.7») */
   source?: string;
+  /** Время на ответ в секундах. Нет: действует только общее время теста */
+  timeLimitSec?: number;
 };
 
 /** Вопрос в сохранённой попытке: что спрашивали, что выбрали и как правильно. */

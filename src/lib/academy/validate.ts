@@ -12,6 +12,14 @@ import {
   type TEST_KINDS,
 } from "./types";
 
+/** Время на ответ: пустое значение (null или нет вовсе) значит «общее время теста». */
+const timeSchema = z
+  .number()
+  .int("Время на ответ — целое число секунд")
+  .min(L.minQuestionSec, `Время на ответ не меньше ${L.minQuestionSec} секунд`)
+  .max(L.maxQuestionSec, "Слишком долгое время на один вопрос")
+  .nullable();
+
 const questionSchema = z
   .object({
     text: z.string().trim().min(1, "Введите текст вопроса").max(L.questionText, "Текст вопроса слишком длинный"),
@@ -21,6 +29,7 @@ const questionSchema = z
       .max(L.maxAnswers, `Не больше ${L.maxAnswers} вариантов ответа`),
     correct: z.number().int().min(0),
     explanation: z.string().trim().max(L.explanation, "Разбор слишком длинный").default(""),
+    timeLimitSec: timeSchema.optional(),
   })
   .superRefine((question, ctx) => {
     if (question.correct >= question.answers.length) {
@@ -71,6 +80,7 @@ const rulesSchema = z.object({
       .max(L.maxRulesQuestions, `Не больше ${L.maxRulesQuestions} вопросов`),
     groups: z.array(z.enum(RULE_GROUP_KEYS)),
     articles: z.array(z.string().max(80)).max(30).default([]),
+    questionTimeSec: timeSchema.optional(),
   }),
 });
 
@@ -100,6 +110,18 @@ export function validateTest(input: unknown): { ok: true; test: TestInput } | { 
     return { ok: false, error: `${prefix}${issue?.message ?? "Проверьте заполнение формы"}` };
   }
   const data = result.data;
+
+  // Время на вопрос не может быть больше времени на весь тест: иначе оно никогда не успеет закончиться
+  const totalSec = data.durationMin * 60;
+  if (data.kind === "manual") {
+    const tooLong = data.questions.findIndex((question) => (question.timeLimitSec ?? 0) > totalSec);
+    if (tooLong !== -1) {
+      return { ok: false, error: `Вопрос ${tooLong + 1}: время на ответ больше времени на весь тест` };
+    }
+  } else if ((data.rules.questionTimeSec ?? 0) > totalSec) {
+    return { ok: false, error: "Время на вопрос больше времени на весь тест" };
+  }
+
   const common = {
     title: data.title,
     description: data.description,
@@ -110,7 +132,12 @@ export function validateTest(input: unknown): { ok: true; test: TestInput } | { 
     closed: data.closed,
   };
   if (data.kind === "manual") {
-    return { ok: true, test: { ...common, kind: "manual", questions: data.questions, rules: null } };
+    // Пустое время на ответ не сохраняем вовсе: такой вопрос живёт по общему времени теста
+    const questions = data.questions.map(({ timeLimitSec, ...question }) => ({
+      ...question,
+      ...(timeLimitSec ? { timeLimitSec } : {}),
+    }));
+    return { ok: true, test: { ...common, kind: "manual", questions, rules: null } };
   }
   const groups = [...new Set(data.rules.groups)];
   // Отдельные разделы берём только из ОП и только существующие. Если ОП выбрано целиком, они уже входят в него.
@@ -128,7 +155,12 @@ export function validateTest(input: unknown): { ok: true; test: TestInput } | { 
       ...common,
       kind: "rules",
       questions: [],
-      rules: { questionCount: data.rules.questionCount, groups, articles },
+      rules: {
+        questionCount: data.rules.questionCount,
+        groups,
+        articles,
+        ...(data.rules.questionTimeSec ? { questionTimeSec: data.rules.questionTimeSec } : {}),
+      },
     },
   };
 }

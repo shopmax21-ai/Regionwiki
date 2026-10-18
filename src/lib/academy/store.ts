@@ -295,6 +295,7 @@ const toPublic = (question: AttemptQuestion): PublicQuestion => ({
   text: question.text,
   answers: question.answers,
   ...(question.source ? { source: question.source } : {}),
+  ...(question.timeLimitSec ? { timeLimitSec: question.timeLimitSec } : {}),
 });
 
 /** Создаёт попытку и возвращает вопросы без правильных ответов. Ответы остаются только на сервере. */
@@ -304,7 +305,12 @@ export const startAttempt = (test: AcademyTest, user: { id: string; name: string
     if (test.kind === "rules") {
       if (!test.rules) throw new AcademyStoreError("invalid", "У теста не заданы настройки автогенерации");
       try {
-        questions = (await generateRulesQuestions(test.rules)).map((question) => ({ ...question, chosen: null }));
+        const timeLimitSec = test.rules.questionTimeSec || undefined;
+        questions = (await generateRulesQuestions(test.rules)).map((question) => ({
+          ...question,
+          ...(timeLimitSec ? { timeLimitSec } : {}),
+          chosen: null,
+        }));
       } catch (error) {
         if (error instanceof RulesGenerationError) throw new AcademyStoreError("generation", error.message, error);
         throw error;

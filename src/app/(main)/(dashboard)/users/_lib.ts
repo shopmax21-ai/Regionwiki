@@ -17,6 +17,8 @@ export type UserItem = {
   createdAt: string;
   lastLoginAt: string | null;
   loginCount: number;
+  /** Баннер профиля: адрес картинки из нашего хранилища или null */
+  background: string | null;
 };
 
 export const toUserItem = (user: DbUser, overrides: PermissionOverrides = {}): UserItem => ({
@@ -31,6 +33,7 @@ export const toUserItem = (user: DbUser, overrides: PermissionOverrides = {}): U
   createdAt: user.createdAt.toISOString(),
   lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
   loginCount: user.loginCount,
+  background: user.profileBackground,
 });
 
 /** Права текущего администратора, нужные интерфейсу, чтобы не показывать кнопки, которые всё равно откажут. */

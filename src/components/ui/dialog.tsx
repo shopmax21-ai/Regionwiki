@@ -56,7 +56,7 @@ function DialogContent({
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
 }) {
-  // Кнопка закрытия стоит над правым верхним углом окна и не входит в прокручиваемое содержимое.
+  // Кнопка закрытия стоит центром на правом верхнем углу окна и не входит в прокручиваемое содержимое.
   // Окно по центру экрана, поэтому её положение считается по размерам окна.
   const [size, setSize] = React.useState<{ width: number; height: number } | null>(null)
   const observer = React.useRef<ResizeObserver | null>(null)
@@ -98,10 +98,11 @@ function DialogContent({
           <Button
             variant="outline"
             size="icon-sm"
-            className="fixed z-50 -translate-x-full bg-popover shadow-md"
+            className="fixed z-50 -translate-x-1/2 bg-popover shadow-md"
             style={{
               left: `calc(50% + ${size.width / 2}px)`,
-              top: `max(0.5rem, calc(50% - ${size.height / 2}px - 2.25rem))`,
+              // Кнопка (1.75rem) наполовину выступает за верхний край окна; у верха экрана не уезжает за него
+              top: `max(0.5rem, calc(50% - ${size.height / 2}px - 0.875rem))`,
             }}
           >
             <XIcon />

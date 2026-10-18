@@ -362,6 +362,7 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
               return (
                 <TableRow
                   key={user.telegramId}
+                  banner={user.background}
                   aria-busy={isLocked(user.telegramId)}
                   className={isLocked(user.telegramId) ? "opacity-70" : undefined}
                 >

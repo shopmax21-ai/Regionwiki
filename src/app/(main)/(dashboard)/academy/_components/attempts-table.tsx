@@ -57,7 +57,7 @@ export function AttemptsTable({ attempts, showUser = false, detailsHref, emptyTe
         </TableHeader>
         <TableBody>
           {attempts.map((attempt) => (
-            <TableRow key={attempt.id} banner={showUser ? attempt.user.background : null}>
+            <TableRow key={attempt.id}>
               <TableCell className="max-w-64 truncate pl-4 font-medium">{attempt.testTitle}</TableCell>
               {showUser && (
                 <TableCell className="max-w-56">
