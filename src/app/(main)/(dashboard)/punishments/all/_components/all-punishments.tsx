@@ -25,7 +25,7 @@ import {
 
 import { releaseRequestAction } from "../../_actions";
 import { durationLabel, formatFull, formatShort } from "../../_components/format";
-import { AdminStatusBadge, RuleChips } from "../../_components/status-badge";
+import { AdminStatusBadge, PunishmentKindBadge, RuleChips } from "../../_components/status-badge";
 
 /** Подходит ли строка под поисковый запрос: ищем вхождение в любом из полей без учёта регистра. */
 const matchesQuery = (needle: string, parts: (string | number | null)[]) =>
@@ -196,7 +196,9 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
                     />
                   )}
                 </TableCell>
-                <TableCell className="whitespace-nowrap">{kindText(request)}</TableCell>
+                <TableCell className="whitespace-nowrap">
+                  <PunishmentKindBadge kind={request.kind} muteChannel={request.muteChannel} />
+                </TableCell>
                 <TableCell className="whitespace-nowrap">{durationLabel(request)}</TableCell>
                 <TableCell>
                   <RuleChips rules={request.rules} />
@@ -268,7 +270,9 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
 
             <dl className="grid gap-3 sm:grid-cols-2">
               <Fact label="Статик" value={opened.staticId} />
-              <Fact label="Наказание" value={kindText(opened)} />
+              <FactNode label="Наказание">
+                <PunishmentKindBadge kind={opened.kind} muteChannel={opened.muteChannel} />
+              </FactNode>
               <Fact label="Срок" value={durationLabel(opened)} />
               <Fact label="Жалоба на форуме" value={opened.forum || "—"} />
               <FactNode label="Хелпер">

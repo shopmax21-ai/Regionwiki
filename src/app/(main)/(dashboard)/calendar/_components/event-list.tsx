@@ -80,7 +80,7 @@ export function EventList({ events, now, meId, onOpen, onNotifyChanged }: EventL
                         <span>{formatRange(event.startsAt, event.endsAt)}</span>
                         <span className="flex min-w-0 items-center gap-1">
                           <PersonName person={event.owner} avatar />
-                          {mine ? " (вы)" : ""}
+                          {mine && <Badge variant="secondary">ВЫ</Badge>}
                         </span>
                         {event.location && (
                           <span className="flex min-w-0 items-center gap-1">

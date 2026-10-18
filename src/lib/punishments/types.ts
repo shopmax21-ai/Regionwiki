@@ -16,19 +16,20 @@ export const PUNISHMENT_LIMITS = {
 } as const;
 
 /** Вид наказания: определяет команду и единицу срока (минуты или дни). */
-export type PunishmentKind = "jail" | "mute" | "ban" | "hardban";
+export type PunishmentKind = "jail" | "mute" | "ban" | "hardban" | "warn";
 
 /** Канал мута: чат или голосовой. Нужен только для kind = "mute". */
 export type MuteChannel = "chat" | "voice";
 
-export const PUNISHMENT_KINDS: PunishmentKind[] = ["jail", "mute", "ban", "hardban"];
+export const PUNISHMENT_KINDS: PunishmentKind[] = ["jail", "mute", "ban", "hardban", "warn"];
 export const MUTE_CHANNELS: MuteChannel[] = ["chat", "voice"];
 
 export const KIND_LABELS: Record<PunishmentKind, string> = {
-  jail: "Деморган (/jail)",
-  mute: "Мут (/mute)",
-  ban: "Бан (/ban)",
-  hardban: "Хардбан (/hardban)",
+  jail: "/jail",
+  mute: "/mute",
+  ban: "/ban",
+  hardban: "/hardban",
+  warn: "/warn",
 };
 
 /** Короткое название вида для таблиц и уведомлений. */
@@ -37,12 +38,13 @@ export const KIND_SHORT: Record<PunishmentKind, string> = {
   mute: "Мут",
   ban: "Бан",
   hardban: "Хардбан",
+  warn: "Предупреждение",
 };
 
 export const MUTE_CHANNEL_LABELS: Record<MuteChannel, string> = { chat: "Чат", voice: "Голосовой" };
 
-/** Бан и хардбан выдаются в днях, деморган и мут в минутах. */
-export const isDaysKind = (kind: PunishmentKind): boolean => kind === "ban" || kind === "hardban";
+/** Бан, хардбан и предупреждение выдаются в днях, деморган и мут в минутах. */
+export const isDaysKind = (kind: PunishmentKind): boolean => kind === "ban" || kind === "hardban" || kind === "warn";
 
 /**
  * pending — ждёт администратора; claimed — взят в работу; approved — одобрен (есть доказательства, можно выдавать);
@@ -59,7 +61,7 @@ export type PunishmentRequest = {
   kind: PunishmentKind;
   /** Только для мута: chat или voice, для остальных видов null */
   muteChannel: MuteChannel | null;
-  /** Срок: минуты для jail и mute, дни для ban и hardban (см. isDaysKind) */
+  /** Срок: минуты для jail и mute, дни для ban, hardban и warn (см. isDaysKind) */
   duration: number;
   /** Название жалобы на форуме, дописывается в конец команды. Пустая строка, если не указано */
   forum: string;
@@ -134,7 +136,7 @@ export type PunishmentEvent = {
  * Команда выдачи наказания. Формат команды определяется только здесь:
  *  - «/jail 5476 60 ОП 4.9»
  *  - «/mute voice 5443 60 ОП 3.11» (chat или voice)
- *  - «/ban 5443 7 ОП 3.11» и «/hardban 5443 30 ОП 3.11» (срок в днях)
+ *  - «/ban 5443 7 ОП 3.11», «/hardban 5443 30 ОП 3.11» и «/warn 5443 7 ОП 3.11» (срок в днях)
  * Несколько пунктов правил идут через запятую. Если указана жалоба на форуме, она дописывается в конец:
  * «/mute voice 5443 60 ОП 3.11 Garik-0018».
  */

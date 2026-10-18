@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -400,7 +401,7 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
                   </TableCell>
                   <TableCell className="pr-4 text-right">
                     {user.telegramId === me.id ? (
-                      <span className="text-muted-foreground text-xs">Это вы</span>
+                      <Badge variant="secondary">ВЫ</Badge>
                     ) : actions.length > 0 ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

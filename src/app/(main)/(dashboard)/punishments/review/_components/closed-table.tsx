@@ -1,17 +1,16 @@
 import { PersonName } from "@/components/person-name";
-import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { kindText, type PunishmentRequest } from "@/lib/punishments/types";
+import type { PunishmentRequest } from "@/lib/punishments/types";
 
 import { durationLabel, formatFull } from "../../_components/format";
-import { AdminStatusBadge, RuleChips } from "../../_components/status-badge";
+import { AdminStatusBadge, PunishmentKindBadge, RuleChips } from "../../_components/status-badge";
 
 /** Таблица выданных наказаний администратора: выданные им и отклонённые им заявки. */
 export function ClosedTable({ requests }: { requests: PunishmentRequest[] }) {
   return (
     <section className="flex flex-col gap-2">
       <h2 className="font-semibold text-lg">Выданные наказания</h2>
-      <Card className="gap-0 py-0">
+      <div className="min-w-0">
         {requests.length === 0 ? (
           <p className="px-4 py-8 text-center text-muted-foreground text-sm">Выданных наказаний пока нет.</p>
         ) : (
@@ -32,7 +31,9 @@ export function ClosedTable({ requests }: { requests: PunishmentRequest[] }) {
                 {requests.map((request) => (
                   <TableRow key={request.id} banner={request.requester.background}>
                     <TableCell className="font-medium font-mono tabular-nums">{request.staticId}</TableCell>
-                    <TableCell className="whitespace-nowrap">{kindText(request)}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <PunishmentKindBadge kind={request.kind} muteChannel={request.muteChannel} />
+                    </TableCell>
                     <TableCell className="whitespace-nowrap">{durationLabel(request)}</TableCell>
                     <TableCell>
                       <div className="flex flex-col items-start gap-1">
@@ -55,7 +56,7 @@ export function ClosedTable({ requests }: { requests: PunishmentRequest[] }) {
             </Table>
           </div>
         )}
-      </Card>
+      </div>
     </section>
   );
 }

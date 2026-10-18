@@ -10,13 +10,12 @@ import { toast } from "sonner";
 import { PersonName } from "@/components/person-name";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { kindText, type QueueItem } from "@/lib/punishments/types";
+import type { QueueItem } from "@/lib/punishments/types";
 
 import { claimRequestAction } from "../../_actions";
 import { ago, durationLabel } from "../../_components/format";
-import { RuleChips } from "../../_components/status-badge";
+import { PunishmentKindBadge, RuleChips } from "../../_components/status-badge";
 
 /**
  * Очередь свободных заявок: видна всем, кто рассматривает наказания. Доказательства отсюда не видны: после «Взять в
@@ -46,7 +45,7 @@ export function QueueList({ items, now }: { items: QueueItem[]; now: number }) {
   return (
     <section className="flex flex-col gap-2">
       <h2 className="font-semibold text-lg">Новые заявки</h2>
-      <Card className="gap-0 py-0">
+      <div className="min-w-0">
         {items.length === 0 ? (
           <p className="px-4 py-8 text-center text-muted-foreground text-sm">Новых заявок нет.</p>
         ) : (
@@ -70,7 +69,9 @@ export function QueueList({ items, now }: { items: QueueItem[]; now: number }) {
                       <PersonName person={item.requester} avatar />
                     </TableCell>
                     <TableCell className="font-medium font-mono tabular-nums">{item.staticId}</TableCell>
-                    <TableCell className="whitespace-nowrap">{kindText(item)}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <PunishmentKindBadge kind={item.kind} muteChannel={item.muteChannel} />
+                    </TableCell>
                     <TableCell className="whitespace-nowrap">{durationLabel(item)}</TableCell>
                     <TableCell>
                       <div className="flex flex-col items-start gap-1">
@@ -99,7 +100,7 @@ export function QueueList({ items, now }: { items: QueueItem[]; now: number }) {
             </Table>
           </div>
         )}
-      </Card>
+      </div>
     </section>
   );
 }

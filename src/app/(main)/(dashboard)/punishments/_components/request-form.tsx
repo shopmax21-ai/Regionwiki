@@ -26,18 +26,20 @@ import {
 import { createRequestAction } from "../_actions";
 import { EvidenceField } from "./evidence-field";
 import { RulePicker } from "./rule-picker";
+import { PUNISHMENT_KIND_COLORS } from "./status-badge";
 
 const QUICK_MINUTES = [15, 30, 60, 120, 180, 300];
 const QUICK_DAYS = [1, 3, 7, 14, 30, 60];
 
 const PILL =
   "rounded-md border px-2.5 py-0.5 text-xs outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring aria-pressed:border-primary aria-pressed:bg-primary/10";
+const KIND_PILL =
+  "rounded-md border px-2.5 py-0.5 text-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring aria-pressed:ring-1 aria-pressed:ring-current";
 
 type Errors = Partial<Record<"staticId" | "duration" | "rules" | "forum", string>>;
 
 /**
- * Форма заявки на наказание для хелпера: вид наказания (деморган, мут, бан, хардбан), статик, срок (минуты или дни),
- * пункты правил, жалоба на форуме и доказательства (необязательно).
+ * Форма заявки на наказание для хелпера: вид наказания, статик, срок, пункты правил, жалоба на форуме и доказательства.
  */
 export function RequestForm() {
   const router = useRouter();
@@ -125,7 +127,7 @@ export function RequestForm() {
                 aria-pressed={kind === value}
                 disabled={pending}
                 onClick={() => changeKind(value)}
-                className={PILL}
+                className={`${KIND_PILL} ${PUNISHMENT_KIND_COLORS[value]}`}
               >
                 {KIND_LABELS[value]}
               </button>

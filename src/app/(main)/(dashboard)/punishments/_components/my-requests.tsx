@@ -4,10 +4,10 @@ import { PersonName } from "@/components/person-name";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { personFromName } from "@/lib/auth/person";
-import { kindText, type PunishmentRequest } from "@/lib/punishments/types";
+import type { PunishmentRequest } from "@/lib/punishments/types";
 
 import { durationLabel, formatFull, formatShort } from "./format";
-import { HelperStatusBadge, RuleChips } from "./status-badge";
+import { HelperStatusBadge, PunishmentKindBadge, RuleChips } from "./status-badge";
 
 /** Таблица наказаний хелпера: его заявки и их статус. После выдачи наказания статус становится «Выдано». */
 export function MyRequests({ requests }: { requests: PunishmentRequest[] }) {
@@ -44,7 +44,9 @@ export function MyRequests({ requests }: { requests: PunishmentRequest[] }) {
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap">{kindText(request)}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    <PunishmentKindBadge kind={request.kind} muteChannel={request.muteChannel} />
+                  </TableCell>
                   <TableCell className="whitespace-nowrap">{durationLabel(request)}</TableCell>
                   <TableCell>
                     <div className="flex flex-col items-start gap-1">

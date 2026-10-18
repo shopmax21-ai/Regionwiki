@@ -34,7 +34,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   buildCommand,
   isCommandAvailable,
-  kindText,
   needsDecision,
   PUNISHMENT_LIMITS,
   type PunishmentRequest,
@@ -50,7 +49,7 @@ import {
   setForumAction,
 } from "../../_actions";
 import { ago, durationLabel } from "../../_components/format";
-import { AdminStatusBadge, RuleChips } from "../../_components/status-badge";
+import { AdminStatusBadge, PunishmentKindBadge, RuleChips } from "../../_components/status-badge";
 
 type Step = "approve" | "reject" | "copy" | "issue" | "release" | "forum" | null;
 
@@ -161,7 +160,9 @@ export function AssignedBlock({ request, now }: { request: PunishmentRequest; no
           </div>
           <div className="flex flex-col gap-0.5">
             <dt className="text-muted-foreground text-xs">Наказание</dt>
-            <dd className="font-medium">{kindText(request)}</dd>
+            <dd>
+              <PunishmentKindBadge kind={request.kind} muteChannel={request.muteChannel} />
+            </dd>
           </div>
           <div className="flex flex-col gap-0.5">
             <dt className="text-muted-foreground text-xs">Срок</dt>

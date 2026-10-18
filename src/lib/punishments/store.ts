@@ -83,7 +83,7 @@ async function init(): Promise<void> {
       at         timestamptz NOT NULL DEFAULT now()
     )`);
     // Миграция: вид наказания, тип мута и жалоба на форуме. Старые заявки остаются деморганом (/jail).
-    // Колонка minutes хранит срок: минуты для jail и mute, дни для ban и hardban.
+    // Колонка minutes хранит срок: минуты для jail и mute, дни для ban, hardban и warn.
     await client.query("ALTER TABLE punishment_requests ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'jail'");
     await client.query("ALTER TABLE punishment_requests ADD COLUMN IF NOT EXISTS mute_channel text");
     await client.query("ALTER TABLE punishment_requests ADD COLUMN IF NOT EXISTS forum text NOT NULL DEFAULT ''");
