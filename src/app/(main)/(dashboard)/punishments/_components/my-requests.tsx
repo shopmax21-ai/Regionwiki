@@ -30,7 +30,7 @@ export function MyRequests({ requests }: { requests: PunishmentRequest[] }) {
                 <TableHead>Срок</TableHead>
                 <TableHead>Пункты</TableHead>
                 <TableHead>Подана</TableHead>
-                <TableHead className="pr-4">Статус</TableHead>
+                <TableHead className="pr-4 text-center">Статус</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -58,7 +58,7 @@ export function MyRequests({ requests }: { requests: PunishmentRequest[] }) {
                     {formatShort(request.createdAt)}
                   </TableCell>
                   <TableCell className="pr-4">
-                    <div className="flex flex-col items-start gap-1">
+                    <div className="flex flex-col items-center gap-1">
                       <HelperStatusBadge status={request.status} compact />
                       {(request.status === "claimed" || request.status === "approved") && request.assigneeName && (
                         <span className="flex items-center gap-1 text-muted-foreground text-xs">

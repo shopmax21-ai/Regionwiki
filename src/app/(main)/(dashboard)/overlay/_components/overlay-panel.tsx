@@ -5,13 +5,9 @@ import { Download, ExternalLink, Keyboard, MessageSquareText, Monitor, Search, T
 import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 
-import { OverlayKeyCard, type OverlayKeyInfo } from "./overlay-key-card";
-
 type Props = {
   files: { name: string; size: number; updatedAt: string }[];
   externalUrl: string | null;
-  /** Ключ доступа текущего администратора: null, если ещё не создан (сам ключ на сервере не хранится) */
-  keyInfo: OverlayKeyInfo | null;
 };
 
 /** Акцент Region: тот же красный, что на страницах входа */
@@ -155,7 +151,7 @@ const HOTKEYS: { keys: string[]; label: string }[] = [
 
 /* ───────────── Страница ───────────── */
 
-export function OverlayPanel({ files, externalUrl, keyInfo }: Props) {
+export function OverlayPanel({ files, externalUrl }: Props) {
   const latest = files[0] ?? null;
   const olderFiles = files.slice(1);
 
@@ -269,13 +265,10 @@ export function OverlayPanel({ files, externalUrl, keyInfo }: Props) {
               2
             </span>
             <h3 className="font-medium">Подключите ключом</h3>
-            <p className="mt-1 mb-4 text-muted-foreground text-sm leading-relaxed">
-              Создайте ключ ниже (он же доступен в профиле) и откройте оверлей: он найдёт ключ в буфере обмена и
-              подключится сам. Адрес сайта вводить не нужно, а правила, ответы и наказания подтягиваются автоматически.
+            <p className="mt-1 text-muted-foreground text-sm leading-relaxed">
+              Создайте ключ в своём профиле и откройте оверлей: он найдёт ключ в буфере обмена и подключится сам. Адрес
+              сайта вводить не нужно, а правила, ответы и наказания подтягиваются автоматически.
             </p>
-            <div className="max-w-xl">
-              <OverlayKeyCard info={keyInfo} />
-            </div>
           </li>
 
           <li className="relative">

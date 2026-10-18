@@ -595,7 +595,7 @@ export function MediaPrSection({
                     <TableHead>Медиа</TableHead>
                     <TableHead>Площадка</TableHead>
                     <TableHead className="text-right">Аудитория</TableHead>
-                    <TableHead>Статус</TableHead>
+                    <TableHead className="text-center">Статус</TableHead>
                     <TableHead>Контакты</TableHead>
                     <TableHead>Заметка</TableHead>
                     <TableHead>Изменено</TableHead>
@@ -610,7 +610,7 @@ export function MediaPrSection({
                       <TableCell className="text-right tabular-nums">
                         {entry.audience === null ? "—" : numberFormat.format(entry.audience)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         <StatusBadge status={entry.status} compact />
                       </TableCell>
                       <TableCell className="max-w-44 whitespace-normal break-words">{entry.contact || "—"}</TableCell>

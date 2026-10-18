@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 
 import { requireAdmin } from "@/lib/auth/admin";
 import { listOverlayFiles } from "@/lib/overlay/files";
-import { getUserTokenInfo } from "@/lib/overlay/user-token";
 
 import { OverlayPanel } from "./_components/overlay-panel";
 
@@ -14,10 +13,8 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  const admin = await requireAdmin();
-  const [files, keyInfo] = await Promise.all([listOverlayFiles(), getUserTokenInfo(admin.id)]);
+  await requireAdmin();
+  const files = await listOverlayFiles();
 
-  return (
-    <OverlayPanel files={files} externalUrl={process.env.OVERLAY_DOWNLOAD_URL || null} keyInfo={keyInfo} />
-  );
+  return <OverlayPanel files={files} externalUrl={process.env.OVERLAY_DOWNLOAD_URL || null} />;
 }

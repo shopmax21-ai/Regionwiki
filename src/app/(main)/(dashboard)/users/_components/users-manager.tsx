@@ -115,9 +115,6 @@ function UserIdentity({ user }: { user: UserItem }) {
           {/* Роль в этой строке уже показана бейджем в колонке «Группа»: иконку слева не дублируем в таблице */}
           <PersonName person={userPerson(user)} showRole={false} />
         </p>
-        <p className="truncate text-muted-foreground text-xs">
-          {[user.nickname ? user.name : null, user.username ? `@${user.username}` : null].filter(Boolean).join(" · ")}
-        </p>
       </div>
     </div>
   );
@@ -343,8 +340,8 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
           <TableHeader>
             <TableRow>
               <TableHead className="pl-4">Пользователь</TableHead>
-              <TableHead>Статус</TableHead>
-              <TableHead>Группа</TableHead>
+              <TableHead className="text-center">Статус</TableHead>
+              <TableHead className="text-center">Группа</TableHead>
               <TableHead className="hidden md:table-cell">Регистрация</TableHead>
               <TableHead className="hidden sm:table-cell">Последний вход</TableHead>
               <TableHead className="w-12 pr-4 text-right">
@@ -372,10 +369,18 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
                     <UserIdentity user={user} />
                   </TableCell>
                   <TableCell>
-                    <StatusIcon icon={statusIcon[user.status]} label={statusLabel[user.status]} tone={statusTone[user.status]} />
+                    <div className="flex justify-center">
+                      <StatusIcon
+                        icon={statusIcon[user.status]}
+                        label={statusLabel[user.status]}
+                        tone={statusTone[user.status]}
+                      />
+                    </div>
                   </TableCell>
                   <TableCell>
-                    <RoleIcon group={user.adminGroup} className="size-5" />
+                    <div className="flex justify-center">
+                      <RoleIcon group={user.adminGroup} className="size-5" />
+                    </div>
                   </TableCell>
                   <TableCell className="hidden text-muted-foreground text-sm md:table-cell">
                     {/* Дата форматируется в часовом поясе б��аузера, поэтому сервер и клиент могут отличаться */}
@@ -402,12 +407,16 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
                             <MoreHorizontal />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => setSheetUserId(user.telegramId)}>
+                        <DropdownMenuContent align="end" className="w-auto min-w-56">
+                          <DropdownMenuItem className="whitespace-nowrap" onSelect={() => setSheetUserId(user.telegramId)}>
                             <KeyRound /> Права и роль
                           </DropdownMenuItem>
                           {actions.map(({ action, label, icon: Icon }) => (
-                            <DropdownMenuItem key={label} onSelect={() => setPendingAction({ user, action })}>
+                            <DropdownMenuItem
+                              key={label}
+                              className="whitespace-nowrap"
+                              onSelect={() => setPendingAction({ user, action })}
+                            >
                               <Icon /> {label}
                             </DropdownMenuItem>
                           ))}

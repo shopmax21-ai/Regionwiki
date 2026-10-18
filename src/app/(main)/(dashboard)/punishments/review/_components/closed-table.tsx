@@ -27,7 +27,7 @@ export function ClosedTable({ requests }: { requests: PunishmentRequest[] }) {
                 <TableHead>Срок</TableHead>
                 <TableHead>Пункты</TableHead>
                 <TableHead>Хелпер</TableHead>
-                <TableHead>Итог</TableHead>
+                <TableHead className="text-center">Итог</TableHead>
                 <TableHead className="pr-4">Дата</TableHead>
               </TableRow>
             </TableHeader>
@@ -47,7 +47,7 @@ export function ClosedTable({ requests }: { requests: PunishmentRequest[] }) {
                   <TableCell className="max-w-56">
                     <PersonName person={request.requester} avatar />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-center">
                     <AdminStatusBadge status={request.status} compact />
                   </TableCell>
                   <TableCell className="whitespace-nowrap pr-4 text-muted-foreground text-xs tabular-nums">

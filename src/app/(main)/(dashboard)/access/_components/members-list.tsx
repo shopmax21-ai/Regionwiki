@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { cn } from "cn";
 import { Ban, CheckCircle2, Search, ShieldCheck, Users } from "lucide-react";
 
+import { PersonName } from "@/components/person-name";
 import { StatusIcon } from "@/components/status-icon";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,8 @@ export type MemberRow = {
   telegramId: string;
   name: string;
   username: string | null;
+  nickname: string | null;
+  staticId: string | null;
   status: "pending" | "approved" | "rejected";
   admin: boolean;
   /** Уже отформатированная дата последнего входа: форматирование на сервере, чтобы не расходилось с браузером */
@@ -48,7 +51,7 @@ export function MembersList({ rows }: { rows: MemberRow[] }) {
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase().replace(/^@/, "");
     return rows.filter(
-      (row) => matches(row, filter) && `${row.name} ${row.username ?? ""}`.toLowerCase().includes(needle),
+      (row) => matches(row, filter) && `${row.name} ${row.nickname ?? ""} ${row.staticId ?? ""} ${row.username ?? ""}`.toLowerCase().includes(needle),
     );
   }, [rows, query, filter]);
 
@@ -108,7 +111,7 @@ export function MembersList({ rows }: { rows: MemberRow[] }) {
           >
             <span>Участник</span>
             <span>Последний вход</span>
-            <span>Статус</span>
+            <span className="text-center">Статус</span>
             <span className="text-right">Решение</span>
           </div>
           <ul className="divide-y">
@@ -121,20 +124,26 @@ export function MembersList({ rows }: { rows: MemberRow[] }) {
                   <AccessAvatar id={row.telegramId} name={row.name} admin={row.admin} />
                   <div className="min-w-0 leading-tight">
                     <p className="flex items-center gap-1.5 font-medium text-sm">
-                      <span className="truncate">{row.name}</span>
+                      <PersonName
+                        person={{
+                          id: row.telegramId,
+                          name: row.name,
+                          nickname: row.nickname,
+                          staticId: row.staticId,
+                          group: null,
+                        }}
+                        showRole={false}
+                      />
                       {row.admin && (
                         <ShieldCheck className="size-3.5 shrink-0 text-primary" aria-label="Администратор" />
                       )}
-                    </p>
-                    <p className="truncate text-muted-foreground text-xs">
-                      {row.username ? `@${row.username}` : "Без username"}
                     </p>
                   </div>
                 </div>
 
                 <p className="hidden truncate text-muted-foreground text-sm md:block">{row.lastLogin}</p>
 
-                <div>
+                <div className="flex justify-center">
                   {row.status === "approved" ? (
                     <StatusIcon icon={CheckCircle2} label="Одобрен" tone="green" />
                   ) : (

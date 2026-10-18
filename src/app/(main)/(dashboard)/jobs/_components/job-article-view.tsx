@@ -52,10 +52,12 @@ type JobArticleViewProps = {
   preview?: boolean;
   /** Вместо готовых разделов гайда показывает переданное содержимое: так страница превращается в редактор */
   guideSlot?: React.ReactNode;
+  /** Вместо текста условий доступа показывает переданное содержимое: в режиме правки здесь поля уровня и предыдущих этапов */
+  accessSlot?: React.ReactNode;
 };
 
 /** Страница гайда целиком. Не зависит от сервера, поэтому её же показывает предпросмотр в редакторе. */
-export function JobArticleView({ job, jobs, actions, preview, guideSlot }: JobArticleViewProps) {
+export function JobArticleView({ job, jobs, actions, preview, guideSlot, accessSlot }: JobArticleViewProps) {
   const previous = previousStages(job, jobs);
   const next = unlockedBy(job, jobs);
   const guide = groupGuideSections(jobBlocks(job));
@@ -121,24 +123,26 @@ export function JobArticleView({ job, jobs, actions, preview, guideSlot }: JobAr
 
         <div className="flex min-w-0 flex-col gap-6 sm:gap-8">
           <Block id="dostup" title="Условия доступа">
-            <div className="flex flex-col gap-3">
-              <p className="flex items-start gap-2">
-                <Lock className="mt-1 size-4 shrink-0 text-primary" aria-hidden="true" />
-                {job.level === 0
-                  ? "Работа доступна сразу после создания персонажа."
-                  : `Работа открывается с ${job.level} уровня персонажа.`}
-              </p>
-              {previous.length > 0 && (
-                <>
-                  <p>Альтернативный путь: получите 2 ранг на одной из этих работ предыдущего этапа.</p>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {previous.map((item) => (
-                      <JobLink key={item.slug} job={item} />
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+            {accessSlot ?? (
+              <div className="flex flex-col gap-3">
+                <p className="flex items-start gap-2">
+                  <Lock className="mt-1 size-4 shrink-0 text-primary" aria-hidden="true" />
+                  {job.level === 0
+                    ? "Работа доступна сразу после создания персонажа."
+                    : `Работа открывается с ${job.level} уровня персонажа.`}
+                </p>
+                {previous.length > 0 && (
+                  <>
+                    <p>Альтернативный путь: получите 2 ранг на одной из этих работ предыдущего этапа.</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {previous.map((item) => (
+                        <JobLink key={item.slug} job={item} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </Block>
 
           {guideSlot ?? <GuideSections sections={guide} />}

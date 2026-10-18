@@ -11,16 +11,18 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
 import { updateJobAction } from "../_actions";
-import type { GuideBlock, Job } from "../_data/jobs";
+import { type GuideBlock, JOB_LIMITS, type Job } from "../_data/jobs";
 import { DropOverlay } from "./drop-overlay";
 import { editorBlocksFromJob, toGuideBlocks } from "./editor-model";
 import { GuideDocEditor } from "./guide-doc-editor";
 import { GuideTemplatesDialog } from "./guide-templates-dialog";
+import { JobAccessEditor } from "./job-access-editor";
 import { JobArticleView } from "./job-article-view";
 import { JobDelete } from "./job-delete";
 import { useGuideBlocks } from "./use-guide-blocks";
 
 type Props = { job: Job; jobs: Job[] };
+type Saved = { blocks: GuideBlock[]; level: number; altRanks: string[] };
 
 /**
  * Страница гайда для редакторов: обычный вид с кнопкой «Править здесь».
@@ -29,14 +31,14 @@ type Props = { job: Job; jobs: Job[] };
 export function JobArticleEditable({ job, jobs }: Props) {
   const [editing, setEditing] = useState(false);
   // Сразу после сохранения показываем новые блоки, не дожидаясь, пока страница перечитает данные с сервера
-  const [saved, setSaved] = useState<GuideBlock[] | null>(null);
+  const [saved, setSaved] = useState<Saved | null>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: сбрасываем локальную копию, когда с сервера пришла новая версия гайда
   useEffect(() => {
     setSaved(null);
   }, [job]);
 
-  const shown = useMemo(() => (saved ? { ...job, blocks: saved } : job), [job, saved]);
+  const shown = useMemo(() => (saved ? { ...job, ...saved } : job), [job, saved]);
   const shownJobs = useMemo(() => jobs.map((item) => (item.slug === job.slug ? shown : item)), [jobs, job.slug, shown]);
 
   if (editing) {
@@ -45,8 +47,8 @@ export function JobArticleEditable({ job, jobs }: Props) {
         job={shown}
         jobs={shownJobs}
         onClose={() => setEditing(false)}
-        onSaved={(blocks) => {
-          setSaved(blocks);
+        onSaved={(result) => {
+          setSaved(result);
           setEditing(false);
         }}
       />
@@ -75,7 +77,7 @@ function InlineEditing({
   jobs,
   onClose,
   onSaved,
-}: Props & { onClose: () => void; onSaved: (blocks: GuideBlock[]) => void }) {
+}: Props & { onClose: () => void; onSaved: (saved: Saved) => void }) {
   const router = useRouter();
   const {
     blocks,
@@ -89,16 +91,29 @@ function InlineEditing({
     closeTemplates,
   } = useGuideBlocks(() => editorBlocksFromJob(job), true);
   const [baseline] = useState(() => JSON.stringify(toGuideBlocks(editorBlocksFromJob(job))));
+  // Условия доступа правятся здесь же, рядом с текстом гайда
+  const [level, setLevel] = useState(() => String(job.level));
+  const [altRanks, setAltRanks] = useState<string[]>(() => job.altRanks ?? []);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const dirty = JSON.stringify(toGuideBlocks(blocks)) !== baseline;
+  const levelValue = level.trim() === "" ? 0 : Number(level);
+  const accessDirty = levelValue !== job.level || altRanks.join("\n") !== (job.altRanks ?? []).join("\n");
+  const dirty = accessDirty || JSON.stringify(toGuideBlocks(blocks)) !== baseline;
   let statusText = "Изменений пока нет";
   if (uploading) statusText = "Загружаем картинки…";
   else if (dirty) statusText = "Есть несохранённые изменения";
 
   // Страница вокруг редактора обновляется на лету: содержание слева строится по тому, что набрано сейчас
-  const draft = useMemo<Job>(() => ({ ...job, blocks: toGuideBlocks(blocks, { preview: true }) }), [job, blocks]);
+  const draft = useMemo<Job>(
+    () => ({
+      ...job,
+      level: Number.isFinite(levelValue) ? levelValue : job.level,
+      altRanks,
+      blocks: toGuideBlocks(blocks, { preview: true }),
+    }),
+    [job, blocks, levelValue, altRanks],
+  );
   const draftJobs = useMemo(() => jobs.map((item) => (item.slug === job.slug ? draft : item)), [jobs, job.slug, draft]);
   const otherJobs = useMemo(() => jobs.filter((item) => item.slug !== job.slug), [jobs, job.slug]);
 
@@ -120,13 +135,18 @@ function InlineEditing({
       return;
     }
 
+    if (!Number.isInteger(levelValue) || levelValue < 0 || levelValue > JOB_LIMITS.level) {
+      setError(`Уровень доступа: целое число от 0 до ${JOB_LIMITS.level}`);
+      return;
+    }
+
     const next = toGuideBlocks(blocks);
     const payload = {
       slug: job.slug,
       title: job.title,
       kind: job.kind,
-      level: job.level,
-      altRanks: job.altRanks ?? [],
+      level: levelValue,
+      altRanks,
       tagline: job.tagline,
       intro: job.intro,
       image: job.image ?? "",
@@ -147,7 +167,7 @@ function InlineEditing({
           return;
         }
         toast.success("Гайд сохранён");
-        onSaved(next);
+        onSaved({ blocks: next, level: levelValue, altRanks });
         router.refresh();
       } catch {
         setError("Нет связи с сервером, попробуйте ещё раз");
@@ -179,6 +199,15 @@ function InlineEditing({
       <JobArticleView
         job={draft}
         jobs={draftJobs}
+        accessSlot={
+          <JobAccessEditor
+            level={level}
+            altRanks={altRanks}
+            options={otherJobs}
+            onLevelChange={setLevel}
+            onAltRanksChange={setAltRanks}
+          />
+        }
         guideSlot={
           <div className="rounded-xl border bg-card p-4 shadow-xs sm:p-6">
             <GuideDocEditor inline blocks={blocks} actions={actions} />

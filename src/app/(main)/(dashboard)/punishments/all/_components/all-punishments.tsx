@@ -181,7 +181,7 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
               <TableHead>Жалоба</TableHead>
               <TableHead>Хелпер</TableHead>
               <TableHead>Администратор</TableHead>
-              <TableHead>Статус</TableHead>
+              <TableHead className="text-center">Статус</TableHead>
               <TableHead className="pr-4">Дата</TableHead>
             </TableRow>
           </TableHeader>
@@ -212,7 +212,7 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
                 <TableCell className="max-w-56">
                   {request.assignee ? <PersonName person={request.assignee} avatar /> : "—"}
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-center">
                   <AdminStatusBadge status={request.status} compact />
                 </TableCell>
                 <TableCell className="whitespace-nowrap pr-4 text-muted-foreground text-xs tabular-nums">

@@ -137,6 +137,8 @@ export function AccessList({ users }: { users: DbUser[] }) {
     telegramId: user.telegramId,
     name: user.name,
     username: user.username,
+    nickname: user.nickname,
+    staticId: user.staticId,
     status: user.status === "approved" ? "approved" : "rejected",
     admin: user.role === "admin",
     lastLogin: user.lastLoginAt ? dateFormat.format(user.lastLoginAt) : "Не входил(а)",
