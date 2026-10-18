@@ -33,7 +33,7 @@ export function ClosedTable({ requests }: { requests: PunishmentRequest[] }) {
             </TableHeader>
             <TableBody>
               {requests.map((request) => (
-                <TableRow key={request.id}>
+                <TableRow key={request.id} banner={request.requester.background}>
                   <TableCell className="pl-4 text-muted-foreground font-mono tabular-nums">{request.number}</TableCell>
                   <TableCell className="font-medium font-mono tabular-nums">{request.staticId}</TableCell>
                   <TableCell className="whitespace-nowrap">{kindText(request)}</TableCell>

@@ -145,7 +145,7 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
           </TableHeader>
           <TableBody>
             {feed.map((event) => (
-              <TableRow key={event.id} className="cursor-pointer" onClick={() => setOpenId(event.requestId)}>
+              <TableRow key={event.id} banner={event.actor.background} className="cursor-pointer" onClick={() => setOpenId(event.requestId)}>
                 <TableCell className="whitespace-nowrap pl-4 text-muted-foreground text-xs tabular-nums">
                   {formatFull(event.at)}
                 </TableCell>
@@ -187,7 +187,7 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
           </TableHeader>
           <TableBody>
             {rows.map((request) => (
-              <TableRow key={request.id} className="cursor-pointer" onClick={() => setOpenId(request.id)}>
+              <TableRow key={request.id} banner={request.requester.background} className="cursor-pointer" onClick={() => setOpenId(request.id)}>
                 <TableCell className="pl-4 text-muted-foreground font-mono tabular-nums">{request.number}</TableCell>
                 <TableCell className="font-medium font-mono tabular-nums">
                   {request.staticId}

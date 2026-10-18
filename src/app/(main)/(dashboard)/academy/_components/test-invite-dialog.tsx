@@ -152,7 +152,7 @@ export function TestInviteDialog({ testId, title }: { testId: string; title: str
           </div>
         )}
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 pb-3">
           <span className="font-medium text-sm">Выданные ссылки</span>
           {invites === null && <p className="text-muted-foreground text-sm">Загрузка...</p>}
           {invites?.length === 0 && (

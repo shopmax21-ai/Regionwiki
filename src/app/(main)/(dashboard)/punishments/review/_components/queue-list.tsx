@@ -70,7 +70,7 @@ export function QueueList({ items, now }: { items: QueueItem[]; now: number }) {
             </TableHeader>
             <TableBody>
               {items.map((item) => (
-                <TableRow key={item.id}>
+                <TableRow key={item.id} banner={item.requester.background}>
                   <TableCell className="pl-4 text-muted-foreground font-mono tabular-nums">{item.number}</TableCell>
                   <TableCell className="max-w-56">
                     <PersonName person={item.requester} avatar />

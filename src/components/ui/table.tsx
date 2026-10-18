@@ -51,14 +51,26 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
   )
 }
 
-function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
+/**
+ * banner: адрес баннера профиля. Он показывается у левого края строки на четверть её ширины
+ * и плавно исчезает слева направо с 75% непрозрачности до 0.
+ */
+function TableRow({
+  className,
+  banner,
+  style,
+  ...props
+}: React.ComponentProps<"tr"> & { banner?: string | null }) {
   return (
     <tr
       data-slot="table-row"
       className={cn(
         "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
+        banner &&
+          "relative before:pointer-events-none before:absolute before:inset-y-0 before:left-0 before:w-1/4 before:bg-[image:var(--row-banner)] before:bg-cover before:bg-center before:content-[''] before:[mask-image:linear-gradient(to_right,rgba(0,0,0,0.75),transparent)] [&>td]:relative",
         className
       )}
+      style={banner ? ({ ...style, "--row-banner": `url(${JSON.stringify(banner)})` } as React.CSSProperties) : style}
       {...props}
     />
   )
