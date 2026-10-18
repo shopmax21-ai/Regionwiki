@@ -1,11 +1,21 @@
 "use client";
 
-import { type ReactNode, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { ArrowRight, ClipboardCheck, Clock3, GraduationCap, Lock, Trash2, Wand2 } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  ClipboardCheck,
+  ClipboardList,
+  Clock3,
+  GraduationCap,
+  Lock,
+  Trash2,
+  Wand2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -20,25 +30,20 @@ import { TestDeleteDialog } from "./test-delete-dialog";
 import { TestEditor } from "./test-editor";
 import { TestInviteDialog } from "./test-invite-dialog";
 
-export type QuizKpis = { attempts: number; averagePercent: number; bestPercent: number };
-
 type QuizCenterProps = {
   cards: TestCardData[];
   /** Полные тесты с правильными ответами для окна редактирования. Приходят только тем, у кого есть право. */
   editable: AcademyTest[] | null;
-  kpis: QuizKpis;
   canSeeResults: boolean;
   /** Почему тесты не загрузились (null, если всё в порядке) */
   problem: string | null;
-  /** Личные результаты текущего администратора: показываются под списком тестов */
-  children: ReactNode;
 };
 
 type Running = { test: TestCardData; attemptId: string; questions: PublicQuestion[] };
 
 const cardColors = ["bg-chart-1", "bg-chart-2", "bg-chart-3", "bg-chart-4", "bg-chart-5"];
 
-export function QuizCenter({ cards, editable, kpis, canSeeResults, problem, children }: QuizCenterProps) {
+export function QuizCenter({ cards, editable, canSeeResults, problem }: QuizCenterProps) {
   const router = useRouter();
   const [running, setRunning] = useState<Running | null>(null);
   const [startingId, setStartingId] = useState<string | null>(null);
@@ -67,7 +72,6 @@ export function QuizCenter({ cards, editable, kpis, canSeeResults, problem, chil
 
   const exit = () => {
     setRunning(null);
-    // Результат только что попал в базу: обновляем показатели и личный блок
     router.refresh();
   };
 
@@ -86,32 +90,8 @@ export function QuizCenter({ cards, editable, kpis, canSeeResults, problem, chil
     );
   }
 
-  const stats = [
-    { title: "Пройдено тестов", value: String(kpis.attempts), note: "всего попыток" },
-    {
-      title: "Средний результат",
-      value: kpis.attempts > 0 ? `${kpis.averagePercent}%` : "—",
-      note: "по всем попыткам",
-    },
-    { title: "Лучший результат", value: kpis.attempts > 0 ? `${kpis.bestPercent}%` : "—", note: "за всё время" },
-  ];
-
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader>
-              <CardTitle className="text-sm">{stat.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <span className="text-3xl tabular-nums tracking-tight">{stat.value}</span>
-              <p className="text-muted-foreground text-xs">{stat.note}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h2 className="font-semibold text-xl">Выберите тест</h2>
@@ -135,9 +115,16 @@ export function QuizCenter({ cards, editable, kpis, canSeeResults, problem, chil
       )}
 
       {!problem && cards.length === 0 && (
-        <p className="rounded-xl border border-dashed px-4 py-10 text-center text-muted-foreground text-sm">
-          Тестов пока нет.{canEdit ? " Создайте первый кнопкой выше." : ""}
-        </p>
+        <div className="mx-auto flex w-full max-w-2xl flex-col items-center rounded-xl border border-dashed px-6 py-10 text-center">
+          <div className="relative mb-4 flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <ClipboardList className="size-8" aria-hidden="true" />
+            <span className="absolute right-0 bottom-0 flex size-6 translate-x-1/4 translate-y-1/4 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground">
+              <Check className="size-3.5" aria-hidden="true" />
+            </span>
+          </div>
+          <h3 className="font-semibold text-lg">Тестов пока нет</h3>
+          <p className="mt-1 text-muted-foreground text-sm">Создайте и управляйте тестами для персонала.</p>
+        </div>
       )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -200,8 +187,6 @@ export function QuizCenter({ cards, editable, kpis, canSeeResults, problem, chil
           );
         })}
       </div>
-
-      {children}
 
       <TestDeleteDialog test={deleting} onClose={() => setDeleting(null)} />
     </div>

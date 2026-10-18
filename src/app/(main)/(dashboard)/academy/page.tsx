@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 
-import { getUserStats, listAttempts, listTests } from "@/lib/academy/store";
+import { listTests } from "@/lib/academy/store";
 import type { AcademyTest, TestCardData } from "@/lib/academy/types";
 import { requireAdmin } from "@/lib/auth/admin";
 
-import { MyResults } from "./_components/my-results";
 import { QuizCenter } from "./_components/quiz-center";
 
 export const metadata: Metadata = {
@@ -34,19 +33,11 @@ export default async function Page() {
 
   let tests: AcademyTest[] = [];
   let problem: string | null = null;
-  let myAttempts: Awaited<ReturnType<typeof listAttempts>> = [];
-  let stats = { attempts: 0, averagePercent: 0, bestPercent: 0 };
 
   try {
-    const [loadedTests, loadedStats, loadedAttempts] = await Promise.all([
-      listTests(),
-      getUserStats(admin.id, 0),
-      listAttempts({ userId: admin.id, limit: 50 }),
-    ]);
+    const loadedTests = await listTests();
     // Закрытые тесты в общем списке видят только те, кто их редактирует и выдаёт на них ссылки
     tests = canEdit ? loadedTests : loadedTests.filter((test) => !test.closed);
-    stats = loadedStats;
-    myAttempts = loadedAttempts;
   } catch (error) {
     console.error("[academy] Не удалось загрузить Академию", error);
     problem = "база данных недоступна";
@@ -57,11 +48,8 @@ export default async function Page() {
       cards={tests.map(toCard)}
       // Правильные ответы уходят в браузер только тем, кто может редактировать тесты
       editable={canEdit ? tests : null}
-      kpis={stats}
       canSeeResults={canSeeResults}
       problem={problem}
-    >
-      <MyResults attempts={myAttempts} />
-    </QuizCenter>
+    />
   );
 }
