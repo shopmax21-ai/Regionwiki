@@ -23,7 +23,6 @@ import {
   X,
 } from "lucide-react";
 
-import { RegionMarkOutline } from "@/app/(main)/auth/_components/region-mark-outline";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Kbd } from "@/components/ui/kbd";
@@ -70,27 +69,37 @@ function plural(n: number, forms: [string, string, string]) {
   return `${n} ${form}`;
 }
 
-type Tone = "red" | "amber" | "sky";
+type Tone = "red" | "amber" | "sky" | "violet";
 
-/** Цвет значка раздела. Классы записаны целиком, чтобы Tailwind их увидел. */
-const TONES: Record<Tone, { icon: string; hover: string; chip: string; line: string }> = {
+/** Оттенки карточек. Классы записаны целиком, чтобы Tailwind их увидел. */
+const TONES: Record<Tone, { icon: string; hover: string; chip: string; glow: string; tint: string }> = {
   red: {
     icon: "bg-primary/10 text-primary",
     hover: "group-hover:bg-primary group-hover:text-primary-foreground",
     chip: "bg-primary/10 text-primary",
-    line: "from-primary/60",
+    glow: "bg-primary/20",
+    tint: "from-primary/[0.07]",
   },
   amber: {
     icon: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
     hover: "group-hover:bg-amber-500 group-hover:text-white",
     chip: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
-    line: "from-amber-500/60",
+    glow: "bg-amber-400/20",
+    tint: "from-amber-500/[0.07]",
   },
   sky: {
     icon: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
     hover: "group-hover:bg-sky-500 group-hover:text-white",
     chip: "bg-sky-500/10 text-sky-700 dark:text-sky-300",
-    line: "from-sky-500/60",
+    glow: "bg-sky-400/20",
+    tint: "from-sky-500/[0.07]",
+  },
+  violet: {
+    icon: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+    hover: "group-hover:bg-violet-500 group-hover:text-white",
+    chip: "bg-violet-500/10 text-violet-700 dark:text-violet-300",
+    glow: "bg-violet-400/20",
+    tint: "from-violet-500/[0.07]",
   },
 };
 
@@ -98,96 +107,88 @@ type Section = {
   title: string;
   description: string;
   icon: ComponentType<{ className?: string }>;
+  tone: Tone;
+  /** Крупная карточка занимает две колонки сетки */
+  wide?: boolean;
   meta?: string;
   href?: string;
 };
 
-type SectionGroup = { title: string; hint: string; tone: Tone; sections: Section[] };
-
-function buildGroups(stats: WikiStats, rulesStatus?: RulesStatusLabel): SectionGroup[] {
+function buildSections(stats: WikiStats, rulesStatus?: RulesStatusLabel): Section[] {
   return [
     {
-      title: "Правила",
-      hint: "Что можно и нельзя на проекте",
+      title: "Основные правила",
+      description: "Общие правила проекта и ответственность игроков",
+      icon: Scale,
       tone: "red",
-      sections: [
-        {
-          title: "Основные правила",
-          description: "Общие правила проекта и ответственность игроков",
-          icon: Scale,
-          meta: `${plural(stats.generalArticles, ["раздел", "раздела", "разделов"])} · ${plural(stats.rules, ["пункт", "пункта", "пунктов"])}`,
-          href: "/rules/general",
-        },
-        {
-          title: "Государственные структуры",
-          description: "Правила государственных организаций",
-          icon: Users,
-          meta: plural(stats.governmentArticles, ["раздел", "раздела", "разделов"]),
-          href: "/rules/government",
-        },
-        {
-          title: "История изменений",
-          description: "Обновления и изменения правил",
-          icon: History,
-          meta: rulesStatus?.label,
-          href: "/rules/changelog",
-        },
-      ],
+      wide: true,
+      meta: `${plural(stats.generalArticles, ["раздел", "раздела", "разделов"])} · ${plural(stats.rules, ["пункт", "пункта", "пунктов"])}`,
+      href: "/rules/general",
     },
     {
-      title: "Заработок и имущество",
-      hint: "Как зарабатывать и во что вкладываться",
+      title: "Госструктуры",
+      description: "Правила государственных организаций",
+      icon: Users,
+      tone: "red",
+      meta: plural(stats.governmentArticles, ["раздел", "раздела", "разделов"]),
+      href: "/rules/government",
+    },
+    {
+      title: "История изменений",
+      description: "Обновления и изменения правил",
+      icon: History,
+      tone: "red",
+      meta: rulesStatus?.label,
+      href: "/rules/changelog",
+    },
+    {
+      title: "Работы",
+      description: "Варианты заработка денег",
+      icon: HardHat,
       tone: "amber",
-      sections: [
-        {
-          title: "Работы",
-          description: "Варианты заработка денег",
-          icon: HardHat,
-          meta: plural(stats.jobs, ["работа", "работы", "работ"]),
-          href: "/jobs",
-        },
-        {
-          title: "Бизнес",
-          description: "Отличный способ заработка",
-          icon: BriefcaseBusiness,
-          meta: plural(stats.businesses, ["бизнес", "бизнеса", "бизнесов"]),
-          href: "/business",
-        },
-        {
-          title: "Недвижимость",
-          description: "Каталог недвижимости",
-          icon: House,
-          meta: plural(stats.realties, ["объект", "объекта", "объектов"]),
-          href: "/real-estate",
-        },
-      ],
+      meta: plural(stats.jobs, ["работа", "работы", "работ"]),
+      href: "/jobs",
     },
     {
-      title: "Мир Region",
-      hint: "Транспорт, места и игроки",
+      title: "Бизнес",
+      description: "Отличный способ заработка",
+      icon: BriefcaseBusiness,
+      tone: "amber",
+      meta: plural(stats.businesses, ["бизнес", "бизнеса", "бизнесов"]),
+      href: "/business",
+    },
+    {
+      title: "Недвижимость",
+      description: "Каталог недвижимости",
+      icon: House,
+      tone: "amber",
+      meta: plural(stats.realties, ["объект", "объекта", "объектов"]),
+      href: "/real-estate",
+    },
+    {
+      title: "Транспорт",
+      description: "Каталог транспорта",
+      icon: CarFront,
       tone: "sky",
-      sections: [
-        {
-          title: "Транспорт",
-          description: "Каталог транспорта",
-          icon: CarFront,
-          meta: plural(stats.vehicles, ["машина", "машины", "машин"]),
-          href: "/transport",
-        },
-        {
-          title: "Карта",
-          description: "Важные локации и полезные адреса",
-          icon: MapIcon,
-          meta: plural(stats.places, ["метка", "метки", "меток"]),
-          href: "/map",
-        },
-        {
-          title: "Медиа",
-          description: "Трансляции игроков REGION",
-          icon: MonitorPlay,
-          href: "/media",
-        },
-      ],
+      meta: plural(stats.vehicles, ["машина", "машины", "машин"]),
+      href: "/transport",
+    },
+    {
+      title: "Карта",
+      description: "Важные локации и полезные адреса",
+      icon: MapIcon,
+      tone: "sky",
+      wide: true,
+      meta: plural(stats.places, ["метка", "метки", "меток"]),
+      href: "/map",
+    },
+    {
+      title: "Медиа",
+      description: "Трансляции игроков REGION",
+      icon: MonitorPlay,
+      tone: "violet",
+      wide: true,
+      href: "/media",
     },
   ];
 }
@@ -205,43 +206,64 @@ const CSS = `
 @media (prefers-reduced-motion:reduce){.wk-accent,.wk-rise,.wk-ping{animation:none}}
 `;
 
-function SectionCard({ section, tone, index }: { section: Section; tone: Tone; index: number }) {
+function SectionCard({ section, index }: { section: Section; index: number }) {
   const Icon = section.icon;
   const soon = !section.href;
-  const colors = TONES[tone];
+  const colors = TONES[section.tone];
 
   const body = (
     <div
-      style={{ animationDelay: `${index * 45}ms` }}
+      style={{ animationDelay: `${index * 40}ms` }}
       className={cn(
-        "wk-rise hv-reg group relative flex h-full gap-4 overflow-hidden rounded-2xl border p-4 transition-all",
-        soon ? "border-dashed bg-muted/30" : "bg-card hover:-translate-y-0.5",
+        "wk-rise hv-reg group relative flex h-full min-h-32 flex-col justify-between gap-5 md:min-h-40 md:gap-6 overflow-hidden rounded-3xl border p-5 transition-all",
+        soon ? "border-dashed bg-muted/30" : cn("bg-gradient-to-br to-card hover:-translate-y-0.5", colors.tint),
+        section.wide && "md:min-h-44 md:p-6",
       )}
     >
-      <span
-        className={cn(
-          "flex size-12 shrink-0 items-center justify-center rounded-xl transition-colors",
-          soon ? "bg-muted text-muted-foreground" : cn(colors.icon, colors.hover),
-        )}
-      >
-        <Icon className="size-6" />
-      </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className={cn("font-semibold text-base leading-tight tracking-tight", soon && "text-muted-foreground")}>
-            {section.title}
-          </h3>
-          {soon ? (
-            <Badge variant="secondary" className="rounded-full">
-              Скоро
-            </Badge>
-          ) : (
-            <ArrowUpRight className="size-4 shrink-0 text-muted-foreground opacity-0 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-foreground group-hover:opacity-100" />
+      {/* Мягкое свечение в углу, усиливается при наведении */}
+      {!soon && (
+        <div
+          aria-hidden="true"
+          className={cn(
+            "pointer-events-none absolute -top-10 -right-10 size-32 rounded-full opacity-0 blur-3xl transition-opacity group-hover:opacity-100",
+            colors.glow,
           )}
-        </div>
+        />
+      )}
+
+      <div className="relative flex items-start justify-between">
+        <span
+          className={cn(
+            "flex size-11 items-center justify-center rounded-2xl transition-colors",
+            soon ? "bg-muted text-muted-foreground" : cn(colors.icon, colors.hover),
+          )}
+        >
+          <Icon className="size-5.5" />
+        </span>
+        {soon ? (
+          <Badge variant="secondary" className="rounded-full">
+            Скоро
+          </Badge>
+        ) : (
+          <span className="flex size-8 items-center justify-center rounded-full border bg-background/60 text-muted-foreground opacity-0 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-foreground group-hover:opacity-100">
+            <ArrowUpRight className="size-4" />
+          </span>
+        )}
+      </div>
+
+      <div className="relative flex flex-col gap-1">
+        <h3
+          className={cn(
+            "font-semibold tracking-tight",
+            section.wide ? "text-xl" : "text-lg",
+            soon && "text-muted-foreground",
+          )}
+        >
+          {section.title}
+        </h3>
         <p className="text-muted-foreground text-sm leading-5">{section.description}</p>
         {section.meta && (
-          <span className={cn("mt-1.5 w-fit rounded-md px-2 py-0.5 font-medium text-xs tabular-nums", colors.chip)}>
+          <span className={cn("mt-2 w-fit rounded-full px-2.5 py-0.5 font-medium text-xs tabular-nums", colors.chip)}>
             {section.meta}
           </span>
         )}
@@ -249,44 +271,42 @@ function SectionCard({ section, tone, index }: { section: Section; tone: Tone; i
     </div>
   );
 
-  if (soon) return body;
+  const span = section.wide ? "md:col-span-2" : "";
+  if (soon) return <div className={span}>{body}</div>;
   return (
     <Link
       href={section.href as string}
       prefetch={false}
-      className="block rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className={cn(
+        "block rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        span,
+      )}
     >
       {body}
     </Link>
   );
 }
 
-/** Крупные цифры под героем: быстро видно, сколько всего в базе знаний. */
-function StatsStrip({ stats }: { stats: WikiStats }) {
+/** Цифры базы знаний одной строкой рядом с заголовком. */
+function StatsInline({ stats }: { stats: WikiStats }) {
   const items = [
-    { icon: Scale, value: stats.rules, label: "пунктов правил" },
-    { icon: HardHat, value: stats.jobs, label: "работ" },
-    { icon: CarFront, value: stats.vehicles, label: "машин в каталоге" },
-    { icon: MapIcon, value: stats.places, label: "меток на карте" },
+    { value: stats.rules, label: "правил" },
+    { value: stats.jobs, label: "работ" },
+    { value: stats.vehicles, label: "машин" },
+    { value: stats.places, label: "меток" },
   ];
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      {items.map(({ icon: Icon, value, label }, index) => (
-        <div
+    <ul className="flex flex-wrap items-center gap-2">
+      {items.map(({ value, label }) => (
+        <li
           key={label}
-          style={{ animationDelay: `${index * 60}ms` }}
-          className="wk-rise flex items-center gap-3 rounded-2xl border bg-card px-4 py-3.5"
+          className="flex items-baseline gap-1.5 rounded-full border bg-card/70 px-3 py-1 text-muted-foreground text-xs"
         >
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Icon className="size-5" aria-hidden="true" />
-          </span>
-          <span className="flex min-w-0 flex-col">
-            <span className="font-extrabold text-2xl tabular-nums italic leading-none">{value}</span>
-            <span className="mt-1 text-muted-foreground text-xs leading-tight">{label}</span>
-          </span>
-        </div>
+          <span className="font-bold text-foreground text-sm tabular-nums italic">{value}</span>
+          {label}
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 
@@ -360,7 +380,7 @@ export function WikiPage({
 
   const trimmed = query.trim();
   const search = useSiteSearch(query, { limit: filter === "all" ? 6 : 30 });
-  const groups = buildGroups(stats, rulesStatus);
+  const sections = buildSections(stats, rulesStatus);
 
   // «/» — быстрый переход к поиску
   useEffect(() => {
@@ -401,103 +421,78 @@ export function WikiPage({
     <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 pb-10">
       <style>{CSS}</style>
 
-      <section className="relative isolate overflow-hidden rounded-3xl border bg-card">
-        {/* Узор из «R», затухающий к тексту */}
-        <svg
-          aria-hidden="true"
-          className="absolute inset-0 -z-10 size-full text-foreground [mask-image:linear-gradient(to_right,transparent_35%,black)]"
-        >
-          <defs>
-            <pattern id="region-home-pattern" width="98" height="64" patternUnits="userSpaceOnUse">
-              <g fill="currentColor" fillOpacity="0.06" fontSize="20" fontStyle="italic" fontWeight="800">
-                <text x="0" y="24">
-                  R
-                </text>
-                <text x="49" y="24">
-                  R
-                </text>
-                <text x="24" y="56">
-                  R
-                </text>
-                <text x="73" y="56">
-                  R
-                </text>
-              </g>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#region-home-pattern)" />
-        </svg>
-
-        {/* Фирменная R с бегущей «жидкостью», уходящая за нижний край */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-12 -bottom-20 hidden md:block lg:right-10 lg:-bottom-24"
-        >
-          <div className="absolute inset-10 rounded-md bg-primary/25 blur-3xl" />
-          <RegionMarkOutline id="rmo-home" className="relative w-72 lg:w-[23rem]" />
-        </div>
-
-        <div className="relative px-6 py-10 md:px-12 md:py-14">
-          <div className="max-w-2xl">
-            <h1 className="wk-rise mt-5 text-balance font-extrabold text-4xl leading-[1.05] tracking-tight [animation-delay:60ms] md:text-6xl">
+      <header className="flex flex-col gap-6 pt-2 md:pt-6">
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <div className="flex flex-col gap-2">
+            <h1 className="wk-rise text-balance font-extrabold text-3xl leading-[1.05] tracking-tight md:text-5xl">
               Всё о жизни на <span className="wk-accent">Region</span>
             </h1>
-            <p className="wk-rise mt-5 max-w-xl text-base text-muted-foreground leading-7 [animation-delay:120ms] md:text-lg">
-              Здесь Вы можете найти любую информацию о проекте Region, его игровых системах
+            <p className="wk-rise text-muted-foreground [animation-delay:80ms] md:text-lg">
+              Правила, работы, транспорт и карта проекта в одном месте
             </p>
-
-            <div className="wk-rise relative mt-8 max-w-xl [animation-delay:180ms]">
-              <Search className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                ref={inputRef}
-                value={query}
-                onChange={(event) => changeQuery(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") changeQuery("");
-                  if (event.key === "Enter") openFirstResult();
-                }}
-                placeholder="Найти правило, работу, машину или раздел"
-                aria-label="Поиск по всем разделам"
-                data-global-search
-                aria-keyshortcuts="Control+E"
-                className="h-14 rounded-2xl bg-background pr-14 pl-12 text-base shadow-sm"
-              />
-              {query ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    changeQuery("");
-                    inputRef.current?.focus();
-                  }}
-                  aria-label="Очистить поиск"
-                  className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <X className="size-4" />
-                </button>
-              ) : (
-                <Kbd className="absolute top-1/2 right-4 -translate-y-1/2">Ctrl + E</Kbd>
-              )}
-            </div>
-
-            <div className="wk-rise mt-4 flex max-w-xl flex-wrap items-center gap-2 text-sm [animation-delay:230ms]">
-              <span className="text-muted-foreground">Например:</span>
-              {suggestions.map((word) => (
-                <button
-                  key={word}
-                  type="button"
-                  onClick={() => {
-                    changeQuery(word);
-                    inputRef.current?.focus();
-                  }}
-                  className="rounded-md border bg-background/70 px-3 py-1 transition-colors hover:border-primary/60 hover:text-primary"
-                >
-                  {word}
-                </button>
-              ))}
-            </div>
+          </div>
+          <div className="wk-rise [animation-delay:120ms]">
+            <StatsInline stats={stats} />
           </div>
         </div>
-      </section>
+
+        <div className="wk-rise relative max-w-3xl [animation-delay:160ms]">
+          {/* Мягкий цветной ореол за полем поиска */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -inset-1.5 rounded-[1.75rem] bg-gradient-to-r from-primary/25 via-transparent to-amber-400/25 opacity-60 blur-xl"
+          />
+          <div className="relative">
+            <Search className="absolute top-1/2 left-5 size-5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              ref={inputRef}
+              value={query}
+              onChange={(event) => changeQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") changeQuery("");
+                if (event.key === "Enter") openFirstResult();
+              }}
+              placeholder="Найти правило, работу, машину или раздел"
+              aria-label="Поиск по всем разделам"
+              data-global-search
+              aria-keyshortcuts="Control+E"
+              className="h-14 rounded-3xl border-foreground/10 bg-card pr-24 pl-14 text-base shadow-lg"
+            />
+            {query ? (
+              <button
+                type="button"
+                onClick={() => {
+                  changeQuery("");
+                  inputRef.current?.focus();
+                }}
+                aria-label="Очистить поиск"
+                className="absolute top-1/2 right-4 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <X className="size-4" />
+              </button>
+            ) : (
+              <Kbd className="absolute top-1/2 right-5 -translate-y-1/2">Ctrl + E</Kbd>
+            )}
+          </div>
+        </div>
+
+        <div className="wk-rise flex flex-wrap items-center gap-2 text-sm [animation-delay:220ms]">
+          <span className="text-muted-foreground">Например:</span>
+          {suggestions.map((word) => (
+            <button
+              key={word}
+              type="button"
+              onClick={() => {
+                changeQuery(word);
+                inputRef.current?.focus();
+              }}
+              className="rounded-full border bg-card/70 px-3 py-1 transition-colors hover:border-primary/60 hover:text-primary"
+            >
+              {word}
+            </button>
+          ))}
+        </div>
+      </header>
 
       {showResults ? (
         <section aria-live="polite" className="flex min-w-0 flex-col gap-5">
@@ -527,38 +522,13 @@ export function WikiPage({
         </section>
       ) : (
         <>
-          <StatsStrip stats={stats} />
+          <section aria-label="Разделы" className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {sections.map((section, index) => (
+              <SectionCard key={section.title} section={section} index={index} />
+            ))}
+          </section>
 
-          <div className="flex min-w-0 flex-col gap-8">
-            <div className="flex min-w-0 flex-col gap-8">
-              {groups.map((group, groupIndex) => (
-                <section key={group.title} className="flex flex-col gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                      <h2 className="font-semibold text-xl tracking-tight">{group.title}</h2>
-                      <p className="text-muted-foreground text-sm">{group.hint}</p>
-                    </div>
-                    <div
-                      aria-hidden="true"
-                      className={cn("h-px flex-1 bg-gradient-to-r to-transparent", TONES[group.tone].line)}
-                    />
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {group.sections.map((section, index) => (
-                      <SectionCard
-                        key={section.title}
-                        section={section}
-                        tone={group.tone}
-                        index={groupIndex * 3 + index}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-
-            {recent.length > 0 && <RecentList recent={recent} rulesStatus={rulesStatus} />}
-          </div>
+          {recent.length > 0 && <RecentList recent={recent} rulesStatus={rulesStatus} />}
         </>
       )}
     </main>
