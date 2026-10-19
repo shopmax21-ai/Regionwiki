@@ -5,13 +5,13 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { cn } from "cn";
+import { Lock } from "lucide-react";
 import { toast } from "sonner";
 
 import {
   BirthdayCakeIcon,
   CaretDownIcon,
   CheckMarkIcon,
-  ClearDateIcon,
   ConfettiIcon,
   DayPickIcon,
   GiftBoxIcon,
@@ -19,6 +19,16 @@ import {
   SaveDiskIcon,
   SparkleIcon,
 } from "@/components/icons/region-icons";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -163,6 +173,9 @@ export function BirthdayCard({ initial }: { initial: string | null }) {
   const [day, setDay] = useState(parsed ? String(parsed.day) : "");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  // Дату указывают один раз: когда она уже есть, выбор и кнопки не показываются
+  const locked = parseBirthday(initial) !== null;
   // Сколько дней осталось, считаем в браузере: на сервере и у человека «сегодня» может отличаться
   const [left, setLeft] = useState<number | null>(null);
 
@@ -174,10 +187,9 @@ export function BirthdayCard({ initial }: { initial: string | null }) {
   const dayCount = monthNumber ? MAX_DAYS[monthNumber - 1] : 31;
   const value = month && day ? toBirthday(monthNumber, Number(day)) : null;
   const valid = value !== null && parseBirthday(value) !== null;
-  const dirty = (value ?? "") !== (initial ?? "");
   const isToday = left === 0;
 
-  const save = (next: string | null) => {
+  const save = (next: string) => {
     setError(null);
     startTransition(async () => {
       try {
@@ -186,11 +198,7 @@ export function BirthdayCard({ initial }: { initial: string | null }) {
           setError(result.error);
           return;
         }
-        if (next === null) {
-          setMonth("");
-          setDay("");
-        }
-        toast.success(next === null ? "День рождения убран" : "День рождения сохранён");
+        toast.success("День рождения сохранён");
         router.refresh();
       } catch {
         setError("Нет связи с сервером, попробуйте ещё раз");
@@ -237,68 +245,62 @@ export function BirthdayCard({ initial }: { initial: string | null }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:mr-14">
-            <Picker
-              id="birthday-day"
-              label="День"
-              value={day}
-              display={day}
-              placeholder="День"
-              disabled={pending}
-              columns="grid-cols-7"
-              icon={DayPickIcon}
-              options={Array.from({ length: dayCount }, (_, index) => ({
-                value: String(index + 1),
-                label: String(index + 1),
-              }))}
-              onSelect={(next) => {
-                setError(null);
-                setDay(next);
-              }}
-              className="w-24"
-            />
-            <Picker
-              id="birthday-month"
-              label="Месяц"
-              value={month}
-              display={month ? MONTHS[monthNumber - 1] : ""}
-              placeholder="Месяц"
-              disabled={pending}
-              columns="grid-cols-2"
-              icon={MonthPickIcon}
-              options={MONTHS.map((name, index) => ({ value: String(index + 1), label: name }))}
-              onSelect={(next) => {
-                setError(null);
-                setMonth(next);
-                // Если в новом месяце меньше дней, выбранный день сбрасываем
-                if (next && Number(day) > MAX_DAYS[Number(next) - 1]) setDay("");
-              }}
-              className="w-36"
-            />
-            <Button
-              size="icon"
-              onClick={() => value && save(value)}
-              disabled={pending || !valid || !dirty}
-              aria-label="Сохранить"
-              title={pending ? "Сохранение..." : "Сохранить"}
-              className="size-9 shrink-0 rounded-xl bg-linear-to-br from-pink-500 to-rose-500 text-white hover:from-pink-500/90 hover:to-rose-500/90"
-            >
-              <SaveDiskIcon className="size-5" />
-            </Button>
-            {initial && (
+          {locked ? (
+            <span className="flex items-center gap-1.5 text-muted-foreground text-xs sm:mr-14">
+              <Lock className="size-3.5" aria-hidden="true" />
+              Указана, изменить нельзя
+            </span>
+          ) : (
+            <div className="flex items-center gap-2 sm:mr-14">
+              <Picker
+                id="birthday-day"
+                label="День"
+                value={day}
+                display={day}
+                placeholder="День"
+                disabled={pending}
+                columns="grid-cols-7"
+                icon={DayPickIcon}
+                options={Array.from({ length: dayCount }, (_, index) => ({
+                  value: String(index + 1),
+                  label: String(index + 1),
+                }))}
+                onSelect={(next) => {
+                  setError(null);
+                  setDay(next);
+                }}
+                className="w-24"
+              />
+              <Picker
+                id="birthday-month"
+                label="Месяц"
+                value={month}
+                display={month ? MONTHS[monthNumber - 1] : ""}
+                placeholder="Месяц"
+                disabled={pending}
+                columns="grid-cols-2"
+                icon={MonthPickIcon}
+                options={MONTHS.map((name, index) => ({ value: String(index + 1), label: name }))}
+                onSelect={(next) => {
+                  setError(null);
+                  setMonth(next);
+                  // Если в новом месяце меньше дней, выбранный день сбрасываем
+                  if (next && Number(day) > MAX_DAYS[Number(next) - 1]) setDay("");
+                }}
+                className="w-36"
+              />
               <Button
                 size="icon"
-                variant="ghost"
-                onClick={() => save(null)}
-                disabled={pending}
-                aria-label="Убрать дату"
-                title="Убрать дату"
-                className="size-9 shrink-0 rounded-xl text-muted-foreground"
+                onClick={() => setConfirmOpen(true)}
+                disabled={pending || !valid}
+                aria-label="Сохранить"
+                title={pending ? "Сохранение..." : "Сохранить"}
+                className="size-9 shrink-0 rounded-xl bg-linear-to-br from-pink-500 to-rose-500 text-white hover:from-pink-500/90 hover:to-rose-500/90"
               >
-                <ClearDateIcon className="size-5" />
+                <SaveDiskIcon className="size-5" />
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {error && (
@@ -312,8 +314,30 @@ export function BirthdayCard({ initial }: { initial: string | null }) {
 
         <p className="max-w-2xl text-muted-foreground text-xs leading-relaxed">
           Год не нужен. Дата появится в календаре, коллеги получат напоминание в Telegram за день, а в сам день рождения
-          сайт поздравит вас при первом входе.
+          сайт поздравит вас при первом входе. {locked ? "Дата указана один раз и дальше не меняется." : "Дату можно указать только один раз, поэтому проверьте её перед сохранением."}
         </p>
+
+        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Сохранить день рождения?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {value && valid ? formatBirthday(value) : ""}. Дату можно указать только один раз: потом изменить или
+                убрать её нельзя.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Проверить ещё раз</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (value && valid) save(value);
+                }}
+              >
+                Сохранить
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );

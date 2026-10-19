@@ -11,7 +11,7 @@ import {
   groupOfUser,
   revokeSessions,
   setNotifyRequests,
-  setUserBirthday,
+  setUserBirthdayOnce,
   setUserIdentity,
   setUserIdentityOnce,
 } from "@/lib/auth/db";
@@ -39,14 +39,15 @@ export async function setRequestNotifications(enabled: boolean): Promise<ActionR
   return { ok: true };
 }
 
-/** Указать свой день рождения («ММ-ДД», без года) или убрать его (null). */
+/** Указать свой день рождения («ММ-ДД», без года). Только один раз: после этого дату нельзя ни изменить, ни убрать. */
 export async function saveBirthday(value: unknown): Promise<ActionResult> {
   const session = await getCurrentUser();
   if (!session) return { ok: false, error: "Войдите заново" };
-  if (value !== null && !parseBirthday(value)) return { ok: false, error: "Выберите существующую дату" };
+  if (!parseBirthday(value)) return { ok: false, error: "Выберите существующую дату" };
 
   try {
-    await setUserBirthday(session.id, value === null ? null : (value as string));
+    const saved = await setUserBirthdayOnce(session.id, value as string);
+    if (!saved) return { ok: false, error: "День рождения уже указан, изменить его нельзя" };
   } catch (error) {
     console.error("[profile] Не удалось сохранить день рождения", error);
     return { ok: false, error: "База данных недоступна, попробуйте позже" };

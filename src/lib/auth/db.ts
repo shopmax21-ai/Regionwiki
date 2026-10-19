@@ -586,6 +586,18 @@ export async function setUserBirthday(telegramId: string, birthday: string | nul
     WHERE telegram_id = ${telegramId}`;
 }
 
+/**
+ * Первое указание дня рождения самим человеком. Условие в запросе гарантирует «один раз» даже при двух одновременных
+ * отправках: если дата уже есть, строка не обновится и вернётся false.
+ */
+export async function setUserBirthdayOnce(telegramId: string, birthday: string): Promise<boolean> {
+  if (!parseBirthday(birthday)) throw new Error("Недопустимая дата рождения");
+  await ensureSchema();
+  const rows = await sql`UPDATE users SET birthday = ${birthday}, birthday_greeted_on = NULL, birthday_reminded_year = NULL
+    WHERE telegram_id = ${telegramId} AND birthday IS NULL RETURNING telegram_id`;
+  return rows.length > 0;
+}
+
 /** Одобренные администраторы с указанным днём рождения: для календаря. */
 export async function listBirthdays(): Promise<DbUser[]> {
   await ensureSchema();
