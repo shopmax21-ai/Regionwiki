@@ -189,10 +189,8 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
 
       <Card className="gap-0 py-0">
         <CardHeader className="border-b py-4">
-          <CardTitle>Попытки</CardTitle>
-          <CardDescription>
-            Показано: {attempts.length}. Откройте попытку, чтобы увидеть, где ошибся администратор, и разбор.
-          </CardDescription>
+          <h2 className="font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm">Попытки</h2>
+          <CardDescription>Откройте попытку, чтобы увидеть, где ошибся администратор, и разбор.</CardDescription>
           {(activeUser || activeTest || userId || testId) && (
             <div className="flex flex-wrap items-center gap-2 pt-2">
               {(activeUser || userId) && (
