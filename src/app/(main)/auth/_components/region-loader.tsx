@@ -4,7 +4,7 @@ import { RegionMarkOutline } from "./region-mark-outline";
 
 /**
  * Загрузка в стиле страницы 404: узор из «R» и фирменная R с красной жидкостью внутри.
- * fullscreen — на весь экран (переход между страницами), иначе — внутри области контента.
+ * fullscreen — на весь экран (корень сайта и отдельные страницы без меню), иначе — только внутри области контента раздела, не закрывая меню и шапку.
  */
 export function RegionLoader({
   fullscreen = false,
@@ -21,7 +21,9 @@ export function RegionLoader({
       aria-live="polite"
       className={cn(
         "relative isolate flex flex-col items-center justify-center gap-6 overflow-hidden bg-background",
-        fullscreen ? "fixed inset-0 z-50 min-h-dvh" : "min-h-[60dvh] rounded-xl",
+        fullscreen
+          ? "fixed inset-0 z-50 min-h-dvh"
+          : "min-h-[calc(100dvh-var(--dashboard-header-height,3rem)-2rem)] rounded-xl md:min-h-[calc(100dvh-var(--dashboard-header-height,3rem)-3rem)]",
       )}
     >
       <svg

@@ -72,7 +72,7 @@ export function GuestQuiz({ token, landing }: { token: string; landing: InviteLa
   const ready = name.trim().length >= INVITE_LIMITS.minGuestName;
 
   return (
-    <Card>
+    <Card className="border-primary/20 bg-card/90 shadow-primary/5 shadow-xl backdrop-blur-sm">
       <CardHeader className="gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">Закрытый тест</Badge>
@@ -127,7 +127,7 @@ export function GuestQuiz({ token, landing }: { token: string; landing: InviteLa
 
 function Notice({ title, text }: { title: string; text: string }) {
   return (
-    <Card>
+    <Card className="bg-card/90 backdrop-blur-sm">
       <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
         <div className="flex size-14 items-center justify-center rounded-md bg-destructive/10 text-destructive">
           <ShieldAlert className="size-7" aria-hidden="true" />
