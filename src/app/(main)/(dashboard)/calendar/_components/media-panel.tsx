@@ -10,7 +10,7 @@ import { PersonName } from "@/components/person-name";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/app-table";
 import { formatRange, relativeTo } from "@/lib/calendar/format";
 import { type CalendarEvent, MSK_ZONE, statusOf } from "@/lib/calendar/types";
 import { channelKey, platformLabels } from "@/lib/media/types";
@@ -140,7 +140,7 @@ export function MediaPanel({ events, now, entries, entriesProblem, onOpen, onCre
                           <span className="flex flex-wrap items-center gap-x-3 text-muted-foreground text-xs">
                             {event.location && <span className="truncate">{event.location}</span>}
                             <span className="flex items-center gap-1">
-                              <PersonName person={event.owner} />
+                              <PersonName person={event.owner} avatar />
                             </span>
                             {status === "upcoming" && <span>{relativeTo(event.startsAt, now)}</span>}
                           </span>

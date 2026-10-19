@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 
 import { PersonName } from "@/components/person-name";
+import { AdminPageHeader } from "@/components/admin-page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDateTime, formatSpent } from "@/lib/academy/format";
@@ -35,7 +36,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const correct = attempt.questions.filter((question) => question.chosen === question.correct).length;
   const skipped = attempt.questions.filter((question) => question.chosen === null).length;
   const facts = [
-    { label: "Администратор", value: <PersonName person={attempt.user} /> },
+    { label: "Администратор", value: <PersonName person={attempt.user} avatar /> },
     { label: "Завершён", value: formatDateTime(attempt.finishedAt) },
     { label: "Заняло времени", value: formatSpent(attempt.startedAt, attempt.finishedAt) },
     { label: "Проходной балл", value: `${attempt.passPercent}%` },
@@ -43,14 +44,15 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-semibold text-2xl">{attempt.testTitle}</h1>
-        </div>
-        <Link href="/academy/results" prefetch={false} className={buttonVariants({ variant: "outline" })}>
-          <ArrowLeft data-icon="inline-start" />К результатам
-        </Link>
-      </div>
+      <AdminPageHeader
+        section="Обучение"
+        title={attempt.testTitle}
+        actions={
+          <Link href="/academy/results" prefetch={false} className={buttonVariants({ variant: "outline" })}>
+            <ArrowLeft data-icon="inline-start" />К результатам
+          </Link>
+        }
+      />
 
       <Card>
         <CardContent className="flex flex-col gap-5">

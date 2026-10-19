@@ -2,7 +2,7 @@ import { Paperclip } from "lucide-react";
 
 import { PersonName } from "@/components/person-name";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/app-table";
 import { personFromName } from "@/lib/auth/person";
 import type { PunishmentRequest } from "@/lib/punishments/types";
 
@@ -20,18 +20,18 @@ export function MyRequests({ requests }: { requests: PunishmentRequest[] }) {
         <p className="px-4 py-8 text-center text-muted-foreground text-sm">Вы ещё не подавали заявок.</p>
       ) : (
         <div className="overflow-x-auto">
-          <Table className="min-w-[700px] border-separate border-spacing-y-2">
-            <TableHeader className="[&_tr]:border-0 [&_tr>th]:bg-muted [&_tr>th:first-child]:rounded-l-lg [&_tr>th:last-child]:rounded-r-lg">
+          <Table className="min-w-[700px]">
+            <TableHeader>
               <TableRow>
-                <TableHead className="pl-4">Статик</TableHead>
+                <TableHead>Статик</TableHead>
                 <TableHead>Наказание</TableHead>
                 <TableHead>Срок</TableHead>
                 <TableHead>Пункты</TableHead>
                 <TableHead>Подана</TableHead>
-                <TableHead className="pr-4 text-center">Статус</TableHead>
+                <TableHead className="text-center">Статус</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody className="[&_tr]:border-0 [&_tr>td]:bg-card/80 [&_tr>td:first-child]:rounded-l-lg [&_tr>td:last-child]:rounded-r-lg">
+            <TableBody>
               {requests.map((request) => (
                 <TableRow key={request.id}>
                   <TableCell className="font-medium font-mono tabular-nums">
@@ -56,18 +56,18 @@ export function MyRequests({ requests }: { requests: PunishmentRequest[] }) {
                   <TableCell className="whitespace-nowrap text-muted-foreground text-xs tabular-nums">
                     {formatShort(request.createdAt)}
                   </TableCell>
-                  <TableCell className="pr-4">
+                  <TableCell>
                     <div className="flex flex-col items-center gap-1">
                       <HelperStatusBadge status={request.status} compact />
                       {(request.status === "claimed" || request.status === "approved") && request.assigneeName && (
                         <span className="flex items-center gap-1 text-muted-foreground text-xs">
                           Рассматривает:{" "}
-                          <PersonName person={request.assignee ?? personFromName(request.assigneeName)} />
+                          <PersonName person={request.assignee ?? personFromName(request.assigneeName)} avatar />
                         </span>
                       )}
                       {request.status === "issued" && request.assigneeName && request.issuedAt && (
                         <span className="flex flex-wrap items-center gap-x-1 text-muted-foreground text-xs">
-                          Выдал <PersonName person={request.assignee ?? personFromName(request.assigneeName)} />,{" "}
+                          Выдал <PersonName person={request.assignee ?? personFromName(request.assigneeName)} avatar />,{" "}
                           {formatFull(request.issuedAt)}
                         </span>
                       )}
@@ -75,7 +75,7 @@ export function MyRequests({ requests }: { requests: PunishmentRequest[] }) {
                         <span className="flex flex-wrap items-center gap-x-1 text-muted-foreground text-xs">
                           {request.assignee && (
                             <>
-                              <PersonName person={request.assignee} />:
+                              <PersonName person={request.assignee} avatar />:
                             </>
                           )}
                           {request.decisionNote || "причина не указана"}

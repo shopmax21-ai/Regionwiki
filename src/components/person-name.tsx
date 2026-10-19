@@ -27,7 +27,7 @@ export function PersonName({
 }) {
   return (
     <span className={cn("inline-flex min-w-0 max-w-full items-center gap-1.5 align-middle", className)}>
-      {avatar && person.group && person.id && <PersonAvatar id={person.id} name={person.name} />}
+      {avatar && person.group && person.id && <PersonAvatar id={person.id} name={personLabel(person)} className="size-7 rounded-lg text-[0.65rem]" />}
       {showRole && person.group && <RoleIcon group={person.group} />}
       <span className="truncate font-medium">{personLabel(person)}</span>
       {person.staticId && (
