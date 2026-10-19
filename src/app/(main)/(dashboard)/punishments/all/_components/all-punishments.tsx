@@ -146,7 +146,6 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
             {feed.map((event) => (
               <TableRow
                 key={event.id}
-                banner={event.actor.background}
                 className="cursor-pointer"
                 onClick={() => setOpenId(event.requestId)}
               >
@@ -192,7 +191,6 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
             {rows.map((request) => (
               <TableRow
                 key={request.id}
-                banner={request.requester.background}
                 className="cursor-pointer"
                 onClick={() => setOpenId(request.id)}
               >
