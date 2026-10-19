@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { cn } from "cn";
-import { ArrowLeft, ArrowRight, CheckCircle2, Clock3, RotateCcw, XCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock3, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import type { PublicQuestion, SubmitAttemptResult, TestCardData } from "@/lib/ac
 
 import { submitAttemptAction } from "../_actions";
 import { AttemptReview } from "./attempt-review";
+import { QuizResult } from "./quiz-result";
 
 type QuizRunnerProps = {
   test: TestCardData;
@@ -140,24 +141,17 @@ export function QuizRunner({
   }, [timeUp, questionExpired, isLast, index, result, pending]);
 
   if (result) {
-    const Icon = result.passed ? CheckCircle2 : XCircle;
     return (
       <div className="flex flex-col gap-6">
-        <Card>
-          <CardContent className="flex flex-col items-center gap-5 py-12 text-center">
-            <div
-              className={`flex size-16 items-center justify-center rounded-md ${result.passed ? "bg-green-500/10 text-green-600 dark:text-green-400" : "bg-destructive/10 text-destructive"}`}
-            >
-              <Icon className="size-8" />
-            </div>
-            <div className="flex flex-col gap-1">
-              <h2 className="font-semibold text-1xl">{result.passed ? "Тест сдан" : "Тест не сдан"}</h2>
-              <p className="text-muted-foreground text-sm">
-                {test.title}: {result.score} из {result.total} правильных ответов ({result.percent}%). Проходной балл:{" "}
-                {test.passPercent}%.
-              </p>
-            </div>
-            {onRestart && onExit ? (
+        <QuizResult
+          passed={result.passed}
+          title={test.title}
+          score={result.score}
+          total={result.total}
+          percent={result.percent}
+          passPercent={test.passPercent}
+          actions={
+            onRestart && onExit ? (
               <div className="flex flex-wrap justify-center gap-2">
                 <Button onClick={onRestart} disabled={restarting}>
                   <RotateCcw data-icon="inline-start" />
@@ -169,9 +163,9 @@ export function QuizRunner({
               </div>
             ) : (
               <p className="text-muted-foreground text-sm">Результат сохранён. Эту страницу можно закрыть.</p>
-            )}
-          </CardContent>
-        </Card>
+            )
+          }
+        />
 
         {result.review && (
           <section className="flex flex-col gap-3" aria-labelledby="review-title">

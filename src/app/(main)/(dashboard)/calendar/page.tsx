@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { requirePageAdmin } from "@/lib/auth/admin";
-import { getUser, listBirthdays } from "@/lib/auth/db";
+import { getUser, listBirthdays, toPerson } from "@/lib/auth/db";
 import { personPlainText } from "@/lib/auth/person";
 import type { CalendarBirthday } from "@/lib/birthdays/types";
 import { listEvents } from "@/lib/calendar/store";
@@ -34,7 +34,7 @@ export default async function Page() {
   const birthdays: CalendarBirthday[] = await listBirthdays()
     .then((users) =>
       users.flatMap((user) =>
-        user.birthday ? [{ id: user.telegramId, label: personPlainText(user), birthday: user.birthday }] : [],
+        user.birthday ? [{ id: user.telegramId, label: personPlainText(user), person: toPerson(user), birthday: user.birthday }] : [],
       ),
     )
     .catch((error) => {

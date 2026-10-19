@@ -16,9 +16,11 @@ import { ru } from "date-fns/locale";
 import { Cake, ChevronLeft, ChevronRight, Filter, Plus, Radio, XIcon } from "lucide-react";
 
 import { EventCalendarViews } from "@/components/calendar/event-calendar-views";
+import { PersonName } from "@/components/person-name";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { Person } from "@/lib/auth/person";
 import { pluralize } from "@/lib/academy/format";
 import { birthdayInYear, type CalendarBirthday, mskDateParts } from "@/lib/birthdays/types";
 import {
@@ -80,6 +82,17 @@ function useNow(initial: number, intervalMs = 30_000) {
 const BIRTHDAY_COLOR = "#ec4899";
 const BIRTHDAY_ID = "birthday:";
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Именинники списком: у каждого Никнейм, иконка роли и приглушённый Static ID. */
+function BirthdayPeople({ people }: { people: Person[] }) {
+  return (
+    <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1 align-middle text-foreground">
+      {people.map((person) => (
+        <PersonName key={person.id} person={person} />
+      ))}
+    </span>
+  );
+}
 
 export function Calendar({
   events: initialEvents,
@@ -162,7 +175,7 @@ export function Calendar({
     const today = mskDateParts(now);
     const tomorrow = mskDateParts(now + DAY_MS);
     const on = (parts: typeof today) =>
-      birthdays.filter((person) => birthdayInYear(person.birthday, parts.year) === parts.key).map((p) => p.label);
+      birthdays.filter((person) => birthdayInYear(person.birthday, parts.year) === parts.key).map((p) => p.person);
     return { today: on(today), tomorrow: on(tomorrow) };
   }, [birthdays, now]);
 
@@ -213,7 +226,7 @@ export function Calendar({
             <p className="flex items-start gap-2">
               <Cake className="mt-0.5 size-4 shrink-0 text-pink-500" aria-hidden="true" />
               <span>
-                <b>Сегодня день рождения:</b> {upcomingBirthdays.today.join(", ")}
+                <b>Сегодня день рождения:</b> <BirthdayPeople people={upcomingBirthdays.today} />
               </span>
             </p>
           )}
@@ -221,7 +234,7 @@ export function Calendar({
             <p className="flex items-start gap-2 text-muted-foreground">
               <Cake className="mt-0.5 size-4 shrink-0 text-pink-500/70" aria-hidden="true" />
               <span>
-                Завтра день рождения: <span className="text-foreground">{upcomingBirthdays.tomorrow.join(", ")}</span>
+                Завтра день рождения: <BirthdayPeople people={upcomingBirthdays.tomorrow} />
               </span>
             </p>
           )}

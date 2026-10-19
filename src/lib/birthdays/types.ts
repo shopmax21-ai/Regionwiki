@@ -3,6 +3,8 @@
  * Файл без серверного кода: его можно импортировать и в клиентских компонентах.
  */
 
+import type { Person } from "@/lib/auth/person";
+
 const MSK_ZONE = "Europe/Moscow";
 
 export const MONTHS = [
@@ -93,6 +95,8 @@ export function birthdayInYear(value: string, year: number): string | null {
 export type CalendarBirthday = {
   id: string;
   label: string;
+  /** Для плашки над календарём: Никнейм, роль и Static ID показываются так же, как везде на сайте */
+  person: Person;
   /** «ММ-ДД» */
   birthday: string;
 };
