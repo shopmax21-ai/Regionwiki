@@ -422,8 +422,8 @@ export function WikiPage({
       <style>{CSS}</style>
 
       <header className="flex flex-col gap-6 pt-2 md:pt-6">
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-          <div className="flex flex-col gap-2">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex flex-col items-center gap-2 text-center">
             <h1 className="wk-rise text-balance font-extrabold text-3xl leading-[1.05] tracking-tight md:text-5xl">
               Всё о жизни на <span className="wk-accent">Region</span>
             </h1>
@@ -431,12 +431,12 @@ export function WikiPage({
               Правила, работы, транспорт и карта проекта в одном месте
             </p>
           </div>
-          <div className="wk-rise [animation-delay:120ms]">
+          <div className="wk-rise flex justify-center [animation-delay:120ms]">
             <StatsInline stats={stats} />
           </div>
         </div>
 
-        <div className="wk-rise relative max-w-3xl [animation-delay:160ms]">
+        <div className="wk-rise relative mx-auto w-full max-w-3xl [animation-delay:160ms]">
           {/* Мягкий цветной ореол за полем поиска */}
           <div
             aria-hidden="true"
@@ -476,7 +476,7 @@ export function WikiPage({
           </div>
         </div>
 
-        <div className="wk-rise flex flex-wrap items-center gap-2 text-sm [animation-delay:220ms]">
+        <div className="wk-rise flex flex-wrap items-center justify-center gap-2 text-sm [animation-delay:220ms]">
           <span className="text-muted-foreground">Например:</span>
           {suggestions.map((word) => (
             <button
