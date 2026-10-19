@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { type Category, categories, type Vehicle } from "../_data/vehicles";
 import { type PriceRange, PriceRangeFilter } from "./price-range-filter";
 import { VehicleCard } from "./vehicle-card";
+import { CompareBar, CompareDialog, CompareToggle, MAX_COMPARE } from "./vehicle-compare";
 import { VehicleEditor } from "./vehicle-editor";
 import { VehicleRow } from "./vehicle-row";
 
@@ -39,6 +40,20 @@ export function TransportWiki({ vehicles, editor = "off" }: { vehicles: Vehicle[
   const [source, setSource] = useState<string>(ALL_SOURCES);
   const [view, setView] = useState<ViewMode>("grid");
   const [page, setPage] = useState(1);
+  const [compare, setCompare] = useState<string[]>([]);
+  const [compareOpen, setCompareOpen] = useState(false);
+
+  const compared = useMemo(
+    () => compare.map((code) => vehicles.find((v) => v.code === code)).filter((v): v is Vehicle => Boolean(v)),
+    [compare, vehicles],
+  );
+  const toggleCompare = (code: string) =>
+    setCompare((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : prev.length < MAX_COMPARE ? [...prev, code] : prev));
+  const removeCompare = (code: string) => {
+    const next = compare.filter((c) => c !== code);
+    setCompare(next);
+    if (next.length < 2) setCompareOpen(false);
+  };
 
   const priceBounds = useMemo<PriceRange>(
     () =>
@@ -188,13 +203,31 @@ export function TransportWiki({ vehicles, editor = "off" }: { vehicles: Vehicle[
         view === "grid" ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {visibleVehicles.map((vehicle) => (
-              <VehicleCard key={vehicle.code} vehicle={vehicle} />
+              <div key={vehicle.code} className="relative">
+                <VehicleCard vehicle={vehicle} />
+                <CompareToggle
+                  vehicle={vehicle}
+                  selected={compare.includes(vehicle.code)}
+                  disabled={compare.length >= MAX_COMPARE}
+                  onToggle={toggleCompare}
+                  className="top-2 right-2"
+                />
+              </div>
             ))}
           </div>
         ) : (
           <div className="flex flex-col gap-2">
             {visibleVehicles.map((vehicle) => (
-              <VehicleRow key={vehicle.code} vehicle={vehicle} />
+              <div key={vehicle.code} className="relative">
+                <VehicleRow vehicle={vehicle} />
+                <CompareToggle
+                  vehicle={vehicle}
+                  selected={compare.includes(vehicle.code)}
+                  disabled={compare.length >= MAX_COMPARE}
+                  onToggle={toggleCompare}
+                  className="top-5 right-5 max-sm:top-5 max-sm:right-5"
+                />
+              </div>
             ))}
           </div>
         )
@@ -228,6 +261,17 @@ export function TransportWiki({ vehicles, editor = "off" }: { vehicles: Vehicle[
           </nav>
         )}
       </footer>
+
+      <CompareBar
+        selected={compared}
+        onRemove={removeCompare}
+        onClear={() => {
+          setCompare([]);
+          setCompareOpen(false);
+        }}
+        onOpen={() => setCompareOpen(true)}
+      />
+      <CompareDialog open={compareOpen} onOpenChange={setCompareOpen} vehicles={compared} onRemove={removeCompare} />
     </main>
   );
 }
