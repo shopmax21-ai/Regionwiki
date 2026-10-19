@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { Check, CheckCircle2, Clock3, KeyRound, MoreHorizontal, Search, ShieldOff, X, XCircle } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, CheckCircle2, Clock3, KeyRound, MoreHorizontal, Search, ShieldOff, X, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { PersonAvatar } from "@/components/person-avatar";
@@ -19,10 +19,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { AdminPageHeader } from "@/components/admin-page-header";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,7 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/app-table";
 import {
   type AdminGroup,
   adminGroups,
@@ -137,6 +138,8 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
   const [busy, setBusy] = useState<ReadonlySet<string>>(new Set());
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  /** Сортировка по группе: null — как пришло с сервера, "desc" — старшие группы сверху, "asc" — младшие сверху */
+  const [groupSort, setGroupSort] = useState<"desc" | "asc" | null>(null);
   const [pendingAction, setPendingAction] = useState<{ user: UserItem; action: Action } | null>(null);
   const [sheetUserId, setSheetUserId] = useState<string | null>(null);
 
@@ -152,14 +155,20 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase().replace(/^@/, "");
-    return items.filter(
+    const filtered = items.filter(
       (user) =>
         matchesFilter(user, filter) &&
         `${user.name} ${user.nickname ?? ""} ${user.staticId ?? ""} ${user.username ?? ""}`
           .toLowerCase()
           .includes(needle),
     );
-  }, [filter, query, items]);
+    if (!groupSort) return filtered;
+    // Array.prototype.sort стабильна: внутри одной группы сохраняется исходный порядок
+    const sign = groupSort === "desc" ? -1 : 1;
+    return filtered.sort((a, b) => sign * (groupLevel(a.adminGroup) - groupLevel(b.adminGroup)));
+  }, [filter, query, items, groupSort]);
+
+  const cycleGroupSort = () => setGroupSort((current) => (current === null ? "desc" : current === "desc" ? "asc" : null));
 
   const patchUser = (id: string, update: (user: UserItem) => UserItem) =>
     setItems((prev) => prev.map((user) => (user.telegramId === id ? update(user) : user)));
@@ -295,10 +304,8 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
 
   return (
     <div className="flex flex-col gap-4 md:gap-6">
+      <AdminPageHeader section="Доступ и аккаунт" title="Пользователи" />
       <Card>
-        <CardHeader>
-          <CardTitle>Пользователи</CardTitle>
-        </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <div className="relative min-w-0">
             <Search
@@ -337,12 +344,37 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="pl-4">Пользователь</TableHead>
+              <TableHead>Пользователь</TableHead>
               <TableHead className="text-center">Статус</TableHead>
-              <TableHead className="text-center">Группа</TableHead>
+              <TableHead
+                className="text-center"
+                aria-sort={groupSort === "desc" ? "descending" : groupSort === "asc" ? "ascending" : "none"}
+              >
+                <button
+                  type="button"
+                  onClick={cycleGroupSort}
+                  title={
+                    groupSort === null
+                      ? "Сортировать по группе"
+                      : groupSort === "desc"
+                        ? "Сначала старшие. Нажмите, чтобы перевернуть"
+                        : "Сначала младшие. Нажмите, чтобы сбросить"
+                  }
+                  className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 font-semibold transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+                >
+                  Группа
+                  {groupSort === "desc" ? (
+                    <ArrowDown className="size-3.5 text-primary" aria-hidden="true" />
+                  ) : groupSort === "asc" ? (
+                    <ArrowUp className="size-3.5 text-primary" aria-hidden="true" />
+                  ) : (
+                    <ArrowUpDown className="size-3.5 opacity-60" aria-hidden="true" />
+                  )}
+                </button>
+              </TableHead>
               <TableHead className="hidden md:table-cell">Регистрация</TableHead>
               <TableHead className="hidden sm:table-cell">Последний вход</TableHead>
-              <TableHead className="w-12 pr-4 text-right">
+              <TableHead className="w-12 text-right">
                 <span className="sr-only">Действия</span>
               </TableHead>
             </TableRow>
@@ -364,7 +396,7 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
                   aria-busy={isLocked(user.telegramId)}
                   className={isLocked(user.telegramId) ? "opacity-70" : undefined}
                 >
-                  <TableCell className="pl-4">
+                  <TableCell>
                     <UserIdentity user={user} />
                   </TableCell>
                   <TableCell>
@@ -396,7 +428,7 @@ export function UsersManager({ users, me, lockedAdminIds, groupPermissions }: Us
                       "Не входил"
                     )}
                   </TableCell>
-                  <TableCell className="pr-4 text-right">
+                  <TableCell className="text-right">
                     {user.telegramId === me.id ? (
                       <Badge variant="secondary">ВЫ</Badge>
                     ) : actions.length > 0 ? (
