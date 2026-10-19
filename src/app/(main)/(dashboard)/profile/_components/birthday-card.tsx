@@ -206,139 +206,176 @@ export function BirthdayCard({ initial }: { initial: string | null }) {
     });
   };
 
+  // Лист календаря слева повторяет выбранную или сохранённую дату: так видно, что получится
+  const shownMonth = locked ? parsed?.month : monthNumber || null;
+  const shownDay = locked ? parsed?.day : Number(day) || null;
+  const progress = left === null ? null : Math.min(1, Math.max(0, 1 - left / 365));
+
   return (
     <Card className="relative gap-0 overflow-hidden border-pink-500/25 bg-linear-to-br from-pink-500/10 via-card to-amber-400/10 py-0">
       {/* Праздничный фон: мягкие пятна света и значки в углах */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-12 -right-10 size-36 rounded-full bg-pink-500/15 blur-3xl" />
-        <div className="absolute -bottom-14 -left-8 size-40 rounded-full bg-amber-400/15 blur-3xl" />
-        <ConfettiIcon className="absolute top-2 right-3 size-9 rotate-12 text-pink-500/25" />
-        <GiftBoxIcon className="absolute right-16 bottom-2 size-8 -rotate-12 text-amber-500/20" />
+        <div className="absolute -top-16 -right-12 size-44 rounded-full bg-pink-500/15 blur-3xl" />
+        <div className="absolute -bottom-16 -left-10 size-44 rounded-full bg-amber-400/15 blur-3xl" />
+        <ConfettiIcon className="absolute top-3 right-4 size-10 rotate-12 text-pink-500/25" />
+        <GiftBoxIcon className="absolute right-6 bottom-3 size-9 -rotate-12 text-amber-500/20" />
       </div>
 
-      <CardContent className="relative flex flex-col gap-3 px-4 py-3.5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-pink-500 to-rose-400 text-white shadow-md shadow-pink-500/25">
-              <BirthdayCakeIcon className="size-5.5" aria-hidden="true" />
-            </div>
-            <div className="flex min-w-0 flex-col">
-              <h3 className="font-semibold leading-tight">День рождения</h3>
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <span className="text-muted-foreground text-sm">
-                  {initial ? formatBirthday(initial) : "Дата пока не указана"}
-                </span>
+      <CardContent className="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:gap-6">
+        {/* Лист календаря */}
+        <div
+          aria-hidden="true"
+          className={cn(
+            "flex w-24 shrink-0 flex-col overflow-hidden rounded-2xl border bg-card text-center shadow-lg",
+            isToday ? "border-amber-400/60 shadow-amber-500/20" : "border-pink-500/30 shadow-pink-500/15",
+          )}
+        >
+          <span
+            className={cn(
+              "px-2 py-1 font-bold text-[11px] text-white uppercase tracking-widest",
+              isToday ? "bg-linear-to-r from-amber-400 to-orange-400" : "bg-linear-to-r from-pink-500 to-rose-500",
+            )}
+          >
+            {shownMonth ? MONTHS[shownMonth - 1].slice(0, 3) : "—"}
+          </span>
+          <span className="py-2 font-extrabold text-4xl text-foreground italic tabular-nums leading-none">
+            {shownDay ?? "?"}
+          </span>
+        </div>
+
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
+          <div className="flex flex-col gap-1">
+            <h3 className="flex items-center gap-2 font-semibold text-lg leading-tight">
+              <BirthdayCakeIcon className="size-5 text-pink-500" aria-hidden="true" />
+              День рождения
+            </h3>
+            {locked ? (
+              <p className="text-muted-foreground text-sm">
+                {initial ? formatBirthday(initial) : ""}
                 {left !== null && (
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-1 rounded-full border px-2 py-px text-[11px]",
-                      isToday
-                        ? "border-amber-500/40 bg-amber-400/15 font-medium text-amber-700 dark:text-amber-300"
-                        : "border-pink-500/25 bg-pink-500/10 text-pink-700 dark:text-pink-300",
-                    )}
-                  >
-                    <SparkleIcon className="size-3" aria-hidden="true" />
-                    {countdownText(left)}
-                  </span>
+                  <>
+                    {" · "}
+                    <span className={cn("font-medium", isToday ? "text-amber-600 dark:text-amber-300" : "text-pink-600 dark:text-pink-300")}>
+                      {countdownText(left)}
+                    </span>
+                  </>
                 )}
-              </div>
-            </div>
+              </p>
+            ) : (
+              <p className="text-muted-foreground text-sm">Когда вас поздравлять? Год указывать не нужно.</p>
+            )}
           </div>
 
           {locked ? (
-            <span className="flex items-center gap-1.5 text-muted-foreground text-xs sm:mr-14">
-              <Lock className="size-3.5" aria-hidden="true" />
-              Указана, изменить нельзя
-            </span>
+            <>
+              {progress !== null && (
+                <div
+                  role="progressbar"
+                  aria-label="До следующего дня рождения"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(progress * 100)}
+                  className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-pink-500/15"
+                >
+                  <div
+                    className="h-full rounded-full bg-linear-to-r from-pink-500 to-amber-400"
+                    style={{ width: `${Math.max(3, progress * 100)}%` }}
+                  />
+                </div>
+              )}
+              <p className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                <Lock className="size-3.5 shrink-0" aria-hidden="true" />
+                Дата указана один раз и дальше не меняется. Она в календаре, коллеги получат напоминание за день, а сайт
+                поздравит вас при первом входе.
+              </p>
+            </>
           ) : (
-            <div className="flex items-center gap-2 sm:mr-14">
-              <Picker
-                id="birthday-day"
-                label="День"
-                value={day}
-                display={day}
-                placeholder="День"
-                disabled={pending}
-                columns="grid-cols-7"
-                icon={DayPickIcon}
-                options={Array.from({ length: dayCount }, (_, index) => ({
-                  value: String(index + 1),
-                  label: String(index + 1),
-                }))}
-                onSelect={(next) => {
-                  setError(null);
-                  setDay(next);
-                }}
-                className="w-24"
-              />
-              <Picker
-                id="birthday-month"
-                label="Месяц"
-                value={month}
-                display={month ? MONTHS[monthNumber - 1] : ""}
-                placeholder="Месяц"
-                disabled={pending}
-                columns="grid-cols-2"
-                icon={MonthPickIcon}
-                options={MONTHS.map((name, index) => ({ value: String(index + 1), label: name }))}
-                onSelect={(next) => {
-                  setError(null);
-                  setMonth(next);
-                  // Если в новом месяце меньше дней, выбранный день сбрасываем
-                  if (next && Number(day) > MAX_DAYS[Number(next) - 1]) setDay("");
-                }}
-                className="w-36"
-              />
-              <Button
-                size="icon"
-                onClick={() => setConfirmOpen(true)}
-                disabled={pending || !valid}
-                aria-label="Сохранить"
-                title={pending ? "Сохранение..." : "Сохранить"}
-                className="size-9 shrink-0 rounded-xl bg-linear-to-br from-pink-500 to-rose-500 text-white hover:from-pink-500/90 hover:to-rose-500/90"
-              >
-                <SaveDiskIcon className="size-5" />
-              </Button>
-            </div>
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <Picker
+                  id="birthday-day"
+                  label="День"
+                  value={day}
+                  display={day}
+                  placeholder="День"
+                  disabled={pending}
+                  columns="grid-cols-7"
+                  icon={DayPickIcon}
+                  options={Array.from({ length: dayCount }, (_, index) => ({
+                    value: String(index + 1),
+                    label: String(index + 1),
+                  }))}
+                  onSelect={(next) => {
+                    setError(null);
+                    setDay(next);
+                  }}
+                  className="w-28"
+                />
+                <Picker
+                  id="birthday-month"
+                  label="Месяц"
+                  value={month}
+                  display={month ? MONTHS[monthNumber - 1] : ""}
+                  placeholder="Месяц"
+                  disabled={pending}
+                  columns="grid-cols-2"
+                  icon={MonthPickIcon}
+                  options={MONTHS.map((name, index) => ({ value: String(index + 1), label: name }))}
+                  onSelect={(next) => {
+                    setError(null);
+                    setMonth(next);
+                    // Если в новом месяце меньше дней, выбранный день сбрасываем
+                    if (next && Number(day) > MAX_DAYS[Number(next) - 1]) setDay("");
+                  }}
+                  className="w-40"
+                />
+                <Button
+                  onClick={() => setConfirmOpen(true)}
+                  disabled={pending || !valid}
+                  className="h-9 rounded-xl bg-linear-to-br from-pink-500 to-rose-500 px-4 text-white hover:from-pink-500/90 hover:to-rose-500/90"
+                >
+                  <SaveDiskIcon className="size-4" />
+                  {pending ? "Сохранение..." : "Сохранить"}
+                </Button>
+              </div>
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                Дату можно указать только один раз, поэтому проверьте её перед сохранением.
+              </p>
+            </>
+          )}
+
+          {error && (
+            <p
+              role="alert"
+              className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-destructive text-sm"
+            >
+              {error}
+            </p>
           )}
         </div>
-
-        {error && (
-          <p
-            role="alert"
-            className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-destructive text-sm"
-          >
-            {error}
-          </p>
-        )}
-
-        <p className="max-w-2xl text-muted-foreground text-xs leading-relaxed">
-          Год не нужен. Дата появится в календаре, коллеги получат напоминание в Telegram за день, а в сам день рождения
-          сайт поздравит вас при первом входе. {locked ? "Дата указана один раз и дальше не меняется." : "Дату можно указать только один раз, поэтому проверьте её перед сохранением."}
-        </p>
-
-        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Сохранить день рождения?</AlertDialogTitle>
-              <AlertDialogDescription>
-                {value && valid ? formatBirthday(value) : ""}. Дату можно указать только один раз: потом изменить или
-                убрать её нельзя.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Проверить ещё раз</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  if (value && valid) save(value);
-                }}
-              >
-                Сохранить
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </CardContent>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Сохранить день рождения?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {value && valid ? formatBirthday(value) : ""}. Дату можно указать только один раз: потом изменить или
+              убрать её нельзя.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Проверить ещё раз</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (value && valid) save(value);
+              }}
+            >
+              Сохранить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
