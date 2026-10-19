@@ -7,6 +7,7 @@ import type { UserStats } from "@/lib/academy/store";
 import { type DbUser, toPerson } from "@/lib/auth/db";
 import type { AdminGroup } from "@/lib/auth/groups";
 
+import { BirthdayCard } from "./birthday-card";
 import { AcademyStatsCard } from "./academy-stats-card";
 import { IdentityCard } from "./identity-card";
 import { ProfileHeaderCard } from "./profile-header-card";
@@ -21,6 +22,7 @@ export function StaffProfileView({
   group,
   academy,
   canEditIdentity,
+  canEditBirthday,
 }: {
   user: DbUser;
   group: AdminGroup;
@@ -28,6 +30,8 @@ export function StaffProfileView({
   academy: UserStats | null;
   /** Посетитель стоит выше по группе: может исправить Никнейм и Static ID этого администратора */
   canEditIdentity: boolean;
+  /** Посетитель — Гл.Администратор: может менять день рождения */
+  canEditBirthday: boolean;
 }) {
   const person = toPerson(user);
   const stats = [
@@ -57,6 +61,10 @@ export function StaffProfileView({
       />
 
       <ProfileStatTiles stats={stats} />
+
+      {(user.birthday || canEditBirthday) && (
+        <BirthdayCard initial={user.birthday} targetId={user.telegramId} canEdit={canEditBirthday} />
+      )}
 
       {canEditIdentity && <IdentityCard person={person} mode="staff" />}
 

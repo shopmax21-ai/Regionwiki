@@ -57,6 +57,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   }
 
   return (
-    <StaffProfileView user={user} group={group} academy={academy} canEditIdentity={admin.level > groupLevel(group)} />
+    <StaffProfileView
+      user={user}
+      group={group}
+      academy={academy}
+      canEditIdentity={admin.level > groupLevel(group)}
+      canEditBirthday={admin.level >= groupLevel("chief")}
+    />
   );
 }

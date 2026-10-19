@@ -89,7 +89,7 @@ export function ProfileView({
           {/* Запасной вариант: анкета первой авторизации обычно уже заполнена, тогда карточки здесь нет */}
           {group && !identityLocked(person) && <IdentityCard person={person} mode="self" />}
 
-          <BirthdayCard initial={user.birthday} />
+          <BirthdayCard initial={user.birthday} targetId={user.telegramId} canEdit={group === "chief"} />
 
           {academy && <AcademyStatsCard stats={academy} />}
 

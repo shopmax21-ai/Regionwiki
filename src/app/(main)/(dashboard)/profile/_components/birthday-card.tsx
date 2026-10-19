@@ -5,7 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { cn } from "cn";
-import { Lock } from "lucide-react";
+import { Lock, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -42,7 +42,7 @@ import {
   toBirthday,
 } from "@/lib/birthdays/types";
 
-import { saveBirthday } from "../_actions";
+import { saveBirthday, saveStaffBirthday } from "../_actions";
 
 const DAY_MS = 86_400_000;
 
@@ -166,7 +166,17 @@ function Picker({
 }
 
 /** День рождения: день и месяц без года. В этот день сайт поздравит фейерверком, а коллеги получат напоминание накануне. */
-export function BirthdayCard({ initial }: { initial: string | null }) {
+export function BirthdayCard({
+  initial,
+  targetId,
+  canEdit = false,
+}: {
+  initial: string | null;
+  /** Telegram ID администратора, чей это блок. Нужен только Гл.Администратору, который меняет чужую дату */
+  targetId?: string;
+  /** Гл.Администратор: может менять уже указанную дату */
+  canEdit?: boolean;
+}) {
   const router = useRouter();
   const parsed = parseBirthday(initial);
   const [month, setMonth] = useState(parsed ? String(parsed.month) : "");
@@ -174,6 +184,7 @@ export function BirthdayCard({ initial }: { initial: string | null }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
   // Дату указывают один раз: когда она уже есть, выбор и кнопки не показываются
   const locked = parseBirthday(initial) !== null;
   // Сколько дней осталось, считаем в браузере: на сервере и у человека «сегодня» может отличаться
@@ -189,15 +200,19 @@ export function BirthdayCard({ initial }: { initial: string | null }) {
   const valid = value !== null && parseBirthday(value) !== null;
   const isToday = left === 0;
 
+  // Выбор даты виден, пока она не указана, и Гл.Администратору в режиме правки
+  const picking = !locked || editing;
+
   const save = (next: string) => {
     setError(null);
     startTransition(async () => {
       try {
-        const result = await saveBirthday(next);
+        const result = locked && targetId !== undefined ? await saveStaffBirthday(targetId, next) : await saveBirthday(next);
         if (!result.ok) {
           setError(result.error);
           return;
         }
+        setEditing(false);
         toast.success("День рождения сохранён");
         router.refresh();
       } catch {
@@ -207,8 +222,8 @@ export function BirthdayCard({ initial }: { initial: string | null }) {
   };
 
   // Лист календаря слева повторяет выбранную или сохранённую дату: так видно, что получится
-  const shownMonth = locked ? parsed?.month : monthNumber || null;
-  const shownDay = locked ? parsed?.day : Number(day) || null;
+  const shownMonth = !picking ? parsed?.month : monthNumber || null;
+  const shownDay = !picking ? parsed?.day : Number(day) || null;
   const progress = left === null ? null : Math.min(1, Math.max(0, 1 - left / 365));
 
   return (
@@ -248,8 +263,33 @@ export function BirthdayCard({ initial }: { initial: string | null }) {
             <h3 className="flex items-center gap-2 font-semibold text-lg leading-tight">
               <BirthdayCakeIcon className="size-5 text-pink-500" aria-hidden="true" />
               День рождения
+              {locked && !canEdit && (
+                <Lock
+                  className="size-3.5 text-muted-foreground"
+                  aria-label="Дата указана, изменить её может Гл.Администратор"
+                >
+                  <title>Дата указана, изменить её может Гл.Администратор</title>
+                </Lock>
+              )}
+              {locked && canEdit && !editing && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="size-7 text-muted-foreground"
+                  title="Изменить дату"
+                  aria-label="Изменить дату"
+                  onClick={() => {
+                    setMonth(parsed ? String(parsed.month) : "");
+                    setDay(parsed ? String(parsed.day) : "");
+                    setEditing(true);
+                  }}
+                >
+                  <Pencil />
+                </Button>
+              )}
             </h3>
-            {locked ? (
+            {locked && !editing && (
               <p className="text-muted-foreground text-sm">
                 {initial ? formatBirthday(initial) : ""}
                 {left !== null && (
@@ -261,87 +301,90 @@ export function BirthdayCard({ initial }: { initial: string | null }) {
                   </>
                 )}
               </p>
-            ) : (
-              <p className="text-muted-foreground text-sm">Когда вас поздравлять? Год указывать не нужно.</p>
             )}
           </div>
 
-          {locked ? (
-            <>
-              {progress !== null && (
+          {!picking ? (
+            progress !== null && (
+              <div
+                role="progressbar"
+                aria-label="До следующего дня рождения"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(progress * 100)}
+                className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-pink-500/15"
+              >
                 <div
-                  role="progressbar"
-                  aria-label="До следующего дня рождения"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={Math.round(progress * 100)}
-                  className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-pink-500/15"
-                >
-                  <div
-                    className="h-full rounded-full bg-linear-to-r from-pink-500 to-amber-400"
-                    style={{ width: `${Math.max(3, progress * 100)}%` }}
-                  />
-                </div>
-              )}
-              <p className="flex items-center gap-1.5 text-muted-foreground text-xs">
-                <Lock className="size-3.5 shrink-0" aria-hidden="true" />
-                Дата указана один раз и дальше не меняется. Она в календаре, коллеги получат напоминание за день, а сайт
-                поздравит вас при первом входе.
-              </p>
-            </>
-          ) : (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                <Picker
-                  id="birthday-day"
-                  label="День"
-                  value={day}
-                  display={day}
-                  placeholder="День"
-                  disabled={pending}
-                  columns="grid-cols-7"
-                  icon={DayPickIcon}
-                  options={Array.from({ length: dayCount }, (_, index) => ({
-                    value: String(index + 1),
-                    label: String(index + 1),
-                  }))}
-                  onSelect={(next) => {
-                    setError(null);
-                    setDay(next);
-                  }}
-                  className="w-28"
+                  className="h-full rounded-full bg-linear-to-r from-pink-500 to-amber-400"
+                  style={{ width: `${Math.max(3, progress * 100)}%` }}
                 />
-                <Picker
-                  id="birthday-month"
-                  label="Месяц"
-                  value={month}
-                  display={month ? MONTHS[monthNumber - 1] : ""}
-                  placeholder="Месяц"
-                  disabled={pending}
-                  columns="grid-cols-2"
-                  icon={MonthPickIcon}
-                  options={MONTHS.map((name, index) => ({ value: String(index + 1), label: name }))}
-                  onSelect={(next) => {
-                    setError(null);
-                    setMonth(next);
-                    // Если в новом месяце меньше дней, выбранный день сбрасываем
-                    if (next && Number(day) > MAX_DAYS[Number(next) - 1]) setDay("");
-                  }}
-                  className="w-40"
-                />
-                <Button
-                  onClick={() => setConfirmOpen(true)}
-                  disabled={pending || !valid}
-                  className="h-9 rounded-xl bg-linear-to-br from-pink-500 to-rose-500 px-4 text-white hover:from-pink-500/90 hover:to-rose-500/90"
-                >
-                  <SaveDiskIcon className="size-4" />
-                  {pending ? "Сохранение..." : "Сохранить"}
-                </Button>
               </div>
-              <p className="text-muted-foreground text-xs leading-relaxed">
-                Дату можно указать только один раз, поэтому проверьте её перед сохранением.
-              </p>
-            </>
+            )
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <Picker
+                id="birthday-day"
+                label="День"
+                value={day}
+                display={day}
+                placeholder="День"
+                disabled={pending}
+                columns="grid-cols-7"
+                icon={DayPickIcon}
+                options={Array.from({ length: dayCount }, (_, index) => ({
+                  value: String(index + 1),
+                  label: String(index + 1),
+                }))}
+                onSelect={(next) => {
+                  setError(null);
+                  setDay(next);
+                }}
+                className="w-28"
+              />
+              <Picker
+                id="birthday-month"
+                label="Месяц"
+                value={month}
+                display={month ? MONTHS[monthNumber - 1] : ""}
+                placeholder="Месяц"
+                disabled={pending}
+                columns="grid-cols-2"
+                icon={MonthPickIcon}
+                options={MONTHS.map((name, index) => ({ value: String(index + 1), label: name }))}
+                onSelect={(next) => {
+                  setError(null);
+                  setMonth(next);
+                  // Если в новом месяце меньше дней, выбранный день сбрасываем
+                  if (next && Number(day) > MAX_DAYS[Number(next) - 1]) setDay("");
+                }}
+                className="w-40"
+              />
+              <Button
+                onClick={() => (locked ? value && save(value) : setConfirmOpen(true))}
+                disabled={pending || !valid || (locked && value === initial)}
+                className="h-9 rounded-xl bg-linear-to-br from-pink-500 to-rose-500 px-4 text-white hover:from-pink-500/90 hover:to-rose-500/90"
+              >
+                <SaveDiskIcon className="size-4" />
+                {pending ? "Сохранение..." : "Сохранить"}
+              </Button>
+              {editing && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-9 rounded-xl text-muted-foreground"
+                  title="Отмена"
+                  aria-label="Отмена"
+                  disabled={pending}
+                  onClick={() => {
+                    setEditing(false);
+                    setError(null);
+                  }}
+                >
+                  <X />
+                </Button>
+              )}
+            </div>
           )}
 
           {error && (

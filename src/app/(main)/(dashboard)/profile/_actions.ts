@@ -11,6 +11,7 @@ import {
   groupOfUser,
   revokeSessions,
   setNotifyRequests,
+  setUserBirthday,
   setUserBirthdayOnce,
   setUserIdentity,
   setUserIdentityOnce,
@@ -54,6 +55,32 @@ export async function saveBirthday(value: unknown): Promise<ActionResult> {
   }
 
   revalidatePath("/profile");
+  revalidatePath("/calendar");
+  return { ok: true };
+}
+
+/**
+ * Изменить день рождения администратора (в том числе свой). Только Гл.Администратор: обычным людям дата даётся один раз
+ * (saveBirthday). Права проверяются по базе в момент сохранения, а не по тому, что видела страница.
+ */
+export async function saveStaffBirthday(targetId: unknown, value: unknown): Promise<ActionResult> {
+  const admin = await getAdminContext();
+  if (!admin || admin.level < groupLevel("chief")) {
+    return { ok: false, error: "Менять день рождения может только Гл.Администратор" };
+  }
+  if (typeof targetId !== "string" || !/^\d{1,20}$/.test(targetId)) return { ok: false, error: "Неизвестный администратор" };
+  if (!parseBirthday(value)) return { ok: false, error: "Выберите существующую дату" };
+
+  try {
+    const target = await getUser(targetId);
+    if (!target || target.status !== "approved") return { ok: false, error: "Администратор не найден" };
+    await setUserBirthday(targetId, value as string);
+  } catch (error) {
+    console.error("[profile] Не удалось изменить день рождения администратора", error);
+    return { ok: false, error: "База данных недоступна, попробуйте позже" };
+  }
+
+  revalidatePath("/profile", "layout");
   revalidatePath("/calendar");
   return { ok: true };
 }
