@@ -72,7 +72,7 @@ export function ProfileView({
   ];
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 md:gap-6">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 md:gap-6">
       <ProfileHeaderCard
         person={person}
         status={user.status}
@@ -83,28 +83,36 @@ export function ProfileView({
 
       <ProfileStatTiles stats={stats} />
 
-      {/* Запасной вариант: анкета первой авторизации обычно уже заполнена, тогда карточки здесь нет */}
-      {group && !identityLocked(person) && <IdentityCard person={person} mode="self" />}
+      <div className="grid items-start gap-4 md:gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        {/* Основная колонка: профиль игрока и учёба */}
+        <div className="flex min-w-0 flex-col gap-4 md:gap-6">
+          {/* Запасной вариант: анкета первой авторизации обычно уже заполнена, тогда карточки здесь нет */}
+          {group && !identityLocked(person) && <IdentityCard person={person} mode="self" />}
 
-      <BirthdayCard initial={user.birthday} />
+          <BirthdayCard initial={user.birthday} />
 
-      {academy && <AcademyStatsCard stats={academy} />}
+          {academy && <AcademyStatsCard stats={academy} />}
 
-      {canReceiveRequests && <NotificationsCard initialEnabled={user.notifyRequests} />}
+          <LoginHistory
+            rows={events.map((event) => ({
+              id: event.id,
+              active: event.id === activeLoginId,
+              device: deviceName(event.userAgent),
+              when: profileDateFormat.format(event.createdAt),
+              ip: event.ip && event.ip !== "unknown" ? event.ip : null,
+            }))}
+          />
+        </div>
 
-      {overlay && <OverlayKeyCard info={overlay.key} />}
+        {/* Боковая колонка: настройки */}
+        <div className="flex min-w-0 flex-col gap-4 md:gap-6">
+          {canReceiveRequests && <NotificationsCard initialEnabled={user.notifyRequests} />}
 
-      <SecurityCard />
+          {overlay && <OverlayKeyCard info={overlay.key} />}
 
-      <LoginHistory
-        rows={events.map((event) => ({
-          id: event.id,
-          active: event.id === activeLoginId,
-          device: deviceName(event.userAgent),
-          when: profileDateFormat.format(event.createdAt),
-          ip: event.ip && event.ip !== "unknown" ? event.ip : null,
-        }))}
-      />
+          <SecurityCard />
+        </div>
+      </div>
     </div>
   );
 }

@@ -41,7 +41,7 @@ export function StaffProfileView({
   ];
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 md:gap-6">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 md:gap-6">
       <div>
         <Link href="/staff" prefetch={false} className={buttonVariants({ variant: "ghost", size: "sm" })}>
           <ArrowLeft data-icon="inline-start" />К администрации
