@@ -33,11 +33,11 @@ export function PersonName({
       {person.staticId && (
         <Tooltip>
           <TooltipTrigger asChild>
-            {/* Заметная плашка: контрастный текст на подложке, чтобы Static ID легко находился глазами */}
+            {/* Заметный Static ID: без рамки и подложки, крупнее и курсивом */}
             <span
               role="img"
               aria-label={`Static ID ${person.staticId}`}
-              className="shrink-0 cursor-default rounded-md bg-primary/10 px-1.5 py-0.5 font-mono font-semibold text-[0.85em] text-foreground tabular-nums ring-1 ring-primary/25 ring-inset"
+              className="shrink-0 cursor-default font-mono font-semibold text-[1em] text-foreground/90 italic tabular-nums"
             >
               #{person.staticId}
             </span>
