@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { cn } from "cn";
-import { Check, GitCompareArrows, Minus, Trophy, X } from "lucide-react";
+import { Check, GitCompareArrows, Minus, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -190,9 +190,6 @@ export function CompareDialog({
   onRemove: (code: string) => void;
 }) {
   const cols = vehicles.length;
-  const wins = new Map<string, number>(vehicles.map((v) => [v.code, 0]));
-  for (const m of metrics) for (const code of bestCodes(vehicles, m)) wins.set(code, (wins.get(code) ?? 0) + 1);
-  const topWins = Math.max(0, ...wins.values());
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -228,7 +225,7 @@ export function CompareDialog({
               {vehicles.map((vehicle) => (
                 <div
                   key={vehicle.code}
-                  className="group relative flex min-w-0 flex-col items-center gap-2 rounded-2xl border bg-card p-2.5 text-center sm:p-3"
+                  className="group relative flex min-w-0 flex-col items-center gap-3 rounded-2xl border bg-card p-2.5 text-center shadow-sm transition-colors hover:border-primary/40 hover:bg-muted/20 sm:p-3"
                 >
                   <VehicleImage
                     vehicle={vehicle}
@@ -248,11 +245,6 @@ export function CompareDialog({
                     <p className="truncate text-xs text-muted-foreground">{vehicle.name}</p>
                     <p className="truncate text-sm font-semibold tracking-tight">{vehicle.model}</p>
                   </div>
-                  {topWins > 0 && wins.get(vehicle.code) === topWins && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-1 text-[0.65rem] font-medium text-amber-600 dark:text-amber-400">
-                      <Trophy className="size-3" /> Лидер
-                    </span>
-                  )}
                 </div>
               ))}
 
