@@ -22,7 +22,6 @@ import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
 import { NavMain } from "./nav-main";
 import { NavUser, type SidebarUser } from "./nav-user";
-import { SupportCard } from "./support-card";
 
 export function AppSidebar({
   user,
@@ -76,7 +75,6 @@ export function AppSidebar({
         <NavMain items={items} />
       </SidebarContent>
       <SidebarFooter>
-        <SupportCard />
         <NavUser user={user} permissions={permissions} />
       </SidebarFooter>
     </Sidebar>
