@@ -449,23 +449,6 @@ export function WikiPage({
             )}
           </div>
         </div>
-
-        <div className="wk-rise flex flex-wrap items-center justify-center gap-2 text-sm [animation-delay:220ms]">
-          <span className="text-muted-foreground">Например:</span>
-          {suggestions.map((word) => (
-            <button
-              key={word}
-              type="button"
-              onClick={() => {
-                changeQuery(word);
-                inputRef.current?.focus();
-              }}
-              className="rounded-full border bg-card/70 px-3 py-1 transition-colors hover:border-primary/60 hover:text-primary"
-            >
-              {word}
-            </button>
-          ))}
-        </div>
       </header>
 
       {showResults ? (
