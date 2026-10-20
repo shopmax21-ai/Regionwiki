@@ -171,7 +171,7 @@ export function CompareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] gap-0 overflow-y-auto p-0 sm:max-w-4xl">
+      <DialogContent className="gap-0 p-0 sm:max-w-4xl">
         <DialogHeader className="border-b p-4 pr-12">
           <DialogTitle className="flex items-center gap-2.5">
             <span className="flex size-8 items-center justify-center rounded-xl bg-primary/10 text-primary">

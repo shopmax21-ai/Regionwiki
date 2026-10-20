@@ -72,7 +72,7 @@ function CopyId({ id }: { id: number }) {
 export function ItemDetailsDialog({ item, canEdit, onOpenChange, onEdit, onDelete }: ItemDetailsDialogProps) {
   return (
     <Dialog open={item !== null} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] gap-4 overflow-y-auto p-4 sm:max-w-4xl sm:p-5">
+      <DialogContent className="gap-4 p-4 sm:max-w-4xl sm:p-5">
         {item && (
           <>
             <div className="grid gap-4 md:grid-cols-[3fr_4fr]">

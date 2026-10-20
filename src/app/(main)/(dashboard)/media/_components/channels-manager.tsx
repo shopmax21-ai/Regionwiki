@@ -150,7 +150,7 @@ export function ChannelsManager({ channels, streams, onChanged }: Props) {
           )}
         </form>
 
-        <ul className="flex max-h-72 flex-col divide-y overflow-y-auto rounded-md border" aria-label="Список каналов">
+        <ul className="flex flex-col divide-y rounded-md border" aria-label="Список каналов">
           {channels.length === 0 && (
             <li className="px-3 py-6 text-center text-muted-foreground text-sm">Каналов пока нет</li>
           )}

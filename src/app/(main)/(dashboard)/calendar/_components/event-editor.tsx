@@ -202,7 +202,7 @@ function EditorBody({
 
   return (
     <DialogContent
-      className="max-h-[90dvh] gap-5 overflow-y-auto sm:max-w-xl"
+      className="gap-5 sm:max-w-xl"
       onKeyDown={(event) => {
             if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
               event.preventDefault();

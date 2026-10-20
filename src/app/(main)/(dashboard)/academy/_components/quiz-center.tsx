@@ -126,30 +126,30 @@ export function QuizCenter({ cards, editable, canSeeResults, problem }: QuizCent
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
         {cards.map((card, index) => {
           const full = editable?.find((test) => test.id === card.id);
           return (
-            <Card key={card.id} className="flex flex-col">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-3">
-                  <div
-                    className={`flex size-10 items-center justify-center rounded-lg ${cardColors[index % cardColors.length]} text-background`}
-                  >
-                    {card.kind === "rules" ? <Wand2 /> : <GraduationCap />}
+            <Card key={card.id} size="sm" className="flex flex-col">
+              <CardHeader className="gap-1.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <div
+                      className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${cardColors[index % cardColors.length]} text-background [&_svg]:size-4`}
+                    >
+                      {card.kind === "rules" ? <Wand2 /> : <GraduationCap />}
+                    </div>
+                    <div className="flex min-w-0 flex-col">
+                      <CardTitle className="line-clamp-2 text-sm leading-tight" title={card.title}>
+                        {card.title}
+                      </CardTitle>
+                      <span className="truncate text-muted-foreground text-xs">{card.category}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    {card.closed && (
-                      <Badge variant="secondary" className="gap-1">
-                        <Lock className="size-3" aria-hidden="true" />
-                        Закрытый
-                      </Badge>
-                    )}
-                    {card.kind === "rules" && <Badge variant="secondary">Автогенерация</Badge>}
-                    <Badge variant="outline">{card.difficulty}</Badge>
-                    {canEdit && card.closed && <TestInviteDialog testId={card.id} title={card.title} />}
-                    {canEdit && full && <TestEditor mode="edit" test={full} />}
-                    {canEdit && (
+                  {canEdit && (
+                    <div className="-mt-1 -mr-1 flex shrink-0 items-center">
+                      {card.closed && <TestInviteDialog testId={card.id} title={card.title} />}
+                      {full && <TestEditor mode="edit" test={full} />}
                       <Button
                         variant="ghost"
                         size="icon-sm"
@@ -159,25 +159,35 @@ export function QuizCenter({ cards, editable, canSeeResults, problem }: QuizCent
                       >
                         <Trash2 />
                       </Button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
-                <CardTitle className="pt-2">{card.title}</CardTitle>
-                <CardDescription>{card.description || "Описание пока не добавлено"}</CardDescription>
+                <CardDescription className="line-clamp-2 min-h-8 text-xs leading-4">
+                  {card.description || "Описание пока не добавлено"}
+                </CardDescription>
               </CardHeader>
-              <CardContent className="mt-auto flex flex-col gap-4">
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-muted-foreground text-xs">
+              <CardContent className="mt-auto flex flex-col gap-2.5">
+                <div className="flex flex-wrap items-center gap-1">
+                  <Badge variant="outline">{card.difficulty}</Badge>
+                  {card.closed && (
+                    <Badge variant="secondary" className="gap-1">
+                      <Lock className="size-3" aria-hidden="true" />
+                      Закрытый
+                    </Badge>
+                  )}
+                  {card.kind === "rules" && <Badge variant="secondary">Автогенерация</Badge>}
+                </div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-muted-foreground text-xs">
                   <span className="flex items-center gap-1">
-                    <Clock3 />
+                    <Clock3 className="size-3.5" aria-hidden="true" />
                     {card.durationMin} мин
                   </span>
                   <span>
                     {card.questionCount} {pluralize(card.questionCount, ["вопрос", "вопроса", "вопросов"])}
                   </span>
-                  <span>Проходной балл {card.passPercent}%</span>
-                  <span>{card.category}</span>
+                  <span>Проходной {card.passPercent}%</span>
                 </div>
-                <Button onClick={() => start(card)} disabled={startingId !== null}>
+                <Button size="sm" onClick={() => start(card)} disabled={startingId !== null}>
                   {startingId === card.id ? "Подготовка..." : "Начать тест"}
                   <ArrowRight data-icon="inline-end" />
                 </Button>

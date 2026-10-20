@@ -131,7 +131,7 @@ export function ItemEditor({ item, defaultCategory, onClose }: ItemEditorProps) 
       }}
     >
       <DialogContent
-        className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl"
+        className="sm:max-w-2xl"
         onKeyDown={(event) => {
             if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
               event.preventDefault();

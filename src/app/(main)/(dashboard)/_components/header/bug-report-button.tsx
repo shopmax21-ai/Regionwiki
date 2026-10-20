@@ -74,7 +74,7 @@ export function BugReportButton() {
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent
-          className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
+          className="sm:max-w-lg"
           onKeyDown={(event) => {
             if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
               event.preventDefault();

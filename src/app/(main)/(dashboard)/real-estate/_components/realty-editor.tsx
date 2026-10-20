@@ -234,7 +234,7 @@ export function RealtyEditor(props: RealtyEditorProps) {
         </DialogTrigger>
 
         <DialogContent
-          className="max-h-[92vh] gap-5 overflow-y-auto sm:max-w-3xl"
+          className="gap-5 sm:max-w-3xl"
           onKeyDown={(event) => {
             if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
               event.preventDefault();

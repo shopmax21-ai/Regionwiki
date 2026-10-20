@@ -183,7 +183,7 @@ export function VehicleEditor(props: VehicleEditorProps) {
         </DialogTrigger>
 
         <DialogContent
-          className="max-h-[92vh] gap-5 overflow-y-auto sm:max-w-5xl"
+          className="gap-5 sm:max-w-5xl"
           onKeyDown={(event) => {
             // Ctrl+Enter (или Cmd+Enter) сохраняет из любого поля
             if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {

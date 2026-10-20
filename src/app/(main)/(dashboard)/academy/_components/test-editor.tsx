@@ -285,7 +285,7 @@ export function TestEditor(props: TestEditorProps) {
         )}
       </DialogTrigger>
       <DialogContent
-        className="max-h-[90dvh] gap-5 overflow-y-auto sm:max-w-3xl"
+        className="gap-5 sm:max-w-3xl"
         onKeyDown={(event) => {
             if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
               event.preventDefault();

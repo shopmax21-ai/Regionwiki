@@ -196,9 +196,7 @@ function FromGuidesTab({ jobs, onPick }: { jobs: Job[]; onPick: (blocks: EditorB
         )}
         {job && sections.length > 0 && (
           <>
-            <div className="max-h-64 overflow-y-auto pr-1 md:max-h-72">
-              <SectionPicker sections={sections} selected={selected} onToggle={toggle} />
-            </div>
+            <SectionPicker sections={sections} selected={selected} onToggle={toggle} />
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
@@ -284,7 +282,7 @@ function MineTab({ blocks, onPick }: { blocks: readonly EditorBlock[]; onPick: (
             Пока пусто. Соберите шаблон из разделов текущего гайда справа.
           </p>
         ) : (
-          <ul className="flex max-h-72 flex-col gap-2 overflow-y-auto pr-1">
+          <ul className="flex flex-col gap-2">
             {templates.map((template) => (
               <li key={template.id} className="flex items-center gap-2 rounded-xl border p-2.5">
                 <div className="min-w-0 flex-1">
@@ -321,9 +319,7 @@ function MineTab({ blocks, onPick }: { blocks: readonly EditorBlock[]; onPick: (
           </p>
         ) : (
           <>
-            <div className="max-h-48 overflow-y-auto pr-1">
-              <SectionPicker sections={sections} selected={checked} onToggle={toggle} />
-            </div>
+            <SectionPicker sections={sections} selected={checked} onToggle={toggle} />
             <div className="flex flex-col gap-1.5">
               <Label htmlFor={nameId}>Название шаблона</Label>
               <div className="flex gap-2">
@@ -362,7 +358,7 @@ export function GuideTemplatesDialog({ open, onOpenChange, blocks, otherJobs, on
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90svh] gap-4 overflow-y-auto sm:max-w-3xl">
+      <DialogContent className="gap-4 sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Шаблоны</DialogTitle>
           <DialogDescription>

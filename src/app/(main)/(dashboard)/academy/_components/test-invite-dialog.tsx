@@ -102,7 +102,7 @@ export function TestInviteDialog({ testId, title }: { testId: string; title: str
           <Link2 />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90dvh] gap-5 overflow-y-auto sm:max-w-xl">
+      <DialogContent className="gap-5 sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Ссылки на закрытый тест</DialogTitle>
           <DialogDescription>

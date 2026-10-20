@@ -93,7 +93,7 @@ export function CommandEditor(props: CommandEditorProps) {
       </DialogTrigger>
 
       <DialogContent
-          className="max-h-[90vh] overflow-y-auto sm:max-w-xl"
+          className="sm:max-w-xl"
           onKeyDown={(event) => {
             if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
               event.preventDefault();

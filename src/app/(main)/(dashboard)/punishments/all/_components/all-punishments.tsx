@@ -146,7 +146,6 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
             {feed.map((event) => (
               <TableRow
                 key={event.id}
-                banner={event.actor.background}
                 className="cursor-pointer"
                 onClick={() => setOpenId(event.requestId)}
               >
@@ -192,7 +191,6 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
             {rows.map((request) => (
               <TableRow
                 key={request.id}
-                banner={request.requester.background}
                 className="cursor-pointer"
                 onClick={() => setOpenId(request.id)}
               >
@@ -269,7 +267,7 @@ export function AllPunishments({ requests, events }: AllPunishmentsProps) {
 
       <Dialog open={opened !== null} onOpenChange={(open) => !open && setOpenId(null)}>
         {opened && (
-          <DialogContent className="max-h-[90dvh] gap-5 overflow-y-auto sm:max-w-xl">
+          <DialogContent className="gap-5 sm:max-w-xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 Заявка №{opened.number} <AdminStatusBadge status={opened.status} />
