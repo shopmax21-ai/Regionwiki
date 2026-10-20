@@ -22,7 +22,7 @@ export function VehicleCardView({ vehicle, image, className }: VehicleCardViewPr
 
   return (
     <Card className={cn("h-full gap-0 py-0 transition-shadow", className)}>
-      <div className="relative overflow-hidden rounded-t-xl bg-muted/30">
+      <div className="relative overflow-hidden rounded-t-xl bg-transparent">
         {image ?? (
           <VehicleImage
             vehicle={vehicle}

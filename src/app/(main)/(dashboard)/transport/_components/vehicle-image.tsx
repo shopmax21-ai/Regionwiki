@@ -27,7 +27,7 @@ export function VehicleImage({ vehicle, sizes, className, imageClassName, priori
   const Icon = categoryIcons[vehicle.category];
 
   return (
-    <div className={cn("relative overflow-hidden bg-gradient-to-b from-muted/70 to-muted/20", className)}>
+    <div className={cn("relative overflow-hidden bg-transparent", className)}>
       {vehicle.imageUrl ? (
         <Image
           src={vehicle.imageUrl}
