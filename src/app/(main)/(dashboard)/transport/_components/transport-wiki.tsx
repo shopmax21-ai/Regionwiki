@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { ChevronLeft, ChevronRight, Funnel, LayoutGrid, Rows2, RussianRuble, Search } from "lucide-react";
+import { CarFront, ChevronLeft, ChevronRight, Funnel, LayoutGrid, Rows2, RussianRuble, Search } from "lucide-react";
 
 import { FilterDropdown } from "@/app/(main)/(dashboard)/_components/filter-dropdown";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,9 @@ export function TransportWiki({ vehicles, editor = "off" }: { vehicles: Vehicle[
     [compare, vehicles],
   );
   const toggleCompare = (code: string) =>
-    setCompare((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : prev.length < MAX_COMPARE ? [...prev, code] : prev));
+    setCompare((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : prev.length < MAX_COMPARE ? [...prev, code] : prev,
+    );
   const removeCompare = (code: string) => {
     const next = compare.filter((c) => c !== code);
     setCompare(next);
@@ -232,8 +234,14 @@ export function TransportWiki({ vehicles, editor = "off" }: { vehicles: Vehicle[
           </div>
         )
       ) : (
-        <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
-          Транспорт не найден. Измените запрос или выберите другую категорию.
+        <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed bg-muted/20 px-6 py-12 text-center">
+          <div className="mb-5 flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/20">
+            <CarFront className="size-8" aria-hidden="true" />
+          </div>
+          <h2 className="text-lg font-semibold tracking-tight">Транспорт не найден</h2>
+          <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+            Измените запрос или выберите другую категорию, чтобы найти подходящий транспорт.
+          </p>
         </div>
       )}
 
