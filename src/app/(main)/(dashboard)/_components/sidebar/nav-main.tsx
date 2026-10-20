@@ -75,7 +75,7 @@ interface NavCollapsibleItemProps {
 
 /** Иконки неактивных пунктов сайдбара приглушены до 25%; при наведении, фокусе и у активного пункта — полная яркость. */
 const inactiveIconClass =
-  "[&>svg:first-child]:opacity-25 [&>svg:first-child]:transition-opacity hover:[&>svg:first-child]:opacity-100 focus-visible:[&>svg:first-child]:opacity-100 data-[active=true]:[&>svg:first-child]:opacity-100";
+  "[&>svg:first-child]:opacity-25 [&>svg:first-child]:transition-[opacity,color] hover:[&>svg:first-child]:opacity-100 hover:[&>svg:first-child]:!text-sidebar-accent-foreground focus-visible:[&>svg:first-child]:opacity-100 focus-visible:[&>svg:first-child]:!text-sidebar-accent-foreground data-[active=true]:[&>svg:first-child]:opacity-100 data-[active=true]:[&>svg:first-child]:!text-sidebar-accent-foreground";
 
 function CollapsedIconFallback({ title }: { title: string }) {
   return (
