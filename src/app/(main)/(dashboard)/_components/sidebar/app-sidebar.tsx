@@ -22,7 +22,6 @@ import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
 import { NavMain } from "./nav-main";
 import { NavUser, type SidebarUser } from "./nav-user";
-import { SupportCard } from "./support-card";
 
 export function AppSidebar({
   user,
@@ -56,27 +55,28 @@ export function AppSidebar({
 
   return (
     <Sidebar {...props} variant={variant} collapsible={collapsible}>
-      <SidebarHeader>
+      <SidebarHeader className="px-3 py-4 group-data-[collapsible=icon]:px-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton asChild size="lg" className="rounded-xl px-3 hover:bg-sidebar-accent">
               <Link prefetch={false} href="/">
-                <RegionMarkOutline
-                  id={markId}
-                  strokeWidth={1.5}
-                  className="size-5! group-data-[collapsible=icon]:size-4!"
-                />
-                <span className="font-semibold text-base">{APP_CONFIG.name}</span>
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
+                  <RegionMarkOutline
+                    id={markId}
+                    strokeWidth={1.5}
+                    className="size-5! group-data-[collapsible=icon]:size-4!"
+                  />
+                </span>
+                <span className="font-semibold text-base tracking-tight">{APP_CONFIG.name}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="px-2">
         <NavMain items={items} />
       </SidebarContent>
-      <SidebarFooter>
-        <SupportCard />
+      <SidebarFooter className="p-2">
         <NavUser user={user} permissions={permissions} />
       </SidebarFooter>
     </Sidebar>

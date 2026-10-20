@@ -158,7 +158,10 @@ export function NavMain({ items }: NavMainProps) {
               )}
               {group.label && (
                 <CollapsibleTrigger asChild>
-                  <SidebarGroupLabel asChild className="group-data-[collapsible=icon]:pointer-events-none">
+                  <SidebarGroupLabel
+                    asChild
+                    className="mb-1 px-3 font-semibold text-[10px] text-muted-foreground/70 uppercase tracking-[0.14em] group-data-[collapsible=icon]:pointer-events-none"
+                  >
                     <button
                       type="button"
                       className="w-full cursor-pointer justify-between text-left hover:text-sidebar-foreground"
@@ -171,7 +174,7 @@ export function NavMain({ items }: NavMainProps) {
               )}
               <CollapsibleContent>
                 <SidebarGroupContent>
-                  <SidebarMenu>
+                  <SidebarMenu className="gap-1">
                     {group.items.map((item) => (
                       <NavItem
                         key={item.id}
