@@ -196,63 +196,86 @@ export function CompareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 p-0 sm:max-w-4xl">
-        <DialogHeader className="border-b p-4 pr-12">
-          <DialogTitle className="flex items-center gap-2.5">
-            <span className="flex size-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <GitCompareArrows className="size-4" />
+      <DialogContent className="max-h-[min(92vh,52rem)] gap-0 overflow-hidden p-0 sm:max-w-5xl">
+        <DialogHeader className="border-b bg-muted/20 p-5 pr-12 sm:p-6">
+          <div className="flex items-start gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
+              <GitCompareArrows className="size-5" />
             </span>
-            Сравнение транспорта
-          </DialogTitle>
-          <DialogDescription>Лучшие значения отмечены зелёным.</DialogDescription>
+            <div className="min-w-0">
+              <DialogTitle className="text-lg tracking-tight sm:text-xl">Сравнение транспорта</DialogTitle>
+              <DialogDescription className="mt-1">
+                Сопоставьте характеристики выбранных машин и найдите подходящую.
+              </DialogDescription>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-emerald-500" /> Лучший показатель
+            </span>
+            <span>
+              {vehicles.length} из {MAX_COMPARE} выбрано
+            </span>
+          </div>
         </DialogHeader>
 
-        <div className="overflow-x-auto">
-          <div className="min-w-[26rem] p-3 sm:min-w-[34rem] sm:p-4" style={{ ["--cols" as string]: cols }}>
-            <div className="grid grid-cols-[5.5rem_repeat(var(--cols),minmax(0,1fr))] gap-2 sm:gap-3 sm:grid-cols-[10rem_repeat(var(--cols),minmax(0,1fr))]">
-              <div />
+        <div className="overflow-auto">
+          <div className="min-w-[30rem] p-4 sm:min-w-[42rem] sm:p-6" style={{ ["--cols" as string]: cols }}>
+            <div className="grid grid-cols-[7.5rem_repeat(var(--cols),minmax(0,1fr))] gap-x-2 gap-y-1 sm:grid-cols-[12rem_repeat(var(--cols),minmax(0,1fr))] sm:gap-x-3">
+              <div className="flex items-end pb-3 text-[0.65rem] font-semibold uppercase tracking-wider text-muted-foreground">
+                Параметр
+              </div>
               {vehicles.map((vehicle) => (
-                <div key={vehicle.code} className="relative flex flex-col items-center gap-2 text-center">
+                <div
+                  key={vehicle.code}
+                  className="group relative flex min-w-0 flex-col items-center gap-2 rounded-2xl border bg-card p-2.5 text-center sm:p-3"
+                >
                   <VehicleImage
                     vehicle={vehicle}
                     sizes="240px"
-                    className="aspect-[16/10] w-full rounded-xl border"
+                    className="aspect-[16/10] w-full rounded-xl bg-muted/50"
                     imageClassName="p-2"
                   />
                   <button
                     type="button"
                     onClick={() => onRemove(vehicle.code)}
                     aria-label={`Убрать ${vehicleTitle(vehicle)}`}
-                    className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-lg border bg-background/80 text-muted-foreground backdrop-blur-sm hover:text-foreground"
+                    className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-lg border bg-background/90 text-muted-foreground shadow-sm transition-colors hover:bg-destructive/10 hover:text-destructive"
                   >
                     <X className="size-3.5" />
                   </button>
-                  <div className="min-w-0">
+                  <div className="min-w-0 w-full">
                     <p className="truncate text-xs text-muted-foreground">{vehicle.name}</p>
-                    <p className="truncate font-semibold tracking-tight">{vehicle.model}</p>
+                    <p className="truncate text-sm font-semibold tracking-tight">{vehicle.model}</p>
                   </div>
                   {topWins > 0 && wins.get(vehicle.code) === topWins && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[0.7rem] font-medium text-amber-600 dark:text-amber-400">
-                      <Trophy className="size-3" /> Лучше по {topWins}
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-1 text-[0.65rem] font-medium text-amber-600 dark:text-amber-400">
+                      <Trophy className="size-3" /> Лидер
                     </span>
                   )}
                 </div>
               ))}
 
-              {metrics.map((metric) => {
+              {metrics.map((metric, index) => {
                 const best = bestCodes(vehicles, metric);
                 return (
                   <div key={metric.label} className="contents">
-                    <div className="flex items-center rounded-xl py-2.5 text-xs text-muted-foreground">
+                    <div
+                      className={cn(
+                        "flex items-center border-b py-3 text-xs font-medium text-muted-foreground",
+                        index === 0 && "border-t",
+                      )}
+                    >
                       {metric.label}
                     </div>
                     {vehicles.map((vehicle) => (
                       <div
                         key={vehicle.code}
                         className={cn(
-                          "flex items-center justify-center rounded-xl bg-muted/50 px-2 py-2.5 text-center text-sm font-medium tabular-nums",
+                          "flex min-h-11 items-center justify-center border-b bg-muted/30 px-2 py-3 text-center text-sm font-medium tabular-nums",
+                          index === 0 && "border-t",
                           best.has(vehicle.code) &&
-                            "bg-emerald-500/15 font-semibold text-emerald-700 ring-1 ring-emerald-500/30 dark:text-emerald-300",
+                            "bg-emerald-500/10 font-semibold text-emerald-700 dark:text-emerald-300",
                         )}
                       >
                         {metric.render(vehicle)}
