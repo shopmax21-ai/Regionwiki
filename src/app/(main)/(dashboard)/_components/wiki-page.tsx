@@ -110,7 +110,6 @@ type Section = {
   tone: Tone;
   /** Крупная карточка занимает две колонки сетки */
   wide?: boolean;
-  meta?: string;
   href?: string;
 };
 
@@ -122,7 +121,6 @@ function buildSections(stats: WikiStats, rulesStatus?: RulesStatusLabel): Sectio
       icon: Scale,
       tone: "red",
       wide: true,
-      meta: `${plural(stats.generalArticles, ["раздел", "раздела", "разделов"])} · ${plural(stats.rules, ["пункт", "пункта", "пунктов"])}`,
       href: "/rules/general",
     },
     {
@@ -130,7 +128,6 @@ function buildSections(stats: WikiStats, rulesStatus?: RulesStatusLabel): Sectio
       description: "Правила государственных организаций",
       icon: Users,
       tone: "red",
-      meta: plural(stats.governmentArticles, ["раздел", "раздела", "разделов"]),
       href: "/rules/government",
     },
     {
@@ -146,7 +143,6 @@ function buildSections(stats: WikiStats, rulesStatus?: RulesStatusLabel): Sectio
       description: "Варианты заработка денег",
       icon: HardHat,
       tone: "amber",
-      meta: plural(stats.jobs, ["работа", "работы", "работ"]),
       href: "/jobs",
     },
     {
@@ -154,7 +150,6 @@ function buildSections(stats: WikiStats, rulesStatus?: RulesStatusLabel): Sectio
       description: "Отличный способ заработка",
       icon: BriefcaseBusiness,
       tone: "amber",
-      meta: plural(stats.businesses, ["бизнес", "бизнеса", "бизнесов"]),
       href: "/business",
     },
     {
@@ -162,7 +157,6 @@ function buildSections(stats: WikiStats, rulesStatus?: RulesStatusLabel): Sectio
       description: "Каталог недвижимости",
       icon: House,
       tone: "amber",
-      meta: plural(stats.realties, ["объект", "объекта", "объектов"]),
       href: "/real-estate",
     },
     {
@@ -170,7 +164,6 @@ function buildSections(stats: WikiStats, rulesStatus?: RulesStatusLabel): Sectio
       description: "Каталог транспорта",
       icon: CarFront,
       tone: "sky",
-      meta: plural(stats.vehicles, ["машина", "машины", "машин"]),
       href: "/transport",
     },
     {
@@ -179,7 +172,6 @@ function buildSections(stats: WikiStats, rulesStatus?: RulesStatusLabel): Sectio
       icon: MapIcon,
       tone: "sky",
       wide: true,
-      meta: plural(stats.places, ["метка", "метки", "меток"]),
       href: "/map",
     },
     {
@@ -262,11 +254,6 @@ function SectionCard({ section, index }: { section: Section; index: number }) {
           {section.title}
         </h3>
         <p className="text-muted-foreground text-sm leading-5">{section.description}</p>
-        {section.meta && (
-          <span className={cn("mt-2 w-fit rounded-full px-2.5 py-0.5 font-medium text-xs tabular-nums", colors.chip)}>
-            {section.meta}
-          </span>
-        )}
       </div>
     </div>
   );
