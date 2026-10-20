@@ -67,43 +67,58 @@ export function CompareBar({
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-4 z-30 flex justify-center px-4">
-      <div className="pointer-events-auto flex w-full max-w-2xl items-center gap-3 rounded-2xl border bg-card/95 p-2.5 shadow-xl backdrop-blur-md">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          {selected.map((vehicle) => (
-            <div
-              key={vehicle.code}
-              className="flex min-w-0 items-center gap-1.5 rounded-xl bg-muted/70 py-1 pr-1 pl-1"
-            >
-              <VehicleImage
-                vehicle={vehicle}
-                sizes="48px"
-                className="hidden size-8 shrink-0 rounded-lg sm:block"
-                imageClassName="p-0.5"
-              />
-              <span className="max-w-24 truncate pl-1 text-xs font-medium sm:pl-0">{vehicle.model}</span>
-              <button
-                type="button"
-                onClick={() => onRemove(vehicle.code)}
-                aria-label={`Убрать ${vehicleTitle(vehicle)}`}
-                className="flex size-6 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-background hover:text-foreground"
-              >
-                <X className="size-3.5" />
-              </button>
+      <div className="pointer-events-auto flex w-full max-w-3xl flex-col gap-3 rounded-2xl border bg-card/95 p-3 shadow-2xl shadow-black/20 backdrop-blur-xl sm:flex-row sm:items-center sm:gap-4">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <div className="hidden size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:flex">
+            <GitCompareArrows className="size-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 flex items-center gap-2">
+              <p className="text-sm font-semibold tracking-tight">Сравнение транспорта</p>
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                {selected.length}/{MAX_COMPARE}
+              </span>
             </div>
-          ))}
-          {selected.length < MAX_COMPARE && (
-            <span className="hidden text-xs text-muted-foreground md:inline">
-              {ready ? "можно добавить ещё" : "выберите ещё машину"}
-            </span>
-          )}
+            <div className="flex min-w-0 items-center gap-2 overflow-x-auto pb-0.5">
+              {selected.map((vehicle) => (
+                <div
+                  key={vehicle.code}
+                  className="flex min-w-0 shrink-0 items-center gap-1.5 rounded-lg border bg-background/70 py-1 pr-1 pl-1"
+                >
+                  <VehicleImage
+                    vehicle={vehicle}
+                    sizes="40px"
+                    className="size-7 shrink-0 rounded-md"
+                    imageClassName="p-0.5"
+                  />
+                  <span className="max-w-28 truncate text-xs font-medium">{vehicle.model}</span>
+                  <button
+                    type="button"
+                    onClick={() => onRemove(vehicle.code)}
+                    aria-label={`Убрать ${vehicleTitle(vehicle)}`}
+                    className="flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </div>
+              ))}
+              {selected.length < MAX_COMPARE && (
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {ready ? "Добавьте ещё" : "Выберите ещё машину"}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
-        <Button variant="ghost" size="sm" onClick={onClear} className="max-sm:hidden">
-          Сбросить
-        </Button>
-        <Button size="sm" disabled={!ready} onClick={onOpen}>
-          <GitCompareArrows data-icon="inline-start" />
-          Сравнить
-        </Button>
+        <div className="flex items-center gap-2 border-t pt-2 sm:border-t-0 sm:pt-0">
+          <Button variant="ghost" size="sm" onClick={onClear} className="flex-1 sm:flex-none">
+            Сбросить
+          </Button>
+          <Button size="sm" disabled={!ready} onClick={onOpen} className="flex-1 sm:flex-none">
+            <GitCompareArrows data-icon="inline-start" />
+            Открыть сравнение
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -132,9 +147,19 @@ const metrics: Metric[] = [
   { label: "Скорость", value: (v) => v.speed, best: "max", render: (v) => `${v.speed} км/ч` },
   { label: "Макс. скорость (FT)", value: (v) => v.tunedSpeed, best: "max", render: (v) => `${v.tunedSpeed} км/ч` },
   { label: "Гос. стоимость", value: (v) => v.price, best: "min", render: (v) => formatPrice(v.price) },
-  { label: "Стоимость свалки", value: (v) => getScrapPrice(v), best: "max", render: (v) => formatPrice(getScrapPrice(v)) },
+  {
+    label: "Стоимость свалки",
+    value: (v) => getScrapPrice(v),
+    best: "max",
+    render: (v) => formatPrice(getScrapPrice(v)),
+  },
   { label: "Багажник", value: (v) => v.trunkKg, best: "max", render: (v) => `${v.trunkKg} кг` },
-  { label: "Грузоподъёмность", value: (v) => v.loadTons ?? 0, best: "max", render: (v) => (v.loadTons ? `${v.loadTons} т` : "—") },
+  {
+    label: "Грузоподъёмность",
+    value: (v) => v.loadTons ?? 0,
+    best: "max",
+    render: (v) => (v.loadTons ? `${v.loadTons} т` : "—"),
+  },
   { label: "Топливо", render: (v) => v.fuel },
   { label: "Категория", render: (v) => v.category },
   { label: "Источник", render: (v) => (v.sources.length ? v.sources.join(", ") : "Не указан") },
@@ -218,7 +243,9 @@ export function CompareDialog({
                 const best = bestCodes(vehicles, metric);
                 return (
                   <div key={metric.label} className="contents">
-                    <div className="flex items-center rounded-xl py-2.5 text-xs text-muted-foreground">{metric.label}</div>
+                    <div className="flex items-center rounded-xl py-2.5 text-xs text-muted-foreground">
+                      {metric.label}
+                    </div>
                     {vehicles.map((vehicle) => (
                       <div
                         key={vehicle.code}
