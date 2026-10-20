@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { cn } from "cn";
-import { Fuel, Gauge, Package, Sparkles } from "lucide-react";
+import { BusFront, Fuel, Gauge, Package } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -40,9 +40,9 @@ export function VehicleCardView({ vehicle, image, className }: VehicleCardViewPr
                   <span
                     role="img"
                     aria-label="Новый транспорт"
-                    className="inline-flex size-8 items-center justify-center rounded-full border border-primary/35 bg-primary/15 text-primary shadow-sm backdrop-blur-sm"
+                    className="inline-flex size-9 items-center justify-center rounded-md border border-primary/35 bg-primary/15 text-primary shadow-sm backdrop-blur-sm"
                   >
-                    <Sparkles className="size-4" aria-hidden="true" />
+                    <BusFront className="size-4" aria-hidden="true" />
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Новый транспорт</TooltipContent>
