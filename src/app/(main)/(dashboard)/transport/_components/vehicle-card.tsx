@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { cn } from "cn";
-import { Fuel, Gauge, Package, Weight } from "lucide-react";
+import { Fuel, Gauge, Package } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -81,10 +81,6 @@ export function VehicleCardView({ vehicle, image, className }: VehicleCardViewPr
           <span className="flex items-center gap-1.5">
             <Package className="size-3.5" aria-hidden="true" />
             {formatTrunk(vehicle)}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Weight className="size-3.5" aria-hidden="true" />
-            {vehicle.category}
           </span>
         </div>
 
