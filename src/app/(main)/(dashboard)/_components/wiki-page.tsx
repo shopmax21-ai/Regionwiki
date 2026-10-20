@@ -135,7 +135,6 @@ function buildSections(stats: WikiStats, rulesStatus?: RulesStatusLabel): Sectio
       description: "Обновления и изменения правил",
       icon: History,
       tone: "red",
-      meta: rulesStatus?.label,
       href: "/rules/changelog",
     },
     {
