@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { cn } from "cn";
-import { Check, GitCompareArrows, Minus, Trophy, X } from "lucide-react";
+import { Check, GitCompareArrows, Minus, Sparkles, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -70,10 +70,7 @@ export function CompareBar({
       <div className="pointer-events-auto flex w-full max-w-2xl items-center gap-3 rounded-2xl border bg-card/95 p-2.5 shadow-xl backdrop-blur-md">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           {selected.map((vehicle) => (
-            <div
-              key={vehicle.code}
-              className="flex min-w-0 items-center gap-1.5 rounded-xl bg-muted/70 py-1 pr-1 pl-1"
-            >
+            <div key={vehicle.code} className="flex min-w-0 items-center gap-1.5 rounded-xl bg-muted/70 py-1 pr-1 pl-1">
               <VehicleImage
                 vehicle={vehicle}
                 sizes="48px"
@@ -132,9 +129,19 @@ const metrics: Metric[] = [
   { label: "Скорость", value: (v) => v.speed, best: "max", render: (v) => `${v.speed} км/ч` },
   { label: "Макс. скорость (FT)", value: (v) => v.tunedSpeed, best: "max", render: (v) => `${v.tunedSpeed} км/ч` },
   { label: "Гос. стоимость", value: (v) => v.price, best: "min", render: (v) => formatPrice(v.price) },
-  { label: "Стоимость свалки", value: (v) => getScrapPrice(v), best: "max", render: (v) => formatPrice(getScrapPrice(v)) },
+  {
+    label: "Стоимость свалки",
+    value: (v) => getScrapPrice(v),
+    best: "max",
+    render: (v) => formatPrice(getScrapPrice(v)),
+  },
   { label: "Багажник", value: (v) => v.trunkKg, best: "max", render: (v) => `${v.trunkKg} кг` },
-  { label: "Грузоподъёмность", value: (v) => v.loadTons ?? 0, best: "max", render: (v) => (v.loadTons ? `${v.loadTons} т` : "—") },
+  {
+    label: "Грузоподъёмность",
+    value: (v) => v.loadTons ?? 0,
+    best: "max",
+    render: (v) => (v.loadTons ? `${v.loadTons} т` : "—"),
+  },
   { label: "Топливо", render: (v) => v.fuel },
   { label: "Категория", render: (v) => v.category },
   { label: "Источник", render: (v) => (v.sources.length ? v.sources.join(", ") : "Не указан") },
@@ -186,39 +193,56 @@ export function CompareDialog({
           <div className="min-w-[26rem] p-3 sm:min-w-[34rem] sm:p-4" style={{ ["--cols" as string]: cols }}>
             <div className="grid grid-cols-[5.5rem_repeat(var(--cols),minmax(0,1fr))] gap-2 sm:gap-3 sm:grid-cols-[10rem_repeat(var(--cols),minmax(0,1fr))]">
               <div />
-              {vehicles.map((vehicle) => (
-                <div key={vehicle.code} className="relative flex flex-col items-center gap-2 text-center">
-                  <VehicleImage
-                    vehicle={vehicle}
-                    sizes="240px"
-                    className="aspect-[16/10] w-full rounded-xl border"
-                    imageClassName="p-2"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => onRemove(vehicle.code)}
-                    aria-label={`Убрать ${vehicleTitle(vehicle)}`}
-                    className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-lg border bg-background/80 text-muted-foreground backdrop-blur-sm hover:text-foreground"
+              {vehicles.map((vehicle) => {
+                const isLeader = topWins > 0 && wins.get(vehicle.code) === topWins;
+                return (
+                  <div
+                    key={vehicle.code}
+                    className={cn(
+                      "relative overflow-hidden rounded-2xl border bg-card text-center shadow-sm transition-colors",
+                      isLeader && "border-primary/60 bg-primary/[0.06] ring-1 ring-primary/20",
+                    )}
                   >
-                    <X className="size-3.5" />
-                  </button>
-                  <div className="min-w-0">
-                    <p className="truncate text-xs text-muted-foreground">{vehicle.name}</p>
-                    <p className="truncate font-semibold tracking-tight">{vehicle.model}</p>
+                    {isLeader && <div className="h-1 bg-primary" aria-hidden="true" />}
+                    <div className="flex flex-col gap-2 p-2.5 sm:p-3">
+                      <div className="relative">
+                        <VehicleImage
+                          vehicle={vehicle}
+                          sizes="240px"
+                          className="aspect-[16/10] w-full rounded-xl border bg-muted/30"
+                          imageClassName="p-2"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => onRemove(vehicle.code)}
+                          aria-label={`Убрать ${vehicleTitle(vehicle)}`}
+                          className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-lg border bg-background/80 text-muted-foreground backdrop-blur-sm hover:text-foreground"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-xs text-muted-foreground">{vehicle.name}</p>
+                        <p className="truncate font-semibold tracking-tight">{vehicle.model}</p>
+                      </div>
+                      {isLeader && (
+                        <div className="flex items-center justify-center gap-1.5 border-t border-primary/15 pt-2 text-[0.7rem] font-semibold text-primary">
+                          <Sparkles className="size-3.5" aria-hidden="true" />
+                          <span>Лидер · {topWins} показателя</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  {topWins > 0 && wins.get(vehicle.code) === topWins && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[0.7rem] font-medium text-amber-600 dark:text-amber-400">
-                      <Trophy className="size-3" /> Лучше по {topWins}
-                    </span>
-                  )}
-                </div>
-              ))}
+                );
+              })}
 
               {metrics.map((metric) => {
                 const best = bestCodes(vehicles, metric);
                 return (
                   <div key={metric.label} className="contents">
-                    <div className="flex items-center rounded-xl py-2.5 text-xs text-muted-foreground">{metric.label}</div>
+                    <div className="flex items-center rounded-xl py-2.5 text-xs text-muted-foreground">
+                      {metric.label}
+                    </div>
                     {vehicles.map((vehicle) => (
                       <div
                         key={vehicle.code}
