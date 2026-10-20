@@ -1,10 +1,11 @@
 import Link from "next/link";
 
 import { cn } from "cn";
-import { Fuel, Gauge, Package } from "lucide-react";
+import { Fuel, Gauge, Package, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { formatPrice, formatTrunk, type Vehicle } from "../_data/vehicles";
 import { VehicleImage } from "./vehicle-image";
@@ -33,7 +34,20 @@ export function VehicleCardView({ vehicle, image, className }: VehicleCardViewPr
         )}
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-2.5">
           <div className="flex flex-wrap gap-1.5">
-            {vehicle.isNew && <Badge>Новый</Badge>}
+            {vehicle.isNew && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    role="img"
+                    aria-label="Новый транспорт"
+                    className="inline-flex size-8 items-center justify-center rounded-full border border-primary/35 bg-primary/15 text-primary shadow-sm backdrop-blur-sm"
+                  >
+                    <Sparkles className="size-4" aria-hidden="true" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Новый транспорт</TooltipContent>
+              </Tooltip>
+            )}
             {vehicle.driftChip && <Badge variant="secondary">Дрифт-чип</Badge>}
           </div>
           <span className="rounded-md border border-border/60 bg-background/80 px-1.5 py-1 font-mono text-[10px] text-muted-foreground backdrop-blur-sm">
