@@ -287,29 +287,6 @@ function SectionCard({ section, index }: { section: Section; index: number }) {
   );
 }
 
-/** Цифры базы знаний одной строкой рядом с заголовком. */
-function StatsInline({ stats }: { stats: WikiStats }) {
-  const items = [
-    { value: stats.rules, label: "правил" },
-    { value: stats.jobs, label: "работ" },
-    { value: stats.vehicles, label: "машин" },
-    { value: stats.places, label: "меток" },
-  ];
-  return (
-    <ul className="flex flex-wrap items-center gap-2">
-      {items.map(({ value, label }) => (
-        <li
-          key={label}
-          className="flex items-baseline gap-1.5 rounded-full border bg-card/70 px-3 py-1 text-muted-foreground text-xs"
-        >
-          <span className="font-bold text-foreground text-sm tabular-nums italic">{value}</span>
-          {label}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 const STATUS_DOT: Record<RulesStatusLabel["state"], string> = {
   fresh: "bg-green-500",
   stale: "bg-amber-500",
@@ -430,9 +407,6 @@ export function WikiPage({
             <p className="wk-rise text-muted-foreground [animation-delay:80ms] md:text-lg">
               Правила, работы, транспорт и карта проекта в одном месте
             </p>
-          </div>
-          <div className="wk-rise flex justify-center [animation-delay:120ms]">
-            <StatsInline stats={stats} />
           </div>
         </div>
 
